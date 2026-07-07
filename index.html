@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agent Activity Tracker</title>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --danger: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-1-soft: rgba(57,135,229,0.20);
+      --good: #0ca30c;
+      --danger: #e66767;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.45;
+    padding: 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ---------- Log form ---------- */
+  .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="datetime-local"], input[type="text"] {
+    font: inherit; font-size: 14px;
+    color: var(--text-primary);
+    background: var(--page);
+    border: 1px solid var(--baseline);
+    border-radius: 7px;
+    padding: 7px 9px;
+    min-width: 130px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .chip {
+    font: inherit; font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--baseline);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.on {
+    background: var(--series-1);
+    border-color: var(--series-1);
+    color: #ffffff;
+    font-weight: 600;
+  }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--series-1);
+    background: var(--series-1);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--baseline);
+    font-weight: 500;
+  }
+  .btn:active { transform: translateY(1px); }
+  .saved-note { color: var(--good); font-size: 13px; font-weight: 600; margin-left: 10px; opacity: 0; transition: opacity .3s; }
+  .saved-note.show { opacity: 1; }
+
+  /* ---------- Period tabs ---------- */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab {
+    font: inherit; font-size: 14px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .tab.on {
+    background: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-weight: 650;
+  }
+
+  /* ---------- Stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .tile .t-label { font-size: 12px; color: var(--text-muted); }
+  .tile .t-value { font-size: 28px; font-weight: 650; margin-top: 2px; }
+  .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .rate .t-value { font-size: 22px; }
+  .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ---------- Breakdown charts ---------- */
+  .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .chart-controls .lbl { font-size: 13px; color: var(--text-muted); }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .hbar-row { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .hbar-name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  .hbar-track { position: relative; height: 18px; }
+  .hbar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--series-1);
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+  }
+  .hbar-val { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .cols { display: flex; align-items: flex-end; gap: 6px; height: 120px; border-bottom: 1px solid var(--baseline); padding: 0 4px; }
+  .col-slot { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+  .col-fill { width: 100%; max-width: 22px; background: var(--series-1); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .col-fill.zero { background: var(--grid); }
+  .col-x { display: flex; gap: 6px; padding: 4px 4px 0; }
+  .col-x span { flex: 1; text-align: center; font-size: 10px; color: var(--text-muted); }
+  .empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+
+  /* ---------- Log table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--baseline); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  td.num, th.num { text-align: center; }
+  .dot { color: var(--series-1); font-weight: 700; }
+  .del {
+    font: inherit; font-size: 12px;
+    background: none; border: none;
+    color: var(--danger); cursor: pointer; padding: 2px 6px;
+  }
+  .table-scroll { overflow-x: auto; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--text-primary); color: var(--page);
+    font-size: 12px; padding: 5px 9px; border-radius: 6px;
+    opacity: 0; transition: opacity .1s;
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .hbar-row { grid-template-columns: 90px 1fr 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Agent Activity Tracker</h1>
+      <div class="sub">Log every dial — the dashboard rolls it up by day, week, and month.</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
+      <button class="btn secondary" id="exportBtn">Export CSV</button>
+    </div>
+  </header>
+
+  <!-- ============ LOG A CALL ============ -->
+  <section class="card">
+    <h2>Log a call</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="fTime">Date &amp; time</label>
+        <input type="datetime-local" id="fTime">
+      </div>
+      <div class="field">
+        <label for="fLead">Lead type</label>
+        <select id="fLead"></select>
+      </div>
+      <div class="field">
+        <label for="fState">State</label>
+        <select id="fState"></select>
+      </div>
+      <div class="field" style="flex:1; min-width:160px;">
+        <label for="fNotes">Notes (optional)</label>
+        <input type="text" id="fNotes" placeholder="Client name, follow-up, etc." style="width:100%;">
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div>
+      <button class="btn" id="saveBtn">Save call</button>
+      <span class="saved-note" id="savedNote">Saved ✓</span>
+    </div>
+  </section>
+
+  <!-- ============ DAILY DIALS ============ -->
+  <section class="card">
+    <h2>End of day — total dials</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="dDate">Day</label>
+        <input type="date" id="dDate">
+      </div>
+      <div class="field">
+        <label for="dCount">Total calls made</label>
+        <input type="number" id="dCount" min="0" step="1" placeholder="e.g. 120" style="min-width:130px; font:inherit; font-size:14px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:7px; padding:7px 9px;">
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn" id="dialsSaveBtn">Save dials</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <span class="saved-note" id="dialsSavedNote">Saved ✓</span>
+      </div>
+    </div>
+    <div class="empty" id="dialsHint" style="padding:8px 0 0;"></div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="tabs" id="tabs"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>Conversion rates</h2>
+    <div class="rates" id="rates"></div>
+  </section>
+
+  <section class="card">
+    <div class="chart-controls">
+      <span class="lbl">Break down</span>
+      <select id="metricSel"></select>
+      <span class="lbl" id="periodEcho"></span>
+    </div>
+    <div class="charts">
+      <div>
+        <h2>By lead type</h2>
+        <div id="chartLead"></div>
+      </div>
+      <div>
+        <h2>By state</h2>
+        <div id="chartState"></div>
+      </div>
+      <div>
+        <h2>By time of day</h2>
+        <div id="chartHour"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALL LOG ============ -->
+  <section class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;">Call log <span id="logCount" style="color:var(--text-muted); font-weight:400; text-transform:none;"></span></h2>
+      <button class="btn secondary" id="manageLeadsBtn">Edit lead types</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th><th>Lead type</th><th>State</th>
+            <th class="num">Pickup</th><th class="num">2+ min</th><th class="num">5+ min</th>
+            <th class="num">Present.</th><th class="num">Appt</th><th class="num">Sold</th>
+            <th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Data ---------------- */
+  var STORE_KEY = "agentTracker.entries.v1";
+  var LEADS_KEY = "agentTracker.leadTypes.v1";
+  var DIALS_KEY = "agentTracker.dials.v1";
+
+  var DEFAULT_LEAD_TYPES = ["Goat Aged", "Londen Fresh", "General Mortgage", "LifeJacket", "Goat fresh", "Self Gen"];
+
+  var STATES = ["N/A","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+
+  var METRICS = [
+    { key: "pickup",       label: "Pickups" },
+    { key: "conv2",        label: "Convos 2+ min" },
+    { key: "conv5",        label: "Convos 5+ min" },
+    { key: "presentation", label: "Presentations" },
+    { key: "appointment",  label: "Appointments set" },
+    { key: "sold",         label: "Sold deals" }
+  ];
+
+  function load(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function save(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+  var entries = load(STORE_KEY, []);
+  var leadTypes = load(LEADS_KEY, DEFAULT_LEAD_TYPES.slice());
+  var dials = load(DIALS_KEY, {}); // { "YYYY-MM-DD": count }
+
+  /* ---------------- Helpers ---------------- */
+  function $(id) { return document.getElementById(id); }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  function toLocalInputValue(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+      "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  function startOfDay(d)  { var x = new Date(d); x.setHours(0,0,0,0); return x; }
+  function startOfWeek(d) { // Monday
+    var x = startOfDay(d);
+    var dow = (x.getDay() + 6) % 7;
+    x.setDate(x.getDate() - dow);
+    return x;
+  }
+  function startOfMonth(d) { var x = startOfDay(d); x.setDate(1); return x; }
+
+  var PERIODS = [
+    { key: "day",   label: "Today",      from: function () { return startOfDay(new Date()); } },
+    { key: "week",  label: "This Week",  from: function () { return startOfWeek(new Date()); } },
+    { key: "month", label: "This Month", from: function () { return startOfMonth(new Date()); } },
+    { key: "all",   label: "All Time",   from: function () { return new Date(0); } }
+  ];
+  var activePeriod = "day";
+  var customDay = null; // "YYYY-MM-DD" when viewing a specific past day
+
+  function filtered() {
+    if (customDay) {
+      return entries.filter(function (e) { return dateKey(new Date(e.ts)) === customDay; });
+    }
+    var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from().getTime();
+    return entries.filter(function (e) { return new Date(e.ts).getTime() >= from; });
+  }
+
+  function dateKey(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function dialsInPeriod() {
+    if (customDay) return dials[customDay] || 0;
+    var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from();
+    var total = 0;
+    Object.keys(dials).forEach(function (k) {
+      if (new Date(k + "T12:00:00") >= from) total += dials[k];
+    });
+    return total;
+  }
+
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+           d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) + "%" : "–"; }
+
+  /* ---------------- Log form ---------------- */
+  var chipState = {};
+
+  var DEFAULT_LEAD = "General Mortgage";
+
+  function resetForm() {
+    $("fTime").value = toLocalInputValue(new Date());
+    $("fNotes").value = "";
+    if (leadTypes.indexOf(DEFAULT_LEAD) > -1) $("fLead").value = DEFAULT_LEAD;
+    $("fState").value = "N/A";
+    METRICS.forEach(function (m) { chipState[m.key] = false; });
+    renderChips();
+  }
+
+  function renderLeadOptions() {
+    var sel = $("fLead");
+    sel.innerHTML = "";
+    leadTypes.forEach(function (t) {
+      var o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+  }
+
+  function renderStateOptions() {
+    var sel = $("fState");
+    sel.innerHTML = "";
+    STATES.forEach(function (s) {
+      var o = document.createElement("option");
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+  }
+
+  // Checking a deeper outcome implies the shallower ones (a 5-min convo was picked up, etc.)
+  var IMPLIES = {
+    conv2: ["pickup"],
+    conv5: ["conv2", "pickup"],
+    presentation: ["pickup"],
+    appointment: ["pickup"],
+    sold: ["pickup"]
+  };
+
+  function toggleChip(key) {
+    chipState[key] = !chipState[key];
+    if (chipState[key] && IMPLIES[key]) {
+      IMPLIES[key].forEach(function (k) { chipState[k] = true; });
+    }
+    if (!chipState.pickup) {
+      METRICS.forEach(function (m) { chipState[m.key] = false; });
+    }
+    renderChips();
+  }
+
+  function renderChips() {
+    var box = $("chips");
+    box.innerHTML = "";
+    METRICS.forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (chipState[m.key] ? " on" : "");
+      b.textContent = (chipState[m.key] ? "✓ " : "") + m.label;
+      b.onclick = function () { toggleChip(m.key); };
+      box.appendChild(b);
+    });
+  }
+
+  $("saveBtn").onclick = function () {
+    var ts = $("fTime").value ? new Date($("fTime").value).toISOString() : new Date().toISOString();
+    var entry = {
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      ts: ts,
+      leadType: $("fLead").value,
+      state: $("fState").value,
+      notes: $("fNotes").value.trim()
+    };
+    METRICS.forEach(function (m) { entry[m.key] = !!chipState[m.key]; });
+    // A logged call with nothing selected still counts as a pickup —
+    // total dials (entered at end of day) covers the calls nobody answered.
+    var anySelected = METRICS.some(function (m) { return entry[m.key]; });
+    if (!anySelected) entry.pickup = true;
+    entries.push(entry);
+    entries.sort(function (a, b) { return new Date(a.ts) - new Date(b.ts); });
+    save(STORE_KEY, entries);
+    resetForm();
+    renderAll();
+    var note = $("savedNote");
+    note.classList.add("show");
+    setTimeout(function () { note.classList.remove("show"); }, 1500);
+  };
+
+  /* ---------------- Daily dials ---------------- */
+  function updateDialBtn() {
+    var n = dials[dateKey(new Date())] || 0;
+    $("dialBtn").textContent = "＋ Dial · " + n + " today";
+  }
+
+  $("dialBtn").onclick = function () {
+    var k = dateKey(new Date());
+    dials[k] = (dials[k] || 0) + 1;
+    save(DIALS_KEY, dials);
+    refreshDialsForm();
+    renderAll();
+  };
+
+  function refreshDialsForm() {
+    var k = $("dDate").value;
+    var existing = dials[k];
+    $("dCount").value = existing != null ? existing : "";
+    $("dialsHint").textContent = existing != null
+      ? "Saved for this day: " + existing + " dials. Enter a new number to overwrite."
+      : "Nothing saved for this day yet.";
+  }
+
+  $("dialsSaveBtn").onclick = function () {
+    var k = $("dDate").value;
+    if (!k) { alert("Pick a day first."); return; }
+    var n = parseInt($("dCount").value, 10);
+    if (isNaN(n) || n < 0) { alert("Enter how many calls you made (0 or more)."); return; }
+    if (n === 0) { delete dials[k]; } else { dials[k] = n; }
+    save(DIALS_KEY, dials);
+    refreshDialsForm();
+    renderAll();
+    var note = $("dialsSavedNote");
+    note.classList.add("show");
+    setTimeout(function () { note.classList.remove("show"); }, 1500);
+  };
+
+  $("manageLeadsBtn").onclick = function () {
+    var current = leadTypes.join(", ");
+    var input = prompt("Lead types (comma-separated). Edit the list and press OK:", current);
+    if (input === null) return;
+    var next = input.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (next.length === 0) return;
+    leadTypes = next;
+    save(LEADS_KEY, leadTypes);
+    renderLeadOptions();
+  };
+
+  /* ---------------- Dashboard ---------------- */
+  function renderTabs() {
+    var box = $("tabs");
+    box.innerHTML = "";
+    PERIODS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.className = "tab" + (!customDay && p.key === activePeriod ? " on" : "");
+      b.textContent = p.label;
+      b.onclick = function () { customDay = null; activePeriod = p.key; renderAll(); };
+      box.appendChild(b);
+    });
+    var lbl = document.createElement("span");
+    lbl.className = "tab" + (customDay ? " on" : "");
+    lbl.style.display = "inline-flex";
+    lbl.style.alignItems = "center";
+    lbl.style.gap = "6px";
+    lbl.style.cursor = "default";
+    lbl.appendChild(document.createTextNode("Pick a day:"));
+    var inp = document.createElement("input");
+    inp.type = "date";
+    inp.value = customDay || "";
+    inp.max = dateKey(new Date());
+    inp.style.cssText = "font:inherit; font-size:13px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
+    inp.onchange = function () {
+      customDay = inp.value || null;
+      renderAll();
+    };
+    lbl.appendChild(inp);
+    box.appendChild(lbl);
+  }
+
+  function count(rows, key) {
+    return rows.reduce(function (n, e) { return n + (e[key] ? 1 : 0); }, 0);
+  }
+
+  function renderTiles(rows) {
+    var box = $("tiles");
+    box.innerHTML = "";
+    var defs = [{ key: "_dials", label: "Total dials" }].concat(METRICS);
+    defs.forEach(function (m) {
+      var v = m.key === "_dials" ? dialsInPeriod() : count(rows, m.key);
+      var t = document.createElement("div");
+      t.className = "tile";
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
+      t.querySelector(".t-label").textContent = m.label;
+      t.querySelector(".t-value").textContent = v;
+      box.appendChild(t);
+    });
+  }
+
+  function renderRates(rows) {
+    var totalDials = dialsInPeriod();
+    var pickups = count(rows, "pickup");
+    var pres = count(rows, "presentation");
+    var sold = count(rows, "sold");
+    var appts = count(rows, "appointment");
+    var defs = [
+      { label: "Pickup rate",        val: pct(pickups, totalDials), sub: pickups + " of " + totalDials + " dials" },
+      { label: "Presentation rate",  val: pct(pres, pickups),  sub: pres + " of " + pickups + " pickups" },
+      { label: "Close rate",         val: pct(sold, pres),     sub: sold + " of " + pres + " presentations" },
+      { label: "Appointment rate",   val: pct(appts, pickups), sub: appts + " of " + pickups + " pickups" },
+      { label: "Sold per dial",      val: pct(sold, totalDials), sub: sold + " of " + totalDials + " dials" }
+    ];
+    var box = $("rates");
+    box.innerHTML = "";
+    defs.forEach(function (d) {
+      var t = document.createElement("div");
+      t.className = "tile rate";
+      t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div><div class="t-sub"></div>';
+      t.querySelector(".t-label").textContent = d.label;
+      t.querySelector(".t-value").textContent = d.val;
+      t.querySelector(".t-sub").textContent = d.sub;
+      box.appendChild(t);
+    });
+  }
+
+  /* ---------------- Breakdown charts ---------------- */
+  var activeMetric = "pickup";
+
+  function renderMetricSel() {
+    var sel = $("metricSel");
+    sel.innerHTML = "";
+    METRICS.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = m.key; o.textContent = m.label;
+      sel.appendChild(o);
+    });
+    sel.value = activeMetric;
+    sel.onchange = function () { activeMetric = sel.value; renderCharts(); };
+  }
+
+  function metricHit(e) {
+    return !!e[activeMetric];
+  }
+
+  var tooltip = $("tooltip");
+  function attachTip(el, text) {
+    el.addEventListener("mousemove", function (ev) {
+      tooltip.textContent = text;
+      tooltip.style.opacity = "1";
+      tooltip.style.left = (ev.clientX + 12) + "px";
+      tooltip.style.top = (ev.clientY - 28) + "px";
+    });
+    el.addEventListener("mouseleave", function () { tooltip.style.opacity = "0"; });
+  }
+
+  function renderHBars(containerId, groups) {
+    var box = $(containerId);
+    box.innerHTML = "";
+    var keys = Object.keys(groups).sort(function (a, b) { return groups[b] - groups[a]; });
+    keys = keys.filter(function (k) { return groups[k] > 0; }).slice(0, 8);
+    if (keys.length === 0) {
+      box.innerHTML = '<div class="empty">No data for this period yet.</div>';
+      return;
+    }
+    var max = groups[keys[0]];
+    keys.forEach(function (k) {
+      var row = document.createElement("div");
+      row.className = "hbar-row";
+      var name = document.createElement("div");
+      name.className = "hbar-name"; name.textContent = k;
+      var track = document.createElement("div");
+      track.className = "hbar-track";
+      var fill = document.createElement("div");
+      fill.className = "hbar-fill";
+      fill.style.width = Math.max(2, (groups[k] / max) * 100) + "%";
+      track.appendChild(fill);
+      var val = document.createElement("div");
+      val.className = "hbar-val"; val.textContent = groups[k];
+      attachTip(track, k + ": " + groups[k]);
+      row.appendChild(name); row.appendChild(track); row.appendChild(val);
+      box.appendChild(row);
+    });
+  }
+
+  function renderHourChart(rows) {
+    var box = $("chartHour");
+    box.innerHTML = "";
+    var hits = rows.filter(metricHit);
+    if (hits.length === 0) {
+      box.innerHTML = '<div class="empty">No data for this period yet.</div>';
+      return;
+    }
+    var buckets = {};
+    for (var h = 7; h <= 21; h++) buckets[h] = 0;
+    hits.forEach(function (e) {
+      var h = new Date(e.ts).getHours();
+      if (h < 7) h = 7;
+      if (h > 21) h = 21;
+      buckets[h]++;
+    });
+    var max = Math.max.apply(null, Object.keys(buckets).map(function (k) { return buckets[k]; }));
+    var cols = document.createElement("div");
+    cols.className = "cols";
+    var xaxis = document.createElement("div");
+    xaxis.className = "col-x";
+    Object.keys(buckets).forEach(function (h) {
+      var slot = document.createElement("div");
+      slot.className = "col-slot";
+      var fill = document.createElement("div");
+      var v = buckets[h];
+      fill.className = "col-fill" + (v === 0 ? " zero" : "");
+      fill.style.height = v === 0 ? "2px" : Math.max(4, (v / max) * 100) + "%";
+      var hr = ((h % 12) || 12) + (h < 12 ? "a" : "p");
+      attachTip(slot, hr + ": " + v);
+      slot.appendChild(fill);
+      cols.appendChild(slot);
+      var lab = document.createElement("span");
+      lab.textContent = (h % 3 === 0) ? hr : "";
+      xaxis.appendChild(lab);
+    });
+    box.appendChild(cols);
+    box.appendChild(xaxis);
+  }
+
+  function renderCharts() {
+    var rows = filtered();
+    var hits = rows.filter(metricHit);
+    var byLead = {}, byState = {};
+    hits.forEach(function (e) {
+      byLead[e.leadType] = (byLead[e.leadType] || 0) + 1;
+      byState[e.state] = (byState[e.state] || 0) + 1;
+    });
+    renderHBars("chartLead", byLead);
+    renderHBars("chartState", byState);
+    renderHourChart(rows);
+    if (customDay) {
+      $("periodEcho").textContent = "· " + new Date(customDay + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    } else {
+      var p = PERIODS.filter(function (x) { return x.key === activePeriod; })[0];
+      $("periodEcho").textContent = "· " + p.label;
+    }
+  }
+
+  /* ---------------- Log table ---------------- */
+  function renderLog(rows) {
+    var body = $("logBody");
+    body.innerHTML = "";
+    var shown = rows.slice().reverse();
+    $("logCount").textContent = "(" + shown.length + " in period)";
+    shown.forEach(function (e) {
+      var tr = document.createElement("tr");
+      function td(text, cls) {
+        var c = document.createElement("td");
+        if (cls) c.className = cls;
+        c.textContent = text;
+        return c;
+      }
+      function mark(on) {
+        var c = document.createElement("td");
+        c.className = "num";
+        if (on) { c.innerHTML = '<span class="dot">●</span>'; }
+        return c;
+      }
+      tr.appendChild(td(fmtWhen(e.ts)));
+      tr.appendChild(td(e.leadType));
+      tr.appendChild(td(e.state));
+      tr.appendChild(mark(e.pickup));
+      tr.appendChild(mark(e.conv2));
+      tr.appendChild(mark(e.conv5));
+      tr.appendChild(mark(e.presentation));
+      tr.appendChild(mark(e.appointment));
+      tr.appendChild(mark(e.sold));
+      tr.appendChild(td(e.notes || ""));
+      var delTd = document.createElement("td");
+      var del = document.createElement("button");
+      del.className = "del"; del.textContent = "✕"; del.title = "Delete this entry";
+      del.onclick = function () {
+        if (!confirm("Delete this call entry?")) return;
+        entries = entries.filter(function (x) { return x.id !== e.id; });
+        save(STORE_KEY, entries);
+        renderAll();
+      };
+      delTd.appendChild(del);
+      tr.appendChild(delTd);
+      body.appendChild(tr);
+    });
+    if (shown.length === 0) {
+      var tr = document.createElement("tr");
+      var c = document.createElement("td");
+      c.colSpan = 11; c.className = "empty"; c.textContent = "Nothing in this period yet — log your first call above.";
+      tr.appendChild(c);
+      body.appendChild(tr);
+    }
+  }
+
+  /* ---------------- CSV export ---------------- */
+  $("exportBtn").onclick = function () {
+    var header = ["Date", "Time", "Lead Type", "State", "Pickup", "Conv 2+ min", "Conv 5+ min", "Presentation", "Appointment Set", "Sold", "Notes"];
+    function esc(v) {
+      v = String(v == null ? "" : v);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }
+    var lines = [header.join(",")];
+    entries.forEach(function (e) {
+      var d = new Date(e.ts);
+      lines.push([
+        d.toLocaleDateString(), d.toLocaleTimeString(),
+        e.leadType, e.state,
+        e.pickup ? 1 : 0, e.conv2 ? 1 : 0, e.conv5 ? 1 : 0,
+        e.presentation ? 1 : 0, e.appointment ? 1 : 0, e.sold ? 1 : 0,
+        e.notes || ""
+      ].map(esc).join(","));
+    });
+    var dialKeys = Object.keys(dials).sort();
+    if (dialKeys.length > 0) {
+      lines.push("");
+      lines.push("Daily Dials");
+      lines.push("Date,Total Dials");
+      dialKeys.forEach(function (k) { lines.push(k + "," + dials[k]); });
+    }
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "call-tracker-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  /* ---------------- Boot ---------------- */
+  function renderAll() {
+    var rows = filtered();
+    renderTabs();
+    renderTiles(rows);
+    renderRates(rows);
+    renderCharts();
+    renderLog(rows);
+    updateDialBtn();
+  }
+
+  renderLeadOptions();
+  renderStateOptions();
+  renderMetricSel();
+  resetForm();
+  $("dDate").value = dateKey(new Date());
+  $("dDate").onchange = refreshDialsForm;
+  refreshDialsForm();
+  renderAll();
+})();
+</script>
+</body>
+</html>
