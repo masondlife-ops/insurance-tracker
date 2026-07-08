@@ -192,9 +192,12 @@
       <h1>Agent Activity Tracker</h1>
       <div class="sub">Log every dial — the dashboard rolls it up by day, week, and month.</div>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span class="saved-note" id="importNote"></span>
       <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
+      <button class="btn secondary" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
       <button class="btn secondary" id="exportBtn">Export CSV</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" hidden>
     </div>
   </header>
 
@@ -814,6 +817,169 @@
     a.download = "call-tracker-" + new Date().toISOString().slice(0, 10) + ".csv";
     a.click();
     URL.revokeObjectURL(a.href);
+  };
+
+  /* ---------------- CSV import ---------------- */
+  function parseCSV(text) {
+    var rows = [], row = [], field = "", inQ = false, i = 0;
+    while (i < text.length) {
+      var ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === ",") { row.push(field); field = ""; i++; continue; }
+      if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); rows.push(row); row = []; field = ""; i++; continue;
+      }
+      field += ch; i++;
+    }
+    if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function flagOn(v) {
+    v = String(v == null ? "" : v).trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes" || v === "y" || v === "x" || v === "●";
+  }
+
+  // Signature for duplicate detection: same second + same fields = same call
+  function entrySig(e) {
+    return [
+      Math.floor(new Date(e.ts).getTime() / 1000),
+      e.leadType, e.state,
+      METRICS.map(function (m) { return e[m.key] ? 1 : 0; }).join(""),
+      e.notes || ""
+    ].join("|");
+  }
+
+  var importNoteTimer;
+  function showImportNote(msg, ok) {
+    var el = $("importNote");
+    el.textContent = msg;
+    el.style.color = ok ? "" : "var(--danger)";
+    el.classList.add("show");
+    clearTimeout(importNoteTimer);
+    importNoteTimer = setTimeout(function () { el.classList.remove("show"); }, 6000);
+  }
+
+  function importCSV(text) {
+    var rows = parseCSV(text).filter(function (r) {
+      return r.some(function (c) { return String(c).trim() !== ""; });
+    });
+    if (rows.length === 0) { showImportNote("That file is empty.", false); return; }
+
+    // Split off the "Daily Dials" section the export appends
+    var dialRows = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]).trim().toLowerCase() === "daily dials") {
+        dialRows = rows.slice(i + 1);
+        rows = rows.slice(0, i);
+        break;
+      }
+    }
+    if (dialRows.length > 0 && String(dialRows[0][0]).trim().toLowerCase() === "date") dialRows.shift();
+
+    var added = 0, dups = 0, bad = 0, dialsAdded = 0;
+
+    if (rows.length > 1) {
+      var header = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+      function col(want) {
+        for (var j = 0; j < header.length; j++) {
+          for (var w = 0; w < want.length; w++) {
+            if (header[j].indexOf(want[w]) > -1) return j;
+          }
+        }
+        return -1;
+      }
+      var cDate = col(["date"]), cTime = col(["time"]);
+      var cLead = col(["lead"]), cState = col(["state"]);
+      var cPickup = col(["pickup"]), c2 = col(["2"]), c5 = col(["5"]);
+      var cPres = col(["present"]), cAppt = col(["appointment", "appt"]);
+      var cSold = col(["sold"]), cNotes = col(["note"]);
+      if (cDate === -1) {
+        showImportNote("Couldn't find a Date column — is this a tracker export?", false);
+        return;
+      }
+      var seen = {};
+      entries.forEach(function (e) { seen[entrySig(e)] = true; });
+      function cell(r, c) { return c > -1 && r[c] != null ? String(r[c]).trim() : ""; }
+
+      rows.slice(1).forEach(function (r) {
+        var ds = cell(r, cDate), tstr = cell(r, cTime);
+        if (!ds) { bad++; return; }
+        var d = new Date(ds + (tstr ? " " + tstr : " 12:00:00"));
+        if (isNaN(d)) d = new Date(ds);
+        if (isNaN(d)) { bad++; return; }
+        var e = {
+          id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+          ts: d.toISOString(),
+          leadType: cell(r, cLead) || "Unknown",
+          state: cell(r, cState) || "N/A",
+          notes: cell(r, cNotes),
+          pickup: flagOn(cell(r, cPickup)),
+          conv2: flagOn(cell(r, c2)),
+          conv5: flagOn(cell(r, c5)),
+          presentation: flagOn(cell(r, cPres)),
+          appointment: flagOn(cell(r, cAppt)),
+          sold: flagOn(cell(r, cSold))
+        };
+        // Same rule as the log form: a call with no outcome still counts as a pickup
+        if (!METRICS.some(function (m) { return e[m.key]; })) e.pickup = true;
+        var sig = entrySig(e);
+        if (seen[sig]) { dups++; return; }
+        seen[sig] = true;
+        if (leadTypes.indexOf(e.leadType) === -1) leadTypes.push(e.leadType);
+        entries.push(e);
+        added++;
+      });
+    }
+
+    dialRows.forEach(function (r) {
+      var k = String(r[0] == null ? "" : r[0]).trim();
+      var n = parseInt(r[1], 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+        var d = new Date(k);
+        if (isNaN(d)) return;
+        k = dateKey(d);
+      }
+      if (isNaN(n) || n < 0) return;
+      // Never overwrite a day you already have numbers for
+      if (dials[k] == null) { dials[k] = n; dialsAdded++; }
+    });
+
+    entries.sort(function (a, b) { return new Date(a.ts) - new Date(b.ts); });
+    save(STORE_KEY, entries);
+    save(LEADS_KEY, leadTypes);
+    save(DIALS_KEY, dials);
+    renderLeadOptions();
+    renderAll();
+
+    var msg = "Imported " + added + " call" + (added === 1 ? "" : "s");
+    if (dialsAdded > 0) msg += " + " + dialsAdded + " day" + (dialsAdded === 1 ? "" : "s") + " of dials";
+    var extra = [];
+    if (dups > 0) extra.push(dups + " duplicate" + (dups === 1 ? "" : "s") + " skipped");
+    if (bad > 0) extra.push(bad + " unreadable row" + (bad === 1 ? "" : "s") + " skipped");
+    if (extra.length > 0) msg += " (" + extra.join(", ") + ")";
+    showImportNote(msg + " ✓", true);
+  }
+
+  $("importBtn").onclick = function () { $("importFile").click(); };
+  $("importFile").onchange = function () {
+    var file = this.files[0];
+    this.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try { importCSV(String(reader.result)); }
+      catch (err) { showImportNote("Import failed: " + err.message, false); }
+    };
+    reader.readAsText(file);
   };
 
   /* ---------------- Boot ---------------- */
