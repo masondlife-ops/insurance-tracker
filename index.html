@@ -139,7 +139,7 @@
   /* ---------- Breakdown charts ---------- */
   .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .chart-controls .lbl { font-size: 13px; color: var(--text-muted); }
-  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
   .hbar-row { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 8px; margin-bottom: 8px; }
   .hbar-name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
   .hbar-track { position: relative; height: 18px; }
@@ -542,7 +542,14 @@
   /* ---------------- Dashboard ---------------- */
   // The tab bar is built once and kept — rebuilding it on every render
   // destroyed the date input mid-typing (focus loss after each keystroke).
-  var tabButtons = [], dayLabel = null, dayInput = null;
+  var tabButtons = [], dayLabel = null, dayInput = null, dayBackBtn = null, dayFwdBtn = null;
+
+  function shiftDay(key, delta) {
+    var p = key.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    d.setDate(d.getDate() + delta);
+    return dateKey(d);
+  }
 
   function buildTabs() {
     var box = $("tabs");
@@ -565,7 +572,22 @@
     dayLabel.style.alignItems = "center";
     dayLabel.style.gap = "6px";
     dayLabel.style.cursor = "default";
-    dayLabel.appendChild(document.createTextNode("Pick a day:"));
+    dayLabel.style.flexWrap = "wrap";
+    var dayText = document.createElement("span");
+    dayText.style.whiteSpace = "nowrap";
+    dayText.textContent = "Pick a day:";
+    dayLabel.appendChild(dayText);
+    var stepBtnCss = "font:inherit; font-size:12px; color:var(--text-secondary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 8px; cursor:pointer;";
+    dayBackBtn = document.createElement("button");
+    dayBackBtn.type = "button";
+    dayBackBtn.textContent = "◀";
+    dayBackBtn.title = "Previous day";
+    dayBackBtn.style.cssText = stepBtnCss;
+    dayBackBtn.onclick = function () {
+      customDay = shiftDay(customDay || dateKey(new Date()), -1);
+      renderAll();
+    };
+    dayLabel.appendChild(dayBackBtn);
     dayInput = document.createElement("input");
     dayInput.type = "date";
     dayInput.max = dateKey(new Date());
@@ -582,6 +604,17 @@
       renderAll();
     };
     dayLabel.appendChild(dayInput);
+    dayFwdBtn = document.createElement("button");
+    dayFwdBtn.type = "button";
+    dayFwdBtn.textContent = "▶";
+    dayFwdBtn.title = "Next day";
+    dayFwdBtn.style.cssText = stepBtnCss;
+    dayFwdBtn.onclick = function () {
+      if (!customDay || customDay >= dateKey(new Date())) return;
+      customDay = shiftDay(customDay, 1);
+      renderAll();
+    };
+    dayLabel.appendChild(dayFwdBtn);
     box.appendChild(dayLabel);
   }
 
@@ -595,6 +628,10 @@
     if (document.activeElement !== dayInput && dayInput.value !== (customDay || "")) {
       dayInput.value = customDay || "";
     }
+    var atToday = !customDay || customDay >= dateKey(new Date());
+    dayFwdBtn.disabled = atToday;
+    dayFwdBtn.style.opacity = atToday ? "0.4" : "1";
+    dayFwdBtn.style.cursor = atToday ? "default" : "pointer";
   }
 
   function count(rows, key) {
