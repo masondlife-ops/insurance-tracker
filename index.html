@@ -37,6 +37,37 @@
       --danger: #e66767;
     }
   }
+  /* Manual override picked with the 🌙/☀️ button — beats the system setting */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-1-soft: rgba(57,135,229,0.20);
+    --good: #0ca30c;
+    --danger: #e66767;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --danger: #d03b3b;
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -186,6 +217,13 @@
     .hbar-row { grid-template-columns: 90px 1fr 32px; }
   }
 </style>
+<script>
+  // Apply a saved theme choice before first paint to avoid a flash
+  try {
+    var savedTheme = localStorage.getItem("agentTracker.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
 </head>
 <body>
 <div class="wrap">
@@ -196,6 +234,7 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="saved-note" id="importNote"></span>
+      <button class="btn secondary" id="themeBtn" title="Switch between light and dark mode">🌙</button>
       <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
       <button class="btn secondary" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
       <button class="btn secondary" id="exportBtn">Export CSV</button>
@@ -1048,6 +1087,25 @@
     reader.readAsText(file);
   };
 
+  /* ---------------- Theme toggle ---------------- */
+  var THEME_KEY = "agentTracker.theme.v1";
+
+  function effectiveTheme() {
+    return document.documentElement.getAttribute("data-theme") ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }
+
+  function updateThemeBtn() {
+    $("themeBtn").textContent = effectiveTheme() === "dark" ? "☀️" : "🌙";
+  }
+
+  $("themeBtn").onclick = function () {
+    var next = effectiveTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    updateThemeBtn();
+  };
+
   /* ---------------- Boot ---------------- */
   function renderAll() {
     var rows = filtered();
@@ -1059,6 +1117,7 @@
     updateDialBtn();
   }
 
+  updateThemeBtn();
   renderLeadOptions();
   renderStateOptions();
   renderMetricSel();
