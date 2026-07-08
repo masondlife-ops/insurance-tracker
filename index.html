@@ -134,6 +134,25 @@
     font-weight: 500;
   }
   .btn:active { transform: translateY(1px); }
+  .theme-toggle {
+    position: relative;
+    width: 46px; height: 26px;
+    flex: none;
+    border-radius: 999px;
+    border: 1px solid var(--baseline);
+    background: var(--page);
+    cursor: pointer;
+    padding: 0;
+  }
+  .theme-toggle .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: left .15s ease, background .15s ease;
+  }
+  .theme-toggle.dark { background: var(--series-1); border-color: var(--series-1); }
+  .theme-toggle.dark .knob { left: 22px; background: #fff; }
   .saved-note { color: var(--good); font-size: 13px; font-weight: 600; margin-left: 10px; opacity: 0; transition: opacity .3s; }
   .saved-note.show { opacity: 1; }
 
@@ -234,7 +253,7 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="saved-note" id="importNote"></span>
-      <button class="btn secondary" id="themeBtn" title="Switch between light and dark mode">🌙</button>
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
       <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
       <button class="btn secondary" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
       <button class="btn secondary" id="exportBtn">Export CSV</button>
@@ -1096,7 +1115,9 @@
   }
 
   function updateThemeBtn() {
-    $("themeBtn").textContent = effectiveTheme() === "dark" ? "☀️" : "🌙";
+    var dark = effectiveTheme() === "dark";
+    $("themeBtn").classList.toggle("dark", dark);
+    $("themeBtn").setAttribute("aria-checked", dark ? "true" : "false");
   }
 
   $("themeBtn").onclick = function () {
