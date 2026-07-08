@@ -6,6 +6,7 @@
 <title>Agent Activity Tracker</title>
 <style>
   :root {
+    color-scheme: light;
     --surface-1: #fcfcfb;
     --page: #f9f9f7;
     --text-primary: #0b0b0b;
@@ -21,6 +22,7 @@
   }
   @media (prefers-color-scheme: dark) {
     :root {
+      color-scheme: dark;
       --surface-1: #1a1a19;
       --page: #0d0d0d;
       --text-primary: #ffffff;
@@ -59,7 +61,7 @@
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--text-muted); }
-  select, input[type="datetime-local"], input[type="text"] {
+  select, input[type="datetime-local"], input[type="text"], input[type="date"], input[type="number"] {
     font: inherit; font-size: 14px;
     color: var(--text-primary);
     background: var(--page);
@@ -239,7 +241,7 @@
       </div>
       <div class="field">
         <label for="dCount">Total calls made</label>
-        <input type="number" id="dCount" min="0" step="1" placeholder="e.g. 120" style="min-width:130px; font:inherit; font-size:14px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:7px; padding:7px 9px;">
+        <input type="number" id="dCount" min="0" step="1" placeholder="e.g. 120">
       </div>
       <div class="field">
         <label>&nbsp;</label>
