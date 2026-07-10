@@ -194,7 +194,8 @@
   .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
   .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
   .settings-row input { width: 80px; }
-  .com-note { font-size: 11px; color: var(--text-muted); margin-top: 3px; min-height: 13px; }
+  .com-row { display: flex; align-items: center; gap: 8px; }
+  .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .com-note.warn { color: #c2790a; }
   td.struck { text-decoration: line-through; color: var(--text-muted); }
   @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
@@ -331,7 +332,7 @@
       <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
       <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
       <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
-      <div class="field"><label for="d-com">Commission ($)</label><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div>
+      <div class="field"><label for="d-com">Commission ($)</label><div class="com-row"><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div></div>
       <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
       <div class="field"><label for="d-status">Status</label>
         <select id="d-status">
