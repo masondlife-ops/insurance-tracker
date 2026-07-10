@@ -198,6 +198,39 @@
   .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .com-note.warn { color: #c2790a; }
   td.struck { text-decoration: line-through; color: var(--text-muted); }
+
+  /* ---------- Goal bar ---------- */
+  .goal-set { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .goal-set input { width: 110px; }
+  .goal-track { height: 14px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
+  .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+  .goal-fill.reached { background: var(--good); }
+  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .goal-meta .hit { color: var(--good); font-weight: 650; }
+
+  /* ---------- Activity funnel ---------- */
+  .funnel { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; }
+  .f-stage { flex: 1; min-width: 58px; text-align: center; padding: 4px 2px; }
+  .f-count { font-size: 22px; font-weight: 650; color: var(--series-1); font-variant-numeric: tabular-nums; }
+  .f-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .f-conv { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; white-space: nowrap; padding: 0 3px; }
+  .funnel-tiles { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .funnel-tiles .tile { flex: 1; min-width: 130px; }
+  .funnel-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+
+  /* ---------- Monthly trend ---------- */
+  .trend { display: flex; align-items: stretch; gap: 12px; height: 150px; }
+  .tc { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .tc-val { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tc-plot { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 46px; }
+  .tc-up { flex: 1; display: flex; align-items: flex-end; }
+  .tc-down { flex: 1; display: flex; align-items: flex-start; border-top: 1px solid var(--baseline); }
+  .tc-bar { width: 100%; }
+  .tc-bar.pos { background: var(--series-1); border-radius: 4px 4px 0 0; }
+  .tc-bar.neg { background: var(--danger); border-radius: 0 0 4px 4px; }
+  .tc:not(.tc-cur) .tc-bar { opacity: .5; }
+  .tc-mo { font-size: 12px; color: var(--text-muted); margin-top: 6px; white-space: nowrap; }
+  .tc-cur .tc-mo { color: var(--series-1); font-weight: 650; }
   @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
   :root[data-theme="dark"] .com-note.warn { color: #f5b451; }
   :root[data-theme="light"] .com-note.warn { color: #c2790a; }
@@ -321,6 +354,18 @@
   </header>
 
   <div class="tiles" id="tiles"></div>
+
+  <div class="card" id="goalCard">
+    <div class="card-head">
+      <h2>Monthly goal <span class="hint">issued AP</span></h2>
+      <div class="goal-set"><span>Goal:</span> $<input type="number" id="goalInput" min="0" step="100" placeholder="0"></div>
+    </div>
+    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
+  </div>
+
+  <div class="card" id="funnelCard"></div>
+  <div class="card" id="trendCard"></div>
 
   <div class="card">
     <h2 id="dealFormTitle">Add a deal</h2>
@@ -720,6 +765,128 @@
     renderSpend();
     renderDatalists();
     refreshContractLevel();
+    renderGoal();
+    renderFunnel();
+    renderTrend();
+  }
+
+  /* ---------- month analytics: goal, funnel, trend ---------- */
+
+  var activityBlob = null; // {entries, dials} pulled from the Activity tracker's cloud row
+
+  function dealsInMonth(ym) { return state.deals.filter(function (d) { return (d.date || "").slice(0, 7) === ym; }); }
+  function expensesInMonth(ym) { return state.expenses.filter(function (e) { return (e.date || "").slice(0, 7) === ym; }); }
+  function monthIssuedAP(ym) { return sum(dealsInMonth(ym).filter(function (d) { return d.status === "Issued"; }), function (d) { return d.ap; }); }
+  function monthProfit(ym) {
+    return sum(dealsInMonth(ym), earnedCom) - sum(expensesInMonth(ym), function (e) { return e.price; });
+  }
+  function moneyK(n) {
+    var a = Math.abs(n), s;
+    if (a >= 1000) s = "$" + (a / 1000).toFixed(a >= 10000 ? 0 : 1) + "k";
+    else s = "$" + Math.round(a);
+    return (n < 0 ? "−" : "") + s;
+  }
+  var SHORT_MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function shortMonth(ym) { var p = ym.split("-"); return SHORT_MO[parseInt(p[1], 10) - 1] + " " + p[0].slice(2); }
+
+  /* goal (issued AP, per-month target) */
+  function updateGoalBar() {
+    var issued = monthIssuedAP(currentMonth);
+    var goals = (state.settings && state.settings.goals) || {};
+    var goal = num(goals[currentMonth]);
+    var fill = $("goalFill"), now = $("goalNow"), rem = $("goalRemain");
+    if (goal && goal > 0) {
+      var pv = issued / goal * 100;
+      fill.style.width = Math.min(100, pv).toFixed(1) + "%";
+      fill.className = "goal-fill" + (issued >= goal ? " reached" : "");
+      now.textContent = money(issued) + " of " + money(goal);
+      rem.innerHTML = issued >= goal
+        ? '<span class="hit">Goal hit — ' + Math.round(pv) + "%</span>"
+        : (Math.round(pv) + "% · " + money(goal - issued) + " to go");
+    } else {
+      fill.style.width = "0"; fill.className = "goal-fill";
+      now.textContent = money(issued) + " issued";
+      rem.textContent = "Set a monthly goal →";
+    }
+  }
+  function renderGoal() {
+    var goals = (state.settings && state.settings.goals) || {};
+    var goal = goals[currentMonth];
+    $("goalInput").value = (goal == null ? "" : goal);
+    updateGoalBar();
+  }
+  $("goalInput").addEventListener("input", function () {
+    state.settings = state.settings || {};
+    state.settings.goals = state.settings.goals || {};
+    var v = num(this.value);
+    if (v == null) delete state.settings.goals[currentMonth]; else state.settings.goals[currentMonth] = v;
+    save();
+    updateGoalBar();
+  });
+
+  /* funnel (activity → deals → dollars) */
+  function activityMonth(ym) {
+    var b = activityBlob || {};
+    var dm = b.dials || {};
+    var dials = 0;
+    Object.keys(dm).forEach(function (k) { if (String(k).slice(0, 7) === ym) dials += (+dm[k] || 0); });
+    var ents = (b.entries || []).filter(function (e) {
+      var d = new Date(e.ts);
+      return (d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")) === ym;
+    });
+    var c = function (f) { return ents.filter(function (e) { return e[f]; }).length; };
+    return { dials: dials, pickups: c("pickup"), convos: c("conv2"), presentations: c("presentation"),
+             hasData: (dials > 0 || ents.length > 0) };
+  }
+  function renderFunnel() {
+    var a = activityMonth(currentMonth);
+    var deals = monthDeals();
+    var dealCount = deals.length;
+    var commission = sum(deals, earnedCom);
+    var leadSpend = sum(expensesInMonth(currentMonth).filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
+    var stages = [
+      { n: "Dials", v: a.dials }, { n: "Pickups", v: a.pickups }, { n: "Convos", v: a.convos },
+      { n: "Presentations", v: a.presentations }, { n: "Deals", v: dealCount }
+    ];
+    var html = '<div class="card-head"><h2>Activity → deals → dollars <span class="hint">this month</span></h2></div><div class="funnel">';
+    stages.forEach(function (s, i) {
+      html += '<div class="f-stage"><div class="f-count">' + s.v + '</div><div class="f-name">' + s.n + "</div></div>";
+      if (i < stages.length - 1) {
+        var prev = s.v, next = stages[i + 1].v;
+        html += '<div class="f-conv">→ ' + (prev > 0 ? Math.round(next / prev * 100) + "%" : "—") + "</div>";
+      }
+    });
+    html += "</div>";
+    var costPerSale = dealCount > 0 ? leadSpend / dealCount : null;
+    var revPerDial = a.dials > 0 ? commission / a.dials : null;
+    var closeRate = a.presentations > 0 ? Math.round(dealCount / a.presentations * 100) + "%" : "—";
+    html += '<div class="funnel-tiles">'
+      + tile("Cost per sale", costPerSale == null ? "—" : money(costPerSale), leadSpend > 0 ? money(leadSpend) + " in leads" : "", "")
+      + tile("Revenue per dial", revPerDial == null ? "—" : money(revPerDial), commission > 0 ? money(commission) + " commission" : "", "")
+      + tile("Presentation → deal", closeRate, a.presentations > 0 ? dealCount + " of " + a.presentations : "", "")
+      + "</div>";
+    if (!a.hasData) html += '<div class="funnel-note">No call activity logged this month yet — log calls on the Activity tab and they\'ll flow in here.</div>';
+    $("funnelCard").innerHTML = html;
+  }
+
+  /* monthly profit trend (last 6 months, zero-baseline) */
+  function renderTrend() {
+    var months = [];
+    for (var i = 5; i >= 0; i--) months.push(shiftMonth(currentMonth, -i));
+    var profits = months.map(monthProfit);
+    var maxMag = Math.max.apply(null, profits.map(function (p) { return Math.abs(p); }));
+    if (!(maxMag > 0)) maxMag = 1;
+    var html = '<div class="card-head"><h2>Monthly profit trend <span class="hint">last 6 months</span></h2></div><div class="trend">';
+    months.forEach(function (ym, idx) {
+      var p = profits[idx], cur = ym === currentMonth;
+      var upH = p > 0 ? (p / maxMag * 100) : 0, dnH = p < 0 ? (Math.abs(p) / maxMag * 100) : 0;
+      html += '<div class="tc' + (cur ? " tc-cur" : "") + '"><div class="tc-val">' + moneyK(p) + "</div>"
+        + '<div class="tc-plot"><div class="tc-up"><div class="tc-bar pos" style="height:' + upH.toFixed(1) + '%"></div></div>'
+        + '<div class="tc-down"><div class="tc-bar neg" style="height:' + dnH.toFixed(1) + '%"></div></div></div>'
+        + '<div class="tc-mo">' + shortMonth(ym) + "</div></div>";
+    });
+    html += "</div>";
+    $("trendCard").innerHTML = html;
   }
 
   /* ---------- commission comp guide (FFG Carrier Comp Guide, rev 2/9/2026) ---------- */
@@ -1366,6 +1533,16 @@
     });
   }
 
+  // read the Activity tracker's cloud row (same account) so the funnel can tie calls → deals
+  function fetchActivity() {
+    if (!cloudOn || !cloudUser) return;
+    sb.from("activity_state").select("data").eq("user_id", cloudUser.id).maybeSingle()
+      .then(function (res) {
+        if (!res.error && res.data && res.data.data) activityBlob = res.data.data;
+        renderFunnel();
+      });
+  }
+
   function cloudPull() {
     return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
@@ -1405,7 +1582,7 @@
     $("acctBox").classList.add("show");
     $("acctEmail").textContent = user.email || "";
     setSyncPill("Loading…", "saving");
-    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot);
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); });
   }
 
   function onSignedOut() {
