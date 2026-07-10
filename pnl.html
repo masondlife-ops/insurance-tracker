@@ -693,7 +693,7 @@
 
   function renderDatalists() {
     updateProductList();
-    fillList("carrierList", state.deals.map(function (d) { return d.carrier; }), Object.keys(COMP_CARRIERS));
+    fillList("carrierList", [], Object.keys(COMP_CARRIERS));
     fillList("leadList", state.deals.map(function (d) { return d.lead; }).concat(state.expenses.map(function (e) { return e.lead; })), ["Goat aged $3", "Unknown", "Referral"]);
     fillList("itemList", state.expenses.map(function (e) { return e.item; }), ["Goat leads", "Ringy"]);
   }
@@ -721,9 +721,6 @@
   // Row order aligns with COMP_LEVELS (145 -> 80). Values are comp % per contract level.
   var COMP_LEVELS = [145,140,135,130,125,120,115,110,105,100,95,90,85,80];
   var COMP_CARRIERS = {
-    "Legal & General America": { plus:true, bonusIncluded:true, products:{
-      "Term":[150,145,140,135,130,125,120,115,110,105,100,95,90,85]
-    }},
     "United Home Life": { products:{
       "Express Issue Premier WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
       "Express Issue Deluxe WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
@@ -733,19 +730,8 @@
       "Term":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
       "Accidental":[110,105,100,95,90,85,80,75,70,65,60,55,50,45]
     }},
-    "The Baltimore Life": { products:{
-      "Silver Guard FE":[115,115,110,105,100,95,90,90,85,85,80,75,70,65],
-      "aPriority Level Term (75K+)":[90,90,85,85,80,80,70,70,60,55,55,50,50,45],
-      "aPriority Whole Life":[115,115,110,105,100,95,90,85,80,75,70,65,60,60],
-      "aPriority Protector Term":[90,90,85,85,80,80,70,70,60,55,55,50,50,45]
-    }},
     "American Home Life (AHL)": { products:{
       "FE":[135,130,125,120,115,110,105,100,90,85,80,75,70,65]  // verified vs PDF page 2 (2/9/2026); 100->90 jump at level 105 is correct
-    }},
-    "Mutual Trust Life": { products:{
-      "Selecterm":[92.5,89,86,83,80,77,74,71,68,60,60,60,60,52.5],
-      "Horizon Value / Guarantee":[105,100,95,90,85,80,75,70,65,60,60,60,60,52.5],
-      "10/20 Year Term Rider":[105,100,95,90,85,80,75,70,65,60,60,60,60,52.5]
     }},
     "Elco Mutual": { products:{
       "FE Immediate":[125,120,120,115,115,110,110,105,105,100,100,95,95,90],
