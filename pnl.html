@@ -919,8 +919,7 @@
     "F&G": { products:{
       "Pathsetter":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
       "Everlast":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Exccudex":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Planright":[127.5,125,122.5,120,115,110,105,100,95,90,85,80,75,70]
+      "Exccudex":[135,130,125,120,115,110,105,100,95,90,85,80,75,70]
     }},
     "Kansas City Life": { products:{
       "Signature Term Simplified Issue":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
@@ -936,7 +935,8 @@
       "Your Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
       "SmartUL":[115,110,105,100,95,90,87.5,85,82.5,80,77.5,75,72.5,70],
       "Accidental Death Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Advantage Plus":[110,105,100,95,90,85,80,75,70,65,60,57.5,55,52.5]
+      "Advantage Plus":[110,105,100,95,90,85,80,75,70,65,60,57.5,55,52.5],
+      "Planright":{ r:[135,130,125,120,115,110,105,100,95,90,85,80,75,70], noPlus:true }
     }},
     "Corebridge Financial": { products:{
       "GIWL Whole Life":[90,80,75,70,65,60,55,50,45,45,45,45,45,45],
@@ -1003,8 +1003,11 @@
     if (!pkey) return null;
     var li = COMP_LEVELS.indexOf(parseInt(level, 10));
     if (li < 0) return null;
-    var base = c.products[pkey][li];
-    var bonus = (c.plus && !c.bonusIncluded) ? 5 : 0;
+    var pv = c.products[pkey];                       // array of rates, or { r:[...], noPlus:true }
+    var rates = Array.isArray(pv) ? pv : pv.r;
+    var noPlus = !Array.isArray(pv) && !!pv.noPlus;  // product opts out of its carrier's +5
+    var base = rates[li];
+    var bonus = (c.plus && !c.bonusIncluded && !noPlus) ? 5 : 0;
     return { rate: base + bonus, base: base, bonus: bonus, bonusIncluded: !!c.bonusIncluded, verify: !!c.verify };
   }
 
