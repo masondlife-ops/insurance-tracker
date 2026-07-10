@@ -194,6 +194,11 @@
   .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
   .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
   .settings-row input { width: 80px; }
+  .com-note { font-size: 11px; color: var(--text-muted); margin-top: 3px; min-height: 13px; }
+  .com-note.warn { color: #c2790a; }
+  @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
+  :root[data-theme="dark"] .com-note.warn { color: #f5b451; }
+  :root[data-theme="light"] .com-note.warn { color: #c2790a; }
 
   /* ---------- Tables ---------- */
   .table-scroll { overflow-x: auto; }
@@ -320,12 +325,12 @@
     <form id="dealForm" class="form-grid">
       <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
       <div class="field"><label for="d-client">Client name</label><input type="text" id="d-client" class="wide" required placeholder="Client"></div>
-      <div class="field"><label for="d-policy">Policy</label><input type="text" id="d-policy" class="narrow" list="policyList" placeholder="WL"></div>
-      <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="narrow" list="carrierList" placeholder="MOO"></div>
+      <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
+      <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
       <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
       <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
       <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
-      <div class="field"><label for="d-com">Commission ($)</label><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label for="d-com">Commission ($)</label><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div>
       <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
       <div class="field"><label for="d-status">Status</label>
         <select id="d-status">
@@ -342,9 +347,14 @@
       <button type="submit" class="btn" id="dealSubmit">Add deal</button>
       <button type="button" class="btn secondary" id="dealCancel" style="display:none">Cancel</button>
     </form>
-    <datalist id="policyList"></datalist>
+    <datalist id="productList"></datalist>
     <datalist id="carrierList"></datalist>
     <datalist id="leadList"></datalist>
+    <div class="settings-row">
+      <span>Your contract level:</span>
+      <select id="contractLevel" style="width:auto"><option value="">Set level…</option></select>
+      <span>&mdash; auto-calculates the upfront commission (first 9 months) from the carrier's comp guide. You can always type over it.</span>
+    </div>
   </div>
 
   <div class="card">
@@ -353,7 +363,7 @@
       <table id="dealsTable">
         <thead>
           <tr>
-            <th>Date</th><th>Client</th><th>Policy</th><th>Carrier</th>
+            <th>Date</th><th>Client</th><th>Product</th><th>Carrier</th>
             <th class="num">Face</th><th class="num">Monthly</th><th class="num">AP</th><th class="num">Com</th>
             <th>Lead type</th><th>Status</th><th>In force</th><th>Notes</th><th></th>
           </tr>
@@ -682,8 +692,8 @@
   }
 
   function renderDatalists() {
-    fillList("policyList", state.deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE", "Med Supp"]);
-    fillList("carrierList", state.deals.map(function (d) { return d.carrier; }), ["AHL", "MOO"]);
+    updateProductList();
+    fillList("carrierList", state.deals.map(function (d) { return d.carrier; }), Object.keys(COMP_CARRIERS));
     fillList("leadList", state.deals.map(function (d) { return d.lead; }).concat(state.expenses.map(function (e) { return e.lead; })), ["Goat aged $3", "Unknown", "Referral"]);
     fillList("itemList", state.expenses.map(function (e) { return e.item; }), ["Goat leads", "Ringy"]);
   }
@@ -704,7 +714,193 @@
     renderROI();
     renderSpend();
     renderDatalists();
+    refreshContractLevel();
   }
+
+  /* ---------- commission comp guide (FFG Carrier Comp Guide, rev 2/9/2026) ---------- */
+  // Row order aligns with COMP_LEVELS (145 -> 80). Values are comp % per contract level.
+  var COMP_LEVELS = [145,140,135,130,125,120,115,110,105,100,95,90,85,80];
+  var COMP_CARRIERS = {
+    "Legal & General America": { plus:true, bonusIncluded:true, products:{
+      "Term":[150,145,140,135,130,125,120,115,110,105,100,95,90,85]
+    }},
+    "United Home Life": { products:{
+      "Express Issue Premier WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Express Issue Deluxe WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Express Issue Graded WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Guaranteed Issue Whole Life":[85,80,75,70,65,60,55,50,45,40,35,30,25,25],
+      "Provider Whole Life":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Term":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Accidental":[110,105,100,95,90,85,80,75,70,65,60,55,50,45]
+    }},
+    "The Baltimore Life": { products:{
+      "Silver Guard FE":[115,115,110,105,100,95,90,90,85,85,80,75,70,65],
+      "aPriority Level Term (75K+)":[90,90,85,85,80,80,70,70,60,55,55,50,50,45],
+      "aPriority Whole Life":[115,115,110,105,100,95,90,85,80,75,70,65,60,60],
+      "aPriority Protector Term":[90,90,85,85,80,80,70,70,60,55,55,50,50,45]
+    }},
+    "American Home Life (AHL)": { verify:true, products:{
+      "FE":[135,130,125,120,115,110,105,100,90,85,80,75,70,65]
+    }},
+    "Mutual Trust Life": { products:{
+      "Selecterm":[92.5,89,86,83,80,77,74,71,68,60,60,60,60,52.5],
+      "Horizon Value / Guarantee":[105,100,95,90,85,80,75,70,65,60,60,60,60,52.5],
+      "10/20 Year Term Rider":[105,100,95,90,85,80,75,70,65,60,60,60,60,52.5]
+    }},
+    "Elco Mutual": { products:{
+      "FE Immediate":[125,120,120,115,115,110,110,105,105,100,100,95,95,90],
+      "Life Pay WL 0-75":[110,105,105,100,100,95,95,90,90,85,85,80,80,75],
+      "Limited Pay WL":[90,85,85,80,80,75,75,70,70,65,65,60,60,55]
+    }},
+    "Liberty Bankers": { products:{
+      "SI Market PermaLife Preferred":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "SI Market PermaLife Standard":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
+      "Modified Whole Life":[88,87.5,85,80,77.5,75,70,67.5,65,62.5,60,55,50,47.5],
+      "Flex 4 Life Paid Up 100":[117,115,110,105,100,95,90,85,80,75,70,65,60,55]
+    }},
+    "F&G": { products:{
+      "Pathsetter":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Everlast":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Exccudex":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Planright":[127.5,125,122.5,120,115,110,105,100,95,90,85,80,75,70]
+    }},
+    "Kansas City Life": { products:{
+      "Signature Term Simplified Issue":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "IUL (All) Fully Underwritten":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Signature Term":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Cashback Life (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Level 30 A (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Signature Term 30 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Longevity Term 85 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55]
+    }},
+    "Foresters": { plus:true, products:{
+      "Strong Foundation":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
+      "Your Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "SmartUL":[115,110,105,100,95,90,87.5,85,82.5,80,77.5,75,72.5,70],
+      "Accidental Death Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Advantage Plus":[110,105,100,95,90,85,80,75,70,65,60,57.5,55,52.5]
+    }},
+    "Corebridge Financial": { products:{
+      "GIWL Whole Life":[90,80,75,70,65,60,55,50,45,45,45,45,45,45],
+      "Simplinow Legacy Max SIWL":[127,122,117,112,107,102,97,92,87,82,77,72,67,62],
+      "Max Accumulator IUL":[110,105,100,95,90,85,80,75,70,65,60,55,50,50]
+    }},
+    "Mutual of Omaha": { products:{
+      "IULe":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Living Promise":[125,120,115,110,105,100,95,90,86,82,78,74,70,65],
+      "Term":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
+      "GA Advantage":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Childrens WL":[107,105,102,100,97,95,92,90,85,80,75,70,65,60],
+      "Accum UL Answers":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
+      "Income Advantage and Life UL":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Critical Advantage":[102,99,96,92,89,85,81,77,73,69,65,61,57,53]
+    }},
+    "American-Amicable": { products:{
+      "Express UL":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
+      "Home Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "OBA":[105,100,95,90,85,80,75,70,65,60,55,50,45,40],
+      "SecureLife Plus":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Security Protector":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
+      "Survivor Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Term Made Simple":[100,95,90,85,80,75,70,65,60,55,50,45,40,40],
+      "Dignity Solutions & Family Legacy":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
+      "Express Term":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
+      "Bonusmaster":[5.5,5.25,5,4.75,4.5,4.25,4,4,3.5,3.5,3,2,0,0],
+      "Guaranteed Guardian":[80,75,75,70,65,60,55,50,45,40,35,30,0,0]
+    }},
+    "Transamerica": { products:{
+      "Trendsetter Super Term":[105,102,100,90,85,80,75,73,70,67,65,63,60,57],
+      "Trendsetter LB Term":[115,110,105,100,90,85,80,75,70,65,60,55,50,45],
+      "Lifetime WL":[142,140,135,130,120,115,110,105,100,95,90,85,80,75],
+      "Immediate Solution WL":[125,122,120,115,105,100,95,90,85,80,75,70,65,63],
+      "10 Pay Solution WL":[107,105,102,100,90,85,80,75,70,65,63,60,57,53],
+      "Easy Solution WL":[78,75,70,65,60,55,50,45,40,38,35,33,30,27],
+      "Express Solution":[140,137,135,130,120,115,110,105,100,95,90,85,80,75],
+      "FFIUL":[117,110,107,105,100,95,90,85,80,75,70,65,60,55]
+    }}
+  };
+
+  function normKey(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
+  function findCarrierKey(carrier) {
+    var n = normKey(carrier);
+    if (!n) return null;
+    var keys = Object.keys(COMP_CARRIERS);
+    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
+    return null;
+  }
+  function findProductKey(carrierObj, product) {
+    var n = normKey(product);
+    if (!n) return null;
+    var keys = Object.keys(carrierObj.products);
+    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
+    return null;
+  }
+  // returns { rate, base, bonus, bonusIncluded, verify } or null
+  function compLookup(carrier, product, level) {
+    if (!carrier || !product || level == null || level === "") return null;
+    var ckey = findCarrierKey(carrier);
+    if (!ckey) return null;
+    var c = COMP_CARRIERS[ckey];
+    var pkey = findProductKey(c, product);
+    if (!pkey) return null;
+    var li = COMP_LEVELS.indexOf(parseInt(level, 10));
+    if (li < 0) return null;
+    var base = c.products[pkey][li];
+    var bonus = (c.plus && !c.bonusIncluded) ? 5 : 0;
+    return { rate: base + bonus, base: base, bonus: bonus, bonusIncluded: !!c.bonusIncluded, verify: !!c.verify };
+  }
+
+  // settings (lazy; persists via save() and cloud sync)
+  function getSetting(k) { return (state.settings || {})[k]; }
+  function setSetting(k, v) { state.settings = state.settings || {}; state.settings[k] = v; save(); }
+
+  function updateProductList() {
+    var ckey = findCarrierKey($("d-carrier").value);
+    if (ckey) {
+      fillList("productList", Object.keys(COMP_CARRIERS[ckey].products), []);
+    } else {
+      fillList("productList", state.deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE"]);
+    }
+  }
+
+  // auto-fill commission from the comp guide (upfront = AP × comp% × 9/12);
+  // never clobbers a commission the user typed (comAutoFilled tracks that)
+  var comAutoFilled = false;
+  function recalcCommission() {
+    var note = $("comNote");
+    var info = compLookup($("d-carrier").value, $("d-policy").value, getSetting("contractLevel"));
+    if (!info) { if (note) { note.textContent = ""; note.className = "com-note"; } return; }
+    var ap = num($("d-ap").value);
+    var comEl = $("d-com");
+    if (ap != null && (comEl.value === "" || comAutoFilled)) {
+      comEl.value = (ap * info.rate / 100 * 9 / 12).toFixed(2);
+      comAutoFilled = true;
+    }
+    if (note) {
+      note.textContent = "auto · " + info.rate + "% × 9 mo"
+        + (info.bonus ? " (incl +5%)" : "")
+        + (info.verify ? "  ⚠ verify AHL" : "");
+      note.className = "com-note" + (info.verify ? " warn" : "");
+    }
+  }
+
+  function refreshContractLevel() {
+    var sel = $("contractLevel");
+    if (!sel) return;
+    var saved = getSetting("contractLevel");
+    sel.value = (saved == null ? "" : String(saved));
+  }
+
+  (function initContractLevel() {
+    var sel = $("contractLevel");
+    COMP_LEVELS.forEach(function (l) {
+      var o = document.createElement("option"); o.value = l; o.textContent = l; sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () {
+      setSetting("contractLevel", this.value);
+      recalcCommission();
+    });
+  })();
 
   /* ---------- deal form ---------- */
 
@@ -716,11 +912,14 @@
   function resetDealForm() {
     editingId = null;
     apAutoFilled = false;
+    comAutoFilled = false;
     $("dealForm").reset();
     $("d-date").value = defaultDateForMonth();
     $("dealFormTitle").textContent = "Add a deal";
     $("dealSubmit").textContent = "Add deal";
     $("dealCancel").style.display = "none";
+    updateProductList();
+    recalcCommission();
   }
 
   function startEdit(id) {
@@ -728,6 +927,7 @@
     if (!d) return;
     editingId = id;
     apAutoFilled = false;
+    comAutoFilled = false;
     $("d-date").value = d.date;
     $("d-client").value = d.client || "";
     $("d-policy").value = d.policy || "";
@@ -743,6 +943,8 @@
     $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
     $("dealSubmit").textContent = "Save changes";
     $("dealCancel").style.display = "";
+    updateProductList();
+    recalcCommission();
     $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
@@ -777,7 +979,8 @@
 
   $("dealCancel").addEventListener("click", function () { resetDealForm(); });
 
-  // auto-fill AP from monthly premium (AP = monthly × 12), but never overwrite a typed value
+  // auto-fill AP from monthly premium (AP = monthly × 12), then auto-calc commission
+  // from the comp guide; neither ever overwrites a value the user typed themselves
   var apAutoFilled = false;
   $("d-monthly").addEventListener("input", function () {
     var m = num(this.value);
@@ -786,8 +989,12 @@
       apEl.value = (m * 12).toFixed(2);
       apAutoFilled = true;
     }
+    recalcCommission();
   });
-  $("d-ap").addEventListener("input", function () { apAutoFilled = false; });
+  $("d-ap").addEventListener("input", function () { apAutoFilled = false; recalcCommission(); });
+  $("d-com").addEventListener("input", function () { comAutoFilled = false; });
+  $("d-carrier").addEventListener("input", function () { updateProductList(); recalcCommission(); });
+  $("d-policy").addEventListener("input", recalcCommission);
 
   /* ---------- expense form ---------- */
 
@@ -910,7 +1117,7 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Policy","Carrier","Face","Monthly","AP","Commission","Lead type","Status","In force","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","In force","Notes"]);
     deals.forEach(function (d) {
       rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.inforce ? "Y" : "N", d.notes]);
     });
@@ -1006,7 +1213,7 @@
           cols = {
             date: headerIndex(lower, ["date"]),
             client: headerIndex(lower, ["client", "client name", "name"]),
-            policy: headerIndex(lower, ["policy", "policy type"]),
+            policy: headerIndex(lower, ["product", "policy", "policy type"]),
             carrier: headerIndex(lower, ["carrier"]),
             face: headerIndex(lower, ["face", "face ($)", "face $"]),
             monthly: headerIndex(lower, ["monthly", "monthly ($)", "monthly $"]),
