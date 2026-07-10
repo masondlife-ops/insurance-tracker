@@ -196,6 +196,7 @@
   .settings-row input { width: 80px; }
   .com-note { font-size: 11px; color: var(--text-muted); margin-top: 3px; min-height: 13px; }
   .com-note.warn { color: #c2790a; }
+  td.struck { text-decoration: line-through; color: var(--text-muted); }
   @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
   :root[data-theme="dark"] .com-note.warn { color: #f5b451; }
   :root[data-theme="light"] .com-note.warn { color: #c2790a; }
@@ -530,13 +531,16 @@
   function monthExpenses() { return state.expenses.filter(inMonth).sort(byDate); }
 
   function sum(arr, f) { return arr.reduce(function (t, r) { return t + (num(f(r)) || 0); }, 0); }
+  // commission that actually counts as income — a charged-back deal earns $0
+  // (it still stays in the list and in Submitted AP, just not in commission/profit/ROI)
+  function earnedCom(d) { return d.status === "Chargeback" ? 0 : (num(d.com) || 0); }
 
   function renderTiles() {
     var deals = monthDeals(), exps = monthExpenses();
     var submittedAP = sum(deals, function (d) { return d.ap; });
     var issued = deals.filter(function (d) { return d.status === "Issued"; });
     var issuedAP = sum(issued, function (d) { return d.ap; });
-    var commission = sum(deals, function (d) { return d.com; });
+    var commission = sum(deals, earnedCom);
     var expenses = sum(exps, function (e) { return e.price; });
     var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
     var profit = commission - expenses;
@@ -581,7 +585,7 @@
         '<td class="num">' + money(d.face) + "</td>" +
         '<td class="num">' + money(d.monthly) + "</td>" +
         '<td class="num">' + money(d.ap) + "</td>" +
-        '<td class="num">' + money(d.com) + "</td>" +
+        '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
         "<td>" + esc(d.lead) + "</td>" +
         '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span></td>" +
         "<td>" + (d.inforce ? "Y" : "—") + "</td>" +
@@ -598,7 +602,7 @@
         '<td class="num">' + money(sum(deals, function (d) { return d.face; })) + "</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.monthly; })) + "</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.ap; })) + "</td>" +
-        '<td class="num">' + money(sum(deals, function (d) { return d.com; })) + "</td>" +
+        '<td class="num">' + money(sum(deals, earnedCom)) + "</td>" +
         '<td colspan="5"></td></tr>';
     } else foot.innerHTML = "";
 
@@ -646,7 +650,7 @@
     leadExps.forEach(function (e) { row(e.lead || "(unassigned)").spend += num(e.price) || 0; });
     deals.forEach(function (d) {
       var r = row(d.lead || "(unassigned)");
-      r.n++; r.ap += num(d.ap) || 0; r.com += num(d.com) || 0;
+      r.n++; r.ap += num(d.ap) || 0; r.com += earnedCom(d);
     });
 
     var keys = Object.keys(rows).sort(function (a, b) {
@@ -1112,7 +1116,7 @@
     rows.push(["Date","Item","Type","Lead type","Price"]);
     exps.forEach(function (e) { rows.push([e.date, e.item, e.kind === "lead" ? "Lead" : "Other", e.lead, e.price]); });
     rows.push([]);
-    var commission = sum(deals, function (d) { return d.com; });
+    var commission = sum(deals, earnedCom);
     var expenses = sum(exps, function (e) { return e.price; });
     var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
     rows.push(["PNL"]);
