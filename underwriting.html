@@ -1,0 +1,1509 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Underwriting &amp; Approval Finder</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  // Apply a saved theme choice before first paint to avoid a flash
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --warn: #9a6a00; --warn-soft: rgba(154,106,0,0.12);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19; --page: #0d0d0d;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+      --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20);
+      --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+      --warn: #d9a441; --warn-soft: rgba(217,164,65,0.16);
+      --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19; --page: #0d0d0d;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #898781;
+    --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20);
+    --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+    --warn: #d9a441; --warn-soft: rgba(217,164,65,0.16);
+    --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #fcfcfb; --page: #f9f9f7;
+    --text-primary: #0b0b0b; --text-secondary: #52514e; --text-muted: #898781;
+    --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --warn: #9a6a00; --warn-soft: rgba(154,106,0,0.12);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page); color: var(--text-primary);
+    line-height: 1.45; padding: 20px;
+  }
+  /* UNDER CONSTRUCTION bar */
+  .uc-bar {
+    position: sticky; top: 0; z-index: 100;
+    margin: -20px -20px 18px; padding: 12px 18px;
+    background: repeating-linear-gradient(45deg, #1a1a19 0 22px, #d9a441 22px 44px);
+    color: #fff; text-align: center; font-weight: 800; font-size: 16px;
+    letter-spacing: .04em; text-transform: uppercase;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.9); border-bottom: 2px solid #000;
+  }
+  .uc-bar .uc-sub {
+    display: block; margin-top: 5px; font-weight: 600; font-size: 12px;
+    letter-spacing: 0; text-transform: none;
+    background: rgba(0,0,0,0.72); color: #ffe9b8; border-radius: 6px;
+    padding: 5px 10px; max-width: 780px; margin-left: auto; margin-right: auto;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .card {
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px;
+  }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+  /* form controls */
+  select, input[type="date"], input[type="text"], input[type="number"] {
+    font: inherit; font-size: 14px; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--baseline);
+    border-radius: 7px; padding: 7px 9px; width: 100%;
+  }
+  textarea {
+    font: inherit; font-size: 14px; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--baseline);
+    border-radius: 7px; padding: 7px 9px; width: 100%; resize: vertical; min-height: 54px;
+  }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  .grid { display: grid; gap: 12px; }
+  .grid.c2 { grid-template-columns: repeat(2, 1fr); }
+  .grid.c3 { grid-template-columns: repeat(3, 1fr); }
+  .grid.c4 { grid-template-columns: repeat(4, 1fr); }
+  @media (max-width: 720px) { .grid.c3, .grid.c4 { grid-template-columns: repeat(2, 1fr); } }
+  .sec-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); margin: 6px 0 2px; }
+  hr.div { border: none; border-top: 1px solid var(--border); margin: 6px 0; }
+
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600; padding: 9px 18px;
+    border-radius: 8px; border: 1px solid var(--series-1);
+    background: var(--series-1); color: #fff; cursor: pointer;
+  }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--baseline); }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .theme-toggle { width: 42px; height: 24px; border-radius: 999px; border: 1px solid var(--baseline); background: var(--page); position: relative; cursor: pointer; }
+  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--text-secondary); transition: transform .15s; }
+  :root[data-theme="dark"] .theme-toggle .knob, @media (prefers-color-scheme: dark) { }
+
+  /* condition chips (yes/no toggles) */
+  /* tag / autocomplete inputs */
+  .tagfield { position: relative; }
+  .tagfield input { width: 100%; }
+  .suggest { position: absolute; z-index: 20; left: 0; right: 0; top: calc(100% + 4px);
+    background: var(--surface-1); border: 1px solid var(--baseline); border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18); overflow: hidden; display: none; max-height: 280px; overflow-y: auto; }
+  .suggest.on { display: block; }
+  .suggest .opt { padding: 8px 11px; font-size: 14px; cursor: pointer; display: flex; align-items: baseline; gap: 8px; }
+  .suggest .opt small { color: var(--text-muted); font-size: 12px; }
+  .suggest .opt.sel, .suggest .opt:hover { background: var(--series-1-soft); }
+  .suggest .opt.add { color: var(--series-1); font-weight: 600; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+  .chip { display: inline-flex; align-items: center; gap: 7px; padding: 5px 6px 5px 11px;
+    border: 1px solid var(--baseline); border-radius: 999px; font-size: 13px; background: var(--page); }
+  .chip.note { border-style: dashed; color: var(--text-secondary); }
+  .chip.warn { border-color: var(--warn); background: var(--warn-soft); color: var(--text-primary); }
+  .chip.ok { border-color: var(--good); background: var(--good-soft); }
+  .chip.med { border-color: var(--series-1); }
+  .chip .via { font-size: 11px; color: var(--text-muted); }
+  .chip select { font: inherit; font-size: 11px; padding: 2px 4px; border-radius: 6px; border: 1px solid var(--baseline); background: var(--surface-1); }
+  .chip .x { cursor: pointer; width: 18px; height: 18px; line-height: 16px; text-align: center;
+    border-radius: 50%; color: var(--text-muted); font-size: 14px; }
+  .chip .x:hover { background: var(--danger-soft); color: var(--danger); }
+  .chips:empty { display: none; }
+
+  /* results */
+  .banner { background: var(--warn-soft); border: 1px solid var(--warn); color: var(--text-primary); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+  .unscored-warn { background: var(--danger-soft); border: 1px solid var(--danger); border-radius: 8px; padding: 9px 12px; font-size: 13px; margin-bottom: 12px; }
+  .unscored-warn b { color: var(--danger); }
+  .banner b { color: var(--warn); }
+  .res-item { border: 1px solid var(--border); border-radius: 9px; padding: 12px; margin-bottom: 10px; }
+  .res-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .res-carrier { font-size: 15px; font-weight: 650; flex: 1 1 auto; }
+  .res-prod { font-size: 12px; color: var(--text-muted); }
+  .tierbadge { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px; text-transform: uppercase; letter-spacing: .03em; }
+  .t-level { background: var(--good-soft); color: var(--good); }
+  .t-graded { background: var(--warn-soft); color: var(--warn); }
+  .t-gi { background: var(--series-1-soft); color: var(--series-1); }
+  .t-uw { background: var(--series-1-soft); color: var(--series-1); }
+  .t-decline { background: var(--danger-soft); color: var(--danger); }
+  .prob { display: flex; align-items: center; gap: 8px; margin: 9px 0 4px; }
+  .prob-bar { flex: 1 1 auto; height: 8px; border-radius: 999px; background: var(--grid); overflow: hidden; }
+  .prob-fill { height: 100%; border-radius: 999px; }
+  .prob-pct { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; min-width: 74px; text-align: right; }
+  .reasons { list-style: none; margin-top: 6px; display: flex; flex-direction: column; gap: 3px; }
+  .reasons li { font-size: 12.5px; color: var(--text-secondary); padding-left: 16px; position: relative; }
+  .reasons li:before { content: "•"; position: absolute; left: 4px; color: var(--text-muted); }
+  .reasons li.neg:before { content: "▼"; color: var(--danger); font-size: 9px; top: 3px; }
+  .reasons li.pos:before { content: "▲"; color: var(--good); font-size: 9px; top: 3px; }
+  .badge-src { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 5px; text-transform: uppercase; letter-spacing: .03em; }
+  .src-starter { background: var(--warn-soft); color: var(--warn); }
+  .src-verified { background: var(--good-soft); color: var(--good); }
+  .empty { color: var(--text-muted); font-size: 14px; text-align: center; padding: 24px; }
+  .summary-line { font-size: 13px; color: var(--text-secondary); margin-bottom: 10px; }
+  .filterow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+
+  /* hub tabs */
+  .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
+  .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
+  .hub-tab.is-active { background: var(--series-1); color: #fff; }
+  .hub-tab:not(.is-active):hover { color: var(--text-primary); }
+</style>
+</head>
+<body>
+<div class="uc-bar">🚧 UNDER CONSTRUCTION — DO NOT RELY 🚧<span class="uc-sub">Work in progress. Only Foresters PlanRight is verified against its guide; everything else is a rough estimate. Always confirm with the carrier’s field guide before quoting a client.</span></div>
+<div class="wrap">
+  <nav class="hub-tabs">
+    <a href="index.html" class="hub-tab">Activity</a>
+    <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
+    <a href="underwriting.html" class="hub-tab is-active">Underwriting</a>
+  </nav>
+
+  <header>
+    <div>
+      <h1>Underwriting &amp; Approval Finder</h1>
+      <div class="sub">Enter a client — see which carriers approve them, the tier, and the odds</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn secondary small" id="clearBtn">Clear</button>
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Light / dark"><span class="knob"></span></button>
+    </div>
+  </header>
+
+  <div class="banner" id="verifyBanner">
+    <b>⚠ Starter rules.</b> These reflect <b>common final-expense underwriting norms</b>, not your carriers' published field guides.
+    Verify against each carrier's guide before quoting. Send the guides to replace a carrier's rules with exact ones (badge flips to <b>✓ verified</b>).
+  </div>
+
+  <!-- ===== Client intake ===== -->
+  <div class="card">
+    <h2>Client <span class="hint">— fill what you know; blanks are treated as “no / unknown”</span></h2>
+
+    <div class="grid c4">
+      <div class="field"><label>Client name (optional)</label><input type="text" id="c-name" placeholder="For your notes"></div>
+      <div class="field"><label>Age</label><input type="number" id="c-age" min="0" max="100" placeholder="e.g. 62"></div>
+      <div class="field"><label>Gender</label>
+        <select id="c-gender"><option value="">—</option><option>Male</option><option>Female</option></select>
+      </div>
+      <div class="field"><label>Desired face amount ($)</label><input type="number" id="c-face" min="0" step="1000" placeholder="e.g. 15000"></div>
+    </div>
+
+    <hr class="div">
+    <div class="sec-title">Build &amp; tobacco</div>
+    <div class="grid c4">
+      <div class="field"><label>Height — feet</label>
+        <select id="c-hft"><option value="">—</option><option>4</option><option>5</option><option>6</option><option>7</option></select>
+      </div>
+      <div class="field"><label>Height — inches</label>
+        <select id="c-hin"><option value="">—</option><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option><option>11</option></select>
+      </div>
+      <div class="field"><label>Weight (lbs)</label><input type="number" id="c-wt" min="0" placeholder="e.g. 190"></div>
+      <div class="field"><label>Tobacco / nicotine</label>
+        <select id="c-tobacco">
+          <option value="none">None (12+ mo)</option>
+          <option value="cigarettes">Cigarettes</option>
+          <option value="vape">Vape / e-cig</option>
+          <option value="cigar">Cigar / pipe (occasional)</option>
+          <option value="chew">Chew / dip</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="div">
+    <div class="sec-title">Health conditions <span style="font-weight:400;text-transform:none;color:var(--text-muted)">— type a condition and pick it; timed ones get a “how long ago”. Anything unrecognized is saved as a note.</span></div>
+    <div class="tagfield">
+      <input type="text" id="condSearch" autocomplete="off" placeholder="Type a condition… e.g. diabetes, COPD, stent, stroke">
+      <div class="suggest" id="condSug"></div>
+    </div>
+    <div class="chips" id="condChips"></div>
+
+    <hr class="div">
+    <div class="sec-title">Medications <span style="font-weight:400;text-transform:none;color:var(--text-muted)">— type a med; recognized meds auto-add the underlying condition (tagged “via …”). Unknown meds are saved as a note.</span></div>
+    <div class="tagfield">
+      <input type="text" id="medSearch" autocomplete="off" placeholder="Type a medication… e.g. Eliquis, metformin, Lasix, Aricept">
+      <div class="suggest" id="medSug"></div>
+    </div>
+    <div class="chips" id="medChips"></div>
+
+    <div style="margin-top:14px; display:flex; gap:8px; flex-wrap:wrap;">
+      <button class="btn" id="runBtn">Find carriers</button>
+      <button class="btn secondary" id="resetCondBtn">Clear health &amp; meds</button>
+    </div>
+  </div>
+
+  <!-- ===== Results ===== -->
+  <div class="card">
+    <h2>Where they can get approved</h2>
+    <div class="filterow" id="filterRow" style="display:none;">
+      <label class="field" style="flex-direction:row;align-items:center;gap:6px;font-size:13px;color:var(--text-secondary)">
+        <input type="checkbox" id="hideDeclines" style="width:16px;height:16px;accent-color:var(--series-1)"> Hide declines
+      </label>
+      <span style="flex:1"></span>
+      <span class="res-prod" id="asOf"></span>
+    </div>
+    <div class="summary-line" id="summaryLine"></div>
+    <div class="unscored-warn" id="unscoredWarn" style="display:none;"></div>
+    <div id="results"><div class="empty">Fill in the client above and press <b>Find carriers</b>.</div></div>
+  </div>
+
+  <div class="card">
+    <h2>How the score works <span class="hint">— read me</span></h2>
+    <div style="font-size:13px;color:var(--text-secondary);display:flex;flex-direction:column;gap:6px;">
+      <div><span class="tierbadge t-level">Level</span> Full immediate death benefit day one — best case.</div>
+      <div><span class="tierbadge t-graded">Graded / Modified</span> Reduced benefit first 2 years (ROP or %). Client still approvable, just not immediate.</div>
+      <div><span class="tierbadge t-gi">Guaranteed Issue</span> No health questions — approves regardless, but 2-yr waiting period &amp; lower comp. The fallback.</div>
+      <div><span class="tierbadge t-uw">Full UW</span> Fully-underwritten product (labs/exam/Rx-check). Not auto-scored here — decision comes from the exam.</div>
+      <div><span class="tierbadge t-decline">Decline</span> A knockout on this carrier’s starter rules. Verify — another carrier may still take them.</div>
+      <div style="color:var(--text-muted);margin-top:4px;">Probability = confidence the client lands at (or above) the shown tier, based on how far conditions/build sit from the cutoffs. It is an estimate to prioritize where to submit — not a guarantee of approval.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+var $ = function (id) { return document.getElementById(id); };
+
+/* ============================================================
+   THEME TOGGLE
+   ============================================================ */
+(function themeInit() {
+  var btn = $("themeBtn");
+  function cur() {
+    var attr = document.documentElement.getAttribute("data-theme");
+    if (attr) return attr;
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  }
+  function paint() {
+    var d = cur() === "dark";
+    btn.setAttribute("aria-checked", d ? "true" : "false");
+    btn.querySelector(".knob").style.transform = d ? "translateX(18px)" : "translateX(0)";
+  }
+  btn.addEventListener("click", function () {
+    var next = cur() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem("agentHub.theme.v1", next); } catch (e) {}
+    paint();
+  });
+  paint();
+})();
+
+/* ============================================================
+   TIERS   (lower rank = better)
+   ============================================================ */
+var TIER = { level: 0, graded: 1, gi: 2, decline: 3 };
+var TIER_NAME = { level: "Level", graded: "Graded", gi: "Guaranteed Issue", decline: "Decline", uw: "Full UW" };
+function worse(a, b) { return TIER[a] >= TIER[b] ? a : b; }
+
+/* ============================================================
+   BUILD CHARTS  —  max non-tobacco weight (lbs) by total inches.
+   Three generic profiles until real per-carrier charts are entered.
+   "min" = underweight floor.  Values are typical FE ranges.
+   ============================================================ */
+function buildChart(profile) {
+  // returns {maxAt(inches), minAt(inches)}
+  // Base max at 60" (5'0"), grows ~5.5 lbs/inch. Profiles shift the ceiling.
+  var ceilingAt60 = { lenient: 205, standard: 185, strict: 168 }[profile] || 185;
+  var floorAt60   = 95;
+  return {
+    maxAt: function (inch) { return Math.round(ceilingAt60 + (inch - 60) * 5.6); },
+    minAt: function (inch) { return Math.round(floorAt60 + (inch - 60) * 2.4); }
+  };
+}
+
+/* ============================================================
+   CONDITION LIBRARY
+   Each condition: key, label, hint, whether it takes a "when" window,
+   and a default outcome function -> {tier, reason, penalty}
+   `when` values: "lt6","6to12","12to24","24to36","gt36","ever"
+   Outcomes reflect COMMON final-expense norms (starter data).
+   ============================================================ */
+function within(when, months) {
+  // true if the event is within `months`
+  var order = ["lt6", "6to12", "12to24", "24to36", "gt36"];
+  var caps = { lt6: 6, "6to12": 12, "12to24": 24, "24to36": 36, gt36: 999 };
+  if (when === "ever") return true; // unknown timing -> assume recent (conservative)
+  return (caps[when] || 999) <= months;
+}
+
+var CONDITIONS = [
+  // --- Cardiovascular ---
+  { key: "heartAttack", label: "Heart attack (MI)", hint: "Myocardial infarction", timed: true,
+    fn: function (w) { if (within(w,12)) return dec("Heart attack < 12 mo"); if (within(w,24)) return grd("Heart attack 12–24 mo"); return pen(10,"Heart attack 2+ yrs — verify"); } },
+  { key: "stentBypass", label: "Stent / bypass / angioplasty", hint: "Any cardiac procedure", timed: true,
+    fn: function (w) { if (within(w,12)) return dec("Cardiac procedure < 12 mo"); if (within(w,24)) return grd("Cardiac procedure 12–24 mo"); return pen(8,"Cardiac procedure 2+ yrs"); } },
+  { key: "chf", label: "Congestive heart failure (CHF)", hint: "Also cardiomyopathy", timed: false,
+    fn: function () { return gi("CHF/cardiomyopathy — GI territory on most FE"); } },
+  { key: "stroke", label: "Stroke / TIA", hint: "CVA or mini-stroke", timed: true,
+    fn: function (w) { if (within(w,12)) return dec("Stroke/TIA < 12 mo"); if (within(w,24)) return grd("Stroke/TIA 12–24 mo"); return pen(8,"Stroke/TIA 2+ yrs"); } },
+  { key: "afib", label: "AFib / arrhythmia", hint: "Controlled", timed: false,
+    fn: function () { return pen(5,"AFib — usually OK if controlled"); } },
+  { key: "aneurysm", label: "Aneurysm (untreated)", hint: "Not surgically repaired", timed: false,
+    fn: function () { return gi("Untreated aneurysm"); } },
+  { key: "angina", label: "Angina", hint: "Chest pain from the heart", timed: true,
+    fn: function (w) { if (within(w,12)) return grd("Angina < 12 mo"); if (within(w,24)) return pen(8,"Angina 12–24 mo"); return pen(4,"Angina 2+ yrs"); } },
+
+  // --- Diabetes ---
+  { key: "diabetes", label: "Diabetes", hint: "Type 2, controlled", timed: false,
+    fn: function () { return pen(4,"Diabetes — typically OK if controlled"); } },
+  { key: "insulin", label: "Diabetes on insulin", hint: "Insulin-dependent", timed: false,
+    fn: function () { return pen(15,"Insulin use — many carriers grade if onset < 50 / high dose"); } },
+  { key: "diabComplications", label: "Diabetic complications", hint: "Neuropathy, retinopathy, amputation", timed: false,
+    fn: function () { return gi("Diabetic complications — GI on most FE"); } },
+
+  // --- Respiratory ---
+  { key: "copd", label: "COPD / emphysema", hint: "Chronic bronchitis", timed: false,
+    fn: function () { return grd("COPD — commonly graded"); } },
+  { key: "oxygen", label: "Oxygen use", hint: "For lung/heart (not sleep apnea)", timed: false,
+    fn: function () { return dec("Oxygen use — knockout on most FE"); } },
+
+  // --- Cancer ---
+  { key: "cancerInternal", label: "Internal cancer", hint: "Any non-skin cancer", timed: true,
+    fn: function (w) { if (within(w,24)) return dec("Cancer treated < 24 mo"); if (within(w,48)) return grd("Cancer 2–4 yrs"); return pen(6,"Cancer 4+ yrs — verify recurrence"); } },
+  { key: "cancerMeta", label: "Recurrent / metastatic cancer", hint: "Spread or returned", timed: false,
+    fn: function () { return dec("Metastatic / recurrent cancer"); } },
+
+  // --- Neuro / cognitive ---
+  { key: "dementia", label: "Alzheimer's / dementia", hint: "Any memory-loss dx", timed: false,
+    fn: function () { return gi("Cognitive impairment — GI only"); } },
+  { key: "parkinsons", label: "Parkinson's", hint: "", timed: false,
+    fn: function () { return gi("Parkinson's — GI on most FE"); } },
+  { key: "alsMs", label: "ALS / MS / muscular dystrophy", hint: "Neuromuscular disease", timed: false,
+    fn: function () { return gi("ALS/MS/MD — GI territory"); } },
+
+  // --- Kidney / liver ---
+  { key: "dialysis", label: "Dialysis", hint: "Current or recommended", timed: false,
+    fn: function () { return dec("Dialysis — knockout"); } },
+  { key: "kidney", label: "Kidney disease (no dialysis)", hint: "CKD", timed: false,
+    fn: function () { return grd("Chronic kidney disease"); } },
+  { key: "liver", label: "Cirrhosis / liver failure", hint: "Not simple hepatitis", timed: false,
+    fn: function () { return gi("Cirrhosis / liver failure"); } },
+  { key: "lupus", label: "Systemic lupus (SLE)", hint: "Autoimmune", timed: false,
+    fn: function () { return grd("Systemic lupus — commonly graded"); } },
+
+  // --- Functional / care ---
+  { key: "adl", label: "Needs help with daily activities", hint: "Bathing, dressing, eating (ADLs)", timed: false,
+    fn: function () { return gi("ADL assistance — GI only"); } },
+  { key: "nursing", label: "Nursing home / skilled care", hint: "Assisted living OK; skilled = worse", timed: false,
+    fn: function () { return gi("Facility / skilled care"); } },
+  { key: "wheelchair", label: "Wheelchair (disease-related)", hint: "Not injury", timed: false,
+    fn: function () { return grd("Wheelchair use — verify cause"); } },
+  { key: "hospital", label: "Hospitalized recently", hint: "Non-routine, last 12 mo", timed: true,
+    fn: function (w) { if (within(w,6)) return grd("Hospitalized < 6 mo"); return pen(6,"Recent hospitalization"); } },
+
+  // --- Other high-signal ---
+  { key: "terminal", label: "Terminal illness / hospice", hint: "< 12–24 mo prognosis", timed: false,
+    fn: function () { return dec("Terminal / hospice — decline"); } },
+  { key: "hiv", label: "HIV / AIDS", hint: "", timed: false,
+    fn: function () { return dec("HIV — knockout on most FE"); } },
+  { key: "transplant", label: "Organ transplant", hint: "Had or on list", timed: false,
+    fn: function () { return gi("Organ transplant — GI"); } },
+  { key: "substance", label: "Alcohol / drug abuse or treatment", hint: "Rehab, DT, relapse", timed: true,
+    fn: function (w) { if (within(w,12)) return grd("Substance treatment < 12 mo"); if (within(w,24)) return pen(10,"Substance treatment 1–2 yr"); return pen(4,"Substance history 2+ yrs"); } },
+  { key: "mental", label: "Bipolar / schizophrenia", hint: "Serious mental illness", timed: false,
+    fn: function () { return pen(12,"Serious mental illness — verify per carrier"); } },
+  { key: "felony", label: "Currently incarcerated / on parole", hint: "Or pending charges", timed: false,
+    fn: function () { return dec("Active incarceration / parole"); } }
+];
+// outcome constructors
+function dec(r) { return { tier: "decline", reason: r }; }
+function gi(r)  { return { tier: "gi", reason: r }; }
+function grd(r) { return { tier: "graded", reason: r }; }
+function pen(p, r) { return { tier: "level", reason: r, penalty: p }; } // stays level but dings probability
+
+/* ============================================================
+   SEARCH VOCABULARY  —  aliases so typing plain language finds the
+   right condition. Keyed by condition key.
+   ============================================================ */
+var ALIASES = {
+  heartAttack: ["heart attack", "mi", "myocardial infarction", "cardiac arrest", "widowmaker"],
+  stentBypass: ["stent", "bypass", "angioplasty", "cabg", "open heart", "heart cath", "catheterization", "atherectomy", "heart procedure", "coronary", "cad"],
+  chf: ["congestive heart failure", "chf", "cardiomyopathy", "heart failure", "enlarged heart", "weak heart"],
+  stroke: ["stroke", "cva", "tia", "mini stroke", "mini-stroke", "brain bleed"],
+  afib: ["afib", "a-fib", "atrial fibrillation", "arrhythmia", "irregular heartbeat", "palpitations", "pacemaker", "cardioversion", "blood thinner", "anticoagulant"],
+  aneurysm: ["aneurysm", "aaa", "aortic aneurysm"],
+  angina: ["angina", "chest pain", "nitroglycerin"],
+  diabetes: ["diabetes", "diabetic", "type 2", "type 1", "sugar", "high blood sugar", "a1c", "hyperglycemia"],
+  insulin: ["insulin", "insulin dependent", "insulin-dependent", "insulin pump"],
+  diabComplications: ["neuropathy", "nephropathy", "retinopathy", "diabetic complications", "diabetic nerve", "diabetic kidney", "diabetic eye", "diabetic amputation"],
+  copd: ["copd", "emphysema", "chronic bronchitis", "chronic lung", "pulmonary fibrosis", "asbestosis", "sarcoidosis"],
+  oxygen: ["oxygen", "o2", "oxygen tank", "home oxygen", "supplemental oxygen"],
+  cancerInternal: ["cancer", "carcinoma", "tumor", "malignancy", "lymphoma", "leukemia", "chemo", "chemotherapy", "radiation"],
+  cancerMeta: ["metastatic", "metastasis", "stage 4", "stage iv", "recurrent cancer", "cancer spread"],
+  dementia: ["dementia", "alzheimer", "alzheimers", "alzheimer's", "memory loss", "cognitive impairment", "mci", "forgetful"],
+  parkinsons: ["parkinson", "parkinsons", "parkinson's"],
+  alsMs: ["als", "lou gehrig", "multiple sclerosis", "ms", "muscular dystrophy", "motor neuron"],
+  dialysis: ["dialysis", "hemodialysis", "renal failure", "kidney failure", "esrd", "end stage renal"],
+  kidney: ["kidney disease", "ckd", "renal insufficiency", "chronic kidney", "renal disease"],
+  liver: ["cirrhosis", "liver failure", "liver disease", "hepatitis c", "hepatitis b", "fatty liver"],
+  lupus: ["lupus", "sle", "systemic lupus"],
+  adl: ["adl", "help bathing", "help dressing", "help eating", "activities of daily living", "needs help", "caregiver"],
+  nursing: ["nursing home", "skilled nursing", "assisted living", "convalescent", "rest home", "long term care facility"],
+  wheelchair: ["wheelchair", "scooter", "electric scooter", "bedridden", "mobility device"],
+  hospital: ["hospitalized", "hospital", "inpatient", "icu", "hospital stay"],
+  terminal: ["terminal", "hospice", "end stage", "end-stage", "palliative", "less than 12 months"],
+  hiv: ["hiv", "aids", "immunodeficiency"],
+  transplant: ["transplant", "organ transplant", "bone marrow transplant", "kidney transplant"],
+  substance: ["alcohol", "alcoholism", "drug abuse", "substance abuse", "rehab", "addiction", "opioid", "detox", "dt"],
+  mental: ["bipolar", "schizophrenia", "schizoaffective", "psychosis", "serious mental illness"],
+  felony: ["incarcerated", "jail", "prison", "parole", "probation", "felony"]
+};
+
+/* ============================================================
+   MEDICATION DICTIONARY  —  common drug (brand + generic) -> the
+   underlying condition key(s) it implies. Adding a recognized med
+   auto-adds those condition chips, tagged "via <med>". Ambiguous
+   meds map to the most likely condition and are flagged to verify.
+   BENIGN = meds that usually carry no underwriting downgrade.
+   ============================================================ */
+var MEDS = {
+  "abilify":["mental"],
+  "actoplus":["diabetes"],
+  "actos":["diabetes"],
+  "advair":["copd"],
+  "afinitor":["cancerInternal"],
+  "agenerase":["hiv"],
+  "aggrastat":["stentBypass"],
+  "aggrenox":["stentBypass"],
+  "agrylin":["cancerInternal"],
+  "akineton":["parkinsons"],
+  "akynzeo":["cancerInternal"],
+  "albuterol":["copd"],
+  "alimta":["cancerInternal"],
+  "alkeran":["cancerInternal"],
+  "aloxi":["cancerInternal"],
+  "amantadine hcl":["parkinsons"],
+  "amaryl":["diabetes"],
+  "amyl nitrate":["angina"],
+  "anagrelide hcl":["cancerInternal"],
+  "anastrozole":["cancerInternal"],
+  "anoro ellipta":["copd"],
+  "antabuse":["substance"],
+  "anzemet":["cancerInternal"],
+  "apokyn":["parkinsons"],
+  "aptivus":["hiv"],
+  "arcapta neohaler":["copd"],
+  "aricept":["dementia"],
+  "arimidex":["cancerInternal"],
+  "aromasin":["cancerInternal"],
+  "atamet":["parkinsons"],
+  "atgam":["transplant"],
+  "atripla":["hiv"],
+  "atrovent/atrovent hfa atrovent (nasal)":["copd"],
+  "avandamet":["diabetes"],
+  "avandia":["diabetes"],
+  "avastin":["cancerInternal"],
+  "avonex":["alsMs"],
+  "azasan":["transplant"],
+  "azathioprine":["transplant"],
+  "azilect":["parkinsons"],
+  "azmacort":["copd"],
+  "baraclude":["liver"],
+  "basaglar":["diabetes", "insulin"],
+  "benlysta":["lupus"],
+  "betaseron":["alsMs"],
+  "bevespi aerosphere":["copd"],
+  "bidil":["chf"],
+  "breo ellipta":["copd"],
+  "brilinta":["stentBypass"],
+  "bromocriptine mesylate":["parkinsons"],
+  "brovana":["copd"],
+  "buprenex / buprenorphine":["substance"],
+  "calcitriol":["kidney"],
+  "calcium acetate":["kidney"],
+  "campath":["cancerInternal"],
+  "campral":["substance"],
+  "camptosar":["cancerInternal"],
+  "carbidopa":["parkinsons"],
+  "carboplatin":["cancerInternal"],
+  "casodex":["cancerInternal"],
+  "cellcept":["transplant"],
+  "cesamet":["cancerInternal"],
+  "chlorambucil":["cancerInternal"],
+  "cisplatin":["cancerInternal"],
+  "clopidogrel":["heartAttack"],
+  "cogentin":["parkinsons"],
+  "cognex":["dementia"],
+  "combivent":["copd"],
+  "combivir":["hiv"],
+  "complera":["hiv"],
+  "comtan":["parkinsons"],
+  "copaxone":["alsMs"],
+  "copegus":["liver"],
+  "cordarone":["afib"],
+  "corlanor":["chf"],
+  "coumadin":["stentBypass"],
+  "cyclophosphamide":["cancerInternal"],
+  "cyclosporine":["transplant"],
+  "cystagon":["kidney"],
+  "cytogam":["transplant"],
+  "cytoxan":["cancerInternal"],
+  "daliresp":["copd"],
+  "daunoxome":["cancerInternal"],
+  "depocyt":["cancerInternal"],
+  "diabeta":["diabetes"],
+  "diabinese":["diabetes"],
+  "digitek":["afib"],
+  "digoxin":["afib"],
+  "dilatrate sr":["angina"],
+  "disulfiram":["substance"],
+  "donepezil":["dementia"],
+  "donepezil hcl":["dementia"],
+  "dronabinol":["cancerInternal"],
+  "duoneb":["copd"],
+  "edurant":["hiv"],
+  "effient":["stentBypass"],
+  "eldepryl":["parkinsons"],
+  "eligard":["cancerInternal"],
+  "eliphos":["kidney"],
+  "eliquis":["afib"],
+  "ellence":["cancerInternal"],
+  "eloxatin":["cancerInternal"],
+  "elspar":["cancerInternal"],
+  "emend":["cancerInternal"],
+  "emtriva":["hiv"],
+  "entresto":["chf"],
+  "epclusa":["liver"],
+  "epivir":["hiv"],
+  "epizicom":["hiv"],
+  "ergoloid mesylates":["dementia"],
+  "eskalith":["mental"],
+  "exelon":["dementia"],
+  "exemestane":["cancerInternal"],
+  "fareston":["cancerInternal"],
+  "farxiga":["diabetes"],
+  "faslodex":["cancerInternal"],
+  "femara":["cancerInternal"],
+  "fentanyl citrate":["cancerInternal"],
+  "fentora":["cancerInternal"],
+  "floxuridine":["cancerInternal"],
+  "fludara":["cancerInternal"],
+  "flutamide":["cancerInternal"],
+  "fortamet":["diabetes"],
+  "fortovase":["hiv"],
+  "foscavir":["hiv"],
+  "fosrenol":["kidney"],
+  "fudr":["cancerInternal"],
+  "fusilev":["cancerInternal"],
+  "fuzeon":["hiv"],
+  "galantamine":["dementia"],
+  "gemzar":["cancerInternal"],
+  "gengraf":["transplant"],
+  "gleevec":["cancerInternal"],
+  "glimepiride":["diabetes"],
+  "glipizide":["diabetes"],
+  "glucophage":["diabetes"],
+  "glucotrol":["diabetes"],
+  "glyburide":["diabetes"],
+  "glynase":["diabetes"],
+  "granisetron / granisol":["cancerInternal"],
+  "haldol":["mental"],
+  "haloperidol":["mental"],
+  "harvoni":["liver"],
+  "hectoral":["kidney"],
+  "hepsera":["liver"],
+  "herceptin":["cancerInternal"],
+  "hexalen":["cancerInternal"],
+  "hivid":["hiv"],
+  "humalog":["diabetes", "insulin"],
+  "humulin":["diabetes", "insulin"],
+  "hydrea":["cancerInternal"],
+  "hydroxychloroquin e":["lupus"],
+  "hydroxyurea":["cancerInternal"],
+  "ibrance":["cancerInternal"],
+  "iletin":["diabetes"],
+  "imbruvica":["cancerInternal"],
+  "imdur":["angina"],
+  "imuran":["transplant"],
+  "incruse ellipta":["copd"],
+  "infergen":["liver"],
+  "insulin":["diabetes", "insulin"],
+  "integrilin":["stentBypass"],
+  "intron-a":["cancerInternal"],
+  "invirase":["hiv"],
+  "invokana":["diabetes"],
+  "ipratropium bromide":["copd"],
+  "isordil":["angina"],
+  "isosorbide":["angina"],
+  "isosorbide dinitrate/mononitr ate":["angina"],
+  "jakafi":["cancerInternal"],
+  "janumet":["diabetes"],
+  "januvia":["diabetes"],
+  "jardiance":["diabetes"],
+  "kaletra":["hiv"],
+  "kemadrin":["parkinsons"],
+  "kepivance":["cancerInternal"],
+  "keytruda":["cancerInternal"],
+  "lanoxin":["afib"],
+  "lantus":["diabetes", "insulin"],
+  "larodopa":["parkinsons"],
+  "letrozole":["cancerInternal"],
+  "leucovorin calcium":["cancerInternal"],
+  "leukeran":["cancerInternal"],
+  "leukine":["cancerInternal"],
+  "leuprolide":["cancerInternal"],
+  "levemir":["diabetes", "insulin"],
+  "levodopa":["parkinsons"],
+  "lexiva":["hiv"],
+  "lithium":["mental"],
+  "lodosyn":["parkinsons"],
+  "lupron":["cancerInternal"],
+  "marinol":["cancerInternal"],
+  "mellaril":["mental"],
+  "memantine":["dementia"],
+  "memantine hcl":["dementia"],
+  "mercaptopurine":["cancerInternal"],
+  "metformin":["diabetes"],
+  "methadone /methadose":["substance"],
+  "methotrexate":["cancerInternal"],
+  "micronase":["diabetes"],
+  "milrinone":["chf"],
+  "minitran":["angina"],
+  "mitomycin":["cancerInternal"],
+  "moban":["mental"],
+  "mounjaro":["diabetes"],
+  "mustargen":["cancerInternal"],
+  "mutamycin":["cancerInternal"],
+  "mycophenolate mofetil":["transplant"],
+  "myfortic":["transplant"],
+  "myleran":["cancerInternal"],
+  "naltrexone":["substance"],
+  "namenda":["dementia"],
+  "namzaric":["dementia"],
+  "narcan / naloxone":["substance"],
+  "navelbine":["cancerInternal"],
+  "neosar":["cancerInternal"],
+  "neulasta":["cancerInternal"],
+  "neumega":["cancerInternal"],
+  "neupogen":["cancerInternal"],
+  "neupro":["parkinsons"],
+  "nexavar":["cancerInternal"],
+  "nimodipine / nimotop":["stroke"],
+  "nitrek / nitro-bid / nitro-dur / nitroglycerin / nitrotab / nitroquick / nitrostat / nitrol / nitromist":["angina"],
+  "nitroglycerin":["angina"],
+  "nitrostat":["angina"],
+  "nolvadex":["cancerInternal"],
+  "norpace":["afib"],
+  "norvir":["hiv"],
+  "novolin":["diabetes", "insulin"],
+  "novolog":["diabetes", "insulin"],
+  "olanzapine":["mental"],
+  "olysio":["liver"],
+  "omontys":["kidney"],
+  "ondansetron":["cancerInternal"],
+  "onxol":["cancerInternal"],
+  "opdivo":["cancerInternal"],
+  "orlam":["substance"],
+  "oseni":["diabetes"],
+  "ozempic":["diabetes"],
+  "pacerone":["afib"],
+  "parcopa":["parkinsons"],
+  "parlodel":["parkinsons"],
+  "pegasys":["liver"],
+  "pergolide mesylate":["parkinsons"],
+  "perjeta":["cancerInternal"],
+  "phoslo":["kidney"],
+  "plaquenil":["lupus"],
+  "plavix":["heartAttack"],
+  "plenaxis":["cancerInternal"],
+  "pradaxa":["afib"],
+  "prandin":["diabetes"],
+  "prastera":["lupus"],
+  "prezista":["hiv"],
+  "prograf":["transplant"],
+  "proleukin":["cancerInternal"],
+  "provenge":["cancerInternal"],
+  "proventil":["copd"],
+  "quetiapine":["mental"],
+  "radicava":["alsMs"],
+  "ranexa":["angina"],
+  "rapamune":["transplant"],
+  "razadyne":["dementia"],
+  "rebetol / rebetron":["liver"],
+  "rebif":["alsMs"],
+  "reminyl":["dementia"],
+  "renagel":["kidney"],
+  "renvela":["kidney"],
+  "requip":["parkinsons"],
+  "rescriptor / retrovir":["hiv"],
+  "revex / revia":["substance"],
+  "revlimid":["cancerInternal"],
+  "reyataz":["hiv"],
+  "ribasphere":["liver"],
+  "ribavirin":["liver"],
+  "rilutek":["alsMs"],
+  "risperdal":["mental"],
+  "risperidone":["mental"],
+  "rituxan":["cancerInternal"],
+  "rivastigmine tartrate":["dementia"],
+  "rocaltrol":["kidney"],
+  "roferon":["cancerInternal"],
+  "ropinirole":["parkinsons"],
+  "rybelsus":["diabetes"],
+  "rythmol":["afib"],
+  "sancuso":["cancerInternal"],
+  "sandimmune":["transplant"],
+  "seebri neohaler":["copd"],
+  "selzentry":["hiv"],
+  "sensipar":["kidney"],
+  "serevent":["copd"],
+  "seroquel":["mental"],
+  "simulect":["transplant"],
+  "sinemet":["parkinsons"],
+  "soltamox":["cancerInternal"],
+  "solvaldi":["liver"],
+  "spiriva":["copd"],
+  "stalevo":["parkinsons"],
+  "starlix":["diabetes"],
+  "stiolto respimat":["copd"],
+  "striverdi respimat":["copd"],
+  "suboxone / subutex":["substance"],
+  "sustiva":["hiv"],
+  "symbicort":["copd"],
+  "symmetrel":["parkinsons"],
+  "tabloid":["cancerInternal"],
+  "tacrolimus":["transplant"],
+  "tambocor":["afib"],
+  "tamoxifen":["cancerInternal"],
+  "tarceva":["cancerInternal"],
+  "targretin":["cancerInternal"],
+  "tasigna":["cancerInternal"],
+  "tasmar":["parkinsons"],
+  "temodar":["cancerInternal"],
+  "thalomid":["cancerInternal"],
+  "theodur":["copd"],
+  "theophylline":["copd"],
+  "thymoglobulin":["transplant"],
+  "tolinase":["diabetes"],
+  "toujeo":["diabetes", "insulin"],
+  "treanda":["cancerInternal"],
+  "trelegy ellipta":["copd"],
+  "trelstar":["cancerInternal"],
+  "tresiba":["diabetes", "insulin"],
+  "tretinoin":["cancerInternal"],
+  "trexall":["cancerInternal"],
+  "trulicity":["diabetes"],
+  "truvada":["hiv"],
+  "tudorza pressair":["copd"],
+  "tykerb":["cancerInternal"],
+  "tyzeka":["liver"],
+  "utibron neohaler":["copd"],
+  "uvadex":["cancerInternal"],
+  "valstar":["cancerInternal"],
+  "vascor":["angina"],
+  "velcade":["cancerInternal"],
+  "ventolin":["copd"],
+  "victoza":["diabetes"],
+  "viracept / viramune":["hiv"],
+  "viread":["hiv"],
+  "vivitrol":["substance"],
+  "warfarin":["stentBypass"],
+  "xarelto":["afib"],
+  "xeloda":["cancerInternal"],
+  "xopenex":["copd"],
+  "xtandi":["cancerInternal"],
+  "zanosar":["cancerInternal"],
+  "zelapar":["parkinsons"],
+  "zemplar":["kidney"],
+  "ziagen":["hiv"],
+  "zofran":["cancerInternal"],
+  "zortress":["transplant"],
+  "zyprexa":["mental"],
+  "zytiga":["cancerInternal"]
+};
+
+var MED_NOTES = {
+  "depakote":["Seizure disorder"],
+  "dilantin":["Seizure disorder"],
+  "gabitril":["Seizure disorder"],
+  "gralise":["Seizure disorder"],
+  "heparin":["Blood clot (PE/DVT)"],
+  "lamictal":["Seizure disorder"],
+  "lamtrogine":["Seizure disorder"],
+  "phenobarbital":["Seizure disorder"],
+  "tegretol":["Seizure disorder"]
+};
+
+var BENIGN_MEDS = ["accupril", "accuretic", "acebutolol hcl", "aceon", "acetaminophen", "acetyl l-carnitine", "adalat", "aldactazide", "aldactone", "aldomat", "allopurinol", "alprazolam", "altace", "amiloride hcl", "amlodipine", "amlodipine besylate/benaz", "amoxicillin", "aspirin", "atacand", "atenolol", "ativan", "atorvastatin", "avalide", "avapro", "azithromycin", "azor", "baclofen", "benazepril hcl", "benicar", "biotin", "blocadren", "brevibloc", "bumetadine /bumex", "buspirone", "bystolic", "calan", "capoten / captopril", "cardizem", "cardura", "cartia", "cartrol", "carvedilol", "catapress", "celebrex", "celecoxib", "cetirizine", "chantix", "citalopram", "commit", "coreg", "corgard", "cozaar", "crestor", "cyclobenzaprine", "cymbalta", "demadex", "diltiazem", "diovan", "doxycycline", "duloxetine", "dyazide", "dynacirc", "edecrin", "effexor", "enalapril maleate / enalaprilat", "eplerenone", "escitalopram", "exforge", "famotidine", "felodipine", "finasteride", "fish oil", "flomax", "fluoxetine", "folic acid", "furosemide", "gabapentin", "hctz", "hydralazine hcl", "hydrochlorothiazide", "hytrin", "hyzaar", "ibuprofen", "inderal", "inderide", "innopran xl", "inspra", "labetaolol", "lasix", "levatol", "levothyroxine", "lexapro", "lexxel", "lipitor", "lisinopril", "lopressor", "loratadine", "losartan", "losartan potassium", "lotensin", "lotrel", "lozol", "lyrica", "magnesium", "maxzide", "meloxicam", "methyldopa", "methylprednisolone", "metolazone", "metoprolol", "metoprolol hctz", "metoprolol tartrate/succinate", "mevacor", "micardis", "midamor", "minipress", "moduretic", "monopril", "montelukast", "nadolol", "naproxen", "neurontin", "nicotine / nicoderm", "nifedipine", "normodyne", "norvasc", "omeprazole", "pantoprazole", "paxil", "pepcid", "pindolol", "plendil", "potassium", "pravachol", "pravastatin", "prazosin", "prednisolone", "prednisone", "pregabalin", "prilosec", "prinivil", "prinzide", "procardia", "propranolol hcl", "prozac", "quinapril", "ramipril", "ranitidine", "reglan", "rosuvastatin", "sectral", "sertraline", "simvastatin", "singulair", "sodium edecrin", "soltalol hydrochloride", "spironolactone", "synthroid", "tagamet", "tamsulosin", "tarka", "tenex", "tenoretic", "tenormin", "teveten", "tiazac", "timolide", "timolol maleate", "tizanidine", "toprol xl", "torsemide", "tramadol", "trandolapril", "trazodone", "triamterene", "triamterene/hctz", "tribenzor", "twynsta", "tylenol", "uniretic", "univasc", "valsartan", "valturna", "vaseretic", "vasotec", "venlafaxine", "verapamil", "vitamin b12", "vitamin d", "zantac", "zebeta", "zestoretic", "zestril", "ziac", "zocor", "zoloft"];
+
+// derived lookup maps built from CONDITIONS (label + timed flag)
+var CONDLABEL = {}, CONDTIMED = {};
+CONDITIONS.forEach(function (c) { CONDLABEL[c.key] = c.label; CONDTIMED[c.key] = !!c.timed; });
+
+/* ============================================================
+   VERIFIED CARRIER PROFILES
+   A carrier with `profile:` is scored by its REAL guide instead of the
+   generic starter matrix. A profile owns its build chart, benefit
+   levels, and per-condition outcomes. Add one profile per guide.
+   ============================================================ */
+// Benefit-level index names used inside profiles (0 = best)
+var LNAME = ["Preferred", "Standard", "Basic", "No Coverage"];
+// timed knockout: within 12 mo -> l1, within 24 mo -> l2, else l3
+function twF(when, l1, l2, l3, name) {
+  var amb = (when === "ever");            // unknown timing -> treat as recent, but flag
+  if (within(when, 12)) return { lvl: l1, note: name + " within 1 yr → " + LNAME[l1], ambiguous: amb };
+  if (within(when, 24)) return { lvl: l2, note: name + " 1–2 yr → " + LNAME[l2], ambiguous: amb };
+  return { lvl: l3, note: name + " 2+ yr → " + LNAME[l3] };
+}
+function flat(lvl, note) { return { lvl: lvl, note: note }; }   // constant outcome
+function noHit(note) { return { lvl: -1, note: note }; }        // asked, but no downgrade
+
+/* ---- FORESTERS PlanRight Whole Life — Medical Reference Guide 503461 US (10/24) ----
+   Verified from guide. Benefit levels: Preferred / Standard / Basic / No Coverage.
+   Build chart is the exact height→[min, maxPreferred, maxStandard, maxBasic] table.
+   Non-FE Foresters lines (Strong Foundation, Your Term, SMART UL, Advantage Plus II)
+   are fully underwritten — surfaced as info, not scored here.                        */
+var FORESTERS = {
+  key: "foresters",
+  age: [50, 85], face: [2000, 35000],
+  product: "PlanRight Whole Life",
+  alsoUW: ["Strong Foundation", "Your Term", "SMART UL", "Advantage Plus II"],
+  levels: [
+    { norm: "level",   base: 94, label: "Level · Preferred" },
+    { norm: "level",   base: 87, label: "Level · Standard" },
+    { norm: "graded",  base: 80, label: "Graded · Basic (2-yr)" },
+    { norm: "decline", base: 0,  label: "Decline (No Coverage)" }
+  ],
+  // inches -> [min, maxPreferred, maxStandard, maxBasic]
+  build: {
+    56:[74,201,216,232], 57:[77,208,223,239], 58:[80,215,230,246], 59:[83,222,237,253],
+    60:[86,229,245,262], 61:[89,237,253,271], 62:[92,246,262,280], 63:[95,253,269,288],
+    64:[98,260,278,297], 65:[101,268,286,306], 66:[104,275,294,315], 67:[107,284,304,325],
+    68:[110,292,313,334], 69:[113,299,321,343], 70:[117,308,330,353], 71:[121,316,339,362],
+    72:[125,325,348,372], 73:[129,333,356,381], 74:[133,341,366,391], 75:[137,349,373,399],
+    76:[142,357,382,409], 77:[147,365,392,419], 78:[152,373,406,434], 79:[159,381,413,442],
+    80:[162,389,421,450], 81:[167,397,430,460]
+  },
+  // condition key -> function(when) -> {lvl, note, ambiguous?}   (lvl: 0..3, -1 = no effect)
+  conds: {
+    heartAttack:      function (w) { return twF(w, 2, 1, 0, "Heart attack"); },
+    stentBypass:      function (w) { return twF(w, 2, 1, 0, "Heart/circulatory procedure"); },
+    chf:              function () { return flat(3, "CHF / cardiomyopathy / heart failure → No Coverage"); },
+    stroke:           function (w) { return twF(w, 2, 1, 0, "Stroke/TIA"); },
+    afib:             function () { return noHit("Arrhythmia alone — no PlanRight downgrade (verify cardioversion/pacemaker < 2 yr)"); },
+    aneurysm:         function () { return flat(2, "Aneurysm (unrepaired, or < 2 yr) → Basic"); },
+    angina:           function (w) { return twF(w, 2, 1, 0, "Angina"); },
+    diabetes:         function () { return noHit("Diabetes alone — Preferred (no downgrade)"); },
+    insulin:          function () { return noHit("Insulin — NOT a PlanRight knockout (Preferred)"); },
+    diabComplications:function () { return flat(2, "Diabetic neuropathy/nephropathy/retinopathy → Basic"); },
+    copd:             function () { return flat(1, "COPD / emphysema / chronic bronchitis → Standard"); },
+    oxygen:           function () { return flat(3, "Oxygen equipment → No Coverage if within 12 mo (verify if older)"); },
+    cancerInternal:   function (w) { return within(w, 36) ? { lvl: 2, note: "Cancer dx/treatment within 3 yr → Basic", ambiguous: (w === "ever") } : noHit("Cancer 3+ yr, single/resolved → Preferred"); },
+    cancerMeta:       function () { return flat(3, "Current / recurrent / multiple cancers → No Coverage"); },
+    dementia:         function () { return flat(3, "Dementia / memory loss / MCI → No Coverage"); },
+    parkinsons:       function () { return flat(1, "Parkinson's → Standard if all ADLs (No Coverage if not — see ADL answer)"); },
+    alsMs:            function () { return flat(3, "ALS → No Coverage (MS: verify, often Standard)"); },
+    dialysis:         function () { return flat(3, "Kidney dialysis (had/advised within 12 mo) → No Coverage"); },
+    kidney:           function () { return flat(1, "Kidney disease / renal insufficiency → Standard"); },
+    liver:            function () { return flat(1, "Cirrhosis / liver disease → Standard"); },
+    lupus:            function () { return flat(1, "Systemic lupus (SLE) → Standard"); },
+    adl:              function () { return flat(3, "Needs help with any ADL → No Coverage"); },
+    nursing:          function () { return flat(3, "Nursing home / skilled nursing facility → No Coverage"); },
+    wheelchair:       function () { return flat(3, "Wheelchair/scooter from illness → No Coverage (injury-related: verify)"); },
+    hospital:         function () { return noHit("No specific PlanRight hospitalization knockout"); },
+    terminal:         function () { return flat(3, "Terminal illness / hospice → No Coverage"); },
+    hiv:              function () { return flat(3, "HIV / AIDS → No Coverage"); },
+    transplant:       function () { return flat(3, "Organ / bone-marrow transplant → No Coverage"); },
+    substance:        function (w) { return within(w, 24) ? { lvl: 2, note: "Alcohol/drug abuse dx/treated/advised within 2 yr → Basic", ambiguous: (w === "ever") } : noHit("Substance history 2+ yr → Preferred"); },
+    mental:           function () { return noHit("Mental health alone — no PlanRight benefit-level downgrade"); },
+    felony:           function () { return noHit("Not a PlanRight medical question"); }
+  }
+};
+
+/* ============================================================
+   CARRIERS  —  product line + underwriting profile.
+   Products mirror the FFG comp guide. Each product carries a `class`:
+     fe      -> simplified-issue FE, scored by knockouts at its `tier`
+     gi      -> guaranteed issue (health-question-free fallback)
+     uw      -> fully underwritten (not auto-scored; needs exam/labs)
+   `age`=[min,max], `face`=[min,max], `build`= chart profile.
+   `verified:false` -> starter rules (badge). Flip true once a real
+   guide is encoded for that carrier.
+   ============================================================ */
+function feProd(name, tier, build) { return { name: name, cls: "fe", tier: tier, build: build || "standard" }; }
+function giProd(name)  { return { name: name, cls: "gi" }; }
+function uwProd(name)  { return { name: name, cls: "uw" }; }
+
+var CARRIERS = [
+  { name: "American Home Life (AHL)", verified: false, age: [50,85], face: [2000,35000],
+    products: [ feProd("FE", "level", "standard") ] },
+
+  { name: "Mutual of Omaha", verified: false, age: [45,85], face: [2000,40000],
+    products: [ feProd("Living Promise", "level", "standard"), feProd("Living Promise (Graded)", "graded", "lenient"), uwProd("Term"), uwProd("IULe"), uwProd("Accum UL Answers") ] },
+
+  { name: "Corebridge Financial", verified: false, age: [50,85], face: [5000,25000],
+    products: [ feProd("Simplinow Legacy Max SIWL", "level", "standard"), giProd("GIWL Whole Life"), uwProd("Max Accumulator IUL") ] },
+
+  { name: "Liberty Bankers", verified: false, age: [45,85], face: [3000,40000],
+    products: [ feProd("SI Market PermaLife Preferred", "level", "lenient"), feProd("SI Market PermaLife Standard", "graded", "lenient"), feProd("Modified Whole Life", "graded", "lenient") ] },
+
+  { name: "United Home Life", verified: false, age: [20,80], face: [5000,50000],
+    products: [ feProd("Express Issue Premier WL", "level", "strict"), feProd("Express Issue Deluxe WL", "level", "standard"), feProd("Express Issue Graded WL", "graded", "lenient"), giProd("Guaranteed Issue Whole Life"), uwProd("Provider Whole Life"), uwProd("Term") ] },
+
+  { name: "Foresters", verified: true, profile: FORESTERS, age: [50,85], face: [2000,35000],
+    products: [ feProd("PlanRight Whole Life", "level", "standard"), uwProd("Strong Foundation"), uwProd("Your Term"), uwProd("SMART UL"), uwProd("Advantage Plus II") ] },
+
+  { name: "Transamerica", verified: false, age: [45,85], face: [1000,50000],
+    products: [ feProd("Immediate Solution WL", "level", "standard"), feProd("Easy Solution WL", "graded", "lenient"), uwProd("Trendsetter Super Term"), uwProd("FFIUL") ] },
+
+  { name: "American-Amicable", verified: false, age: [50,85], face: [2500,35000],
+    products: [ feProd("Home Protector", "level", "standard"), feProd("Survivor Protector", "level", "standard"), feProd("Dignity Solutions & Family Legacy", "graded", "lenient"), feProd("Guaranteed Guardian", "gi"), uwProd("SecureLife Plus"), uwProd("Term Made Simple") ] },
+
+  { name: "Elco Mutual", verified: false, age: [45,85], face: [2000,35000],
+    products: [ feProd("FE Immediate", "level", "standard"), feProd("Life Pay WL 0-75", "graded", "lenient"), uwProd("Limited Pay WL") ] },
+
+  { name: "F&G", verified: false, age: [18,80], face: [10000,1000000],
+    products: [ uwProd("Pathsetter"), uwProd("Everlast"), uwProd("Exccudex") ] },
+
+  { name: "Kansas City Life", verified: false, age: [18,85], face: [10000,1000000],
+    products: [ uwProd("Signature Term Simplified Issue"), uwProd("IUL (All) Fully Underwritten"), uwProd("Cashback Life (UW)") ] }
+];
+
+/* ============================================================
+   READ THE FORM
+   ============================================================ */
+function readClient() {
+  var hft = parseInt($("c-hft").value, 10);
+  var hin = parseInt($("c-hin").value, 10);
+  var inches = (isNaN(hft) ? null : hft * 12 + (isNaN(hin) ? 0 : hin));
+  var conds = {};
+  Object.keys(selConds).forEach(function (k) {
+    conds[k] = { yes: true, when: selConds[k].when || "ever" };
+  });
+  return {
+    name: $("c-name").value.trim(),
+    age: parseInt($("c-age").value, 10),
+    gender: $("c-gender").value,
+    face: parseFloat($("c-face").value),
+    inches: inches,
+    weight: parseFloat($("c-wt").value),
+    tobacco: $("c-tobacco").value,
+    conds: conds,
+    notes: freeNotes.slice(),
+    meds: medList.map(function (m) { return m.name; })
+  };
+}
+
+/* ============================================================
+   ENGINE  —  evaluate one carrier for the client
+   returns { tier, product, prob, reasons:[{txt,cls}], levelLabel?, alsoUW? }
+   ============================================================ */
+function evalCarrier(carrier, client) {
+  if (carrier.profile) return evalProfile(carrier.profile, client);
+  return evalGeneric(carrier, client);
+}
+
+// Score a carrier from its REAL guide profile (build chart + benefit levels + condition map)
+function evalProfile(P, client) {
+  var reasons = [];
+  var worst = 0;            // benefit-level index, 0 = best (Preferred)
+  var facePenalty = 0, buildBorderline = false, ambiguous = false;
+
+  // age gate (hard)
+  if (!isNaN(client.age) && (client.age < P.age[0] || client.age > P.age[1])) {
+    return { tier: "decline", levelLabel: "Decline", product: P.product, prob: 0,
+      reasons: [{ txt: "Age " + client.age + " outside issue range " + P.age[0] + "–" + P.age[1], cls: "neg" }] };
+  }
+  // face gate (soft — nudge amount, don't hard-decline)
+  if (!isNaN(client.face) && (client.face < P.face[0] || client.face > P.face[1])) {
+    reasons.push({ txt: "Face $" + fmt(client.face) + " outside $" + fmt(P.face[0]) + "–$" + fmt(P.face[1]) + " — adjust amount", cls: "neg" });
+    facePenalty = 8;
+  }
+  // build chart (exact height→[min, maxPref, maxStd, maxBasic])
+  if (client.inches && !isNaN(client.weight)) {
+    var row = P.build[client.inches];
+    if (!row) { reasons.push({ txt: "Height outside build chart — verify", cls: "neg" }); worst = Math.max(worst, 3); }
+    else {
+      var min = row[0], mp = row[1], ms = row[2], mb = row[3];
+      if (client.weight < min) { reasons.push({ txt: "Weight " + client.weight + " below min " + min + " for height → No Coverage", cls: "neg" }); worst = Math.max(worst, 3); }
+      else if (client.weight > mb) { reasons.push({ txt: "Weight " + client.weight + " over Basic max " + mb + " → No Coverage", cls: "neg" }); worst = Math.max(worst, 3); }
+      else if (client.weight > ms) { reasons.push({ txt: "Build → Basic (over Standard max " + ms + ", within Basic " + mb + ")", cls: "neg" }); worst = Math.max(worst, 2); }
+      else if (client.weight > mp) { reasons.push({ txt: "Build → Standard (over Preferred max " + mp + ", within Standard " + ms + ")", cls: "neg" }); worst = Math.max(worst, 1); }
+      else { reasons.push({ txt: "Build → Preferred (≤ " + mp + " lbs)", cls: "pos" }); if (client.weight > mp - 8) buildBorderline = true; }
+    }
+  }
+  // tobacco = rate class only, not a benefit-level change
+  if (client.tobacco && client.tobacco !== "none") reasons.push({ txt: "Tobacco → tobacco rate class (premium only, no tier change)", cls: "" });
+
+  // conditions per the guide
+  Object.keys(P.conds).forEach(function (k) {
+    var a = client.conds[k];
+    if (!a || !a.yes) return;
+    var out = P.conds[k](a.when);
+    if (out.ambiguous) ambiguous = true;
+    if (out.lvl >= 0) { worst = Math.max(worst, out.lvl); reasons.push({ txt: out.note, cls: out.lvl >= 1 ? "neg" : "" }); }
+    else reasons.push({ txt: out.note, cls: "" });
+  });
+
+  var lvl = P.levels[worst];
+  var res = { tier: lvl.norm, levelLabel: lvl.label, product: P.product, reasons: reasons, alsoUW: P.alsoUW };
+  if (lvl.norm === "decline") { res.prob = 0; return res; }
+  var prob = lvl.base - facePenalty - (buildBorderline ? 6 : 0) - (ambiguous ? 5 : 0);
+  res.prob = Math.max(3, Math.min(99, Math.round(prob)));
+  return res;
+}
+
+// Score a carrier from the generic starter matrix (unverified carriers)
+function evalGeneric(carrier, client) {
+  var reasons = [];
+  var attained = "level";   // best case, walked down by knockouts
+  var probPenalty = 0;      // subtracted from base probability
+
+  // 1) age / face gates (hard) — use FE range if any FE product exists
+  var feProducts = carrier.products.filter(function (p) { return p.cls === "fe"; });
+  var giProducts = carrier.products.filter(function (p) { return p.cls === "gi"; });
+  var uwProducts = carrier.products.filter(function (p) { return p.cls === "uw"; });
+
+  var ageBad = !isNaN(client.age) && (client.age < carrier.age[0] || client.age > carrier.age[1]);
+  var faceBad = !isNaN(client.face) && (client.face < carrier.face[0] || client.face > carrier.face[1]);
+
+  if (ageBad) {
+    return { tier: "decline", product: "—", prob: 0,
+      reasons: [{ txt: "Age " + client.age + " outside issue range " + carrier.age[0] + "–" + carrier.age[1], cls: "neg" }] };
+  }
+  if (faceBad) {
+    reasons.push({ txt: "Face $" + fmt(client.face) + " outside " + "$" + fmt(carrier.face[0]) + "–$" + fmt(carrier.face[1]) + " — adjust amount", cls: "neg" });
+    probPenalty += 8;
+  }
+
+  // 2) build check (against the best FE product's chart)
+  var buildProfile = feProducts.length ? feProducts[0].build : "standard";
+  if (client.inches && !isNaN(client.weight)) {
+    var chart = buildChart(buildProfile);
+    var mx = chart.maxAt(client.inches), mn = chart.minAt(client.inches);
+    if (client.weight > mx) {
+      var over = client.weight - mx;
+      if (over > mx * 0.12) { attained = worse(attained, "graded"); reasons.push({ txt: "Weight " + client.weight + " over ~" + mx + " max (build) — graded/decline zone", cls: "neg" }); probPenalty += 18; }
+      else { reasons.push({ txt: "Weight near build ceiling (~" + mx + " lbs) — borderline", cls: "neg" }); probPenalty += 10; }
+    } else if (client.weight < mn) {
+      reasons.push({ txt: "Underweight (< ~" + mn + " lbs) — verify reason", cls: "neg" }); probPenalty += 6;
+    } else {
+      reasons.push({ txt: "Build within range", cls: "pos" });
+    }
+  }
+
+  // 3) tobacco (rate class note; not a knockout)
+  if (client.tobacco && client.tobacco !== "none") {
+    reasons.push({ txt: "Tobacco (" + client.tobacco + ") — tobacco rate class", cls: "neg" }); probPenalty += 3;
+  }
+
+  // 4) health knockouts
+  CONDITIONS.forEach(function (cdef) {
+    var a = client.conds[cdef.key];
+    if (!a || !a.yes) return;
+    var out = cdef.fn(a.when);
+    if (out.tier && out.tier !== "level") {
+      attained = worse(attained, out.tier);
+      reasons.push({ txt: out.reason, cls: "neg" });
+    } else if (out.penalty) {
+      reasons.push({ txt: out.reason, cls: "neg" });
+      probPenalty += out.penalty;
+    }
+  });
+
+  // 5) map attained tier -> an actual product this carrier sells
+  var product = pickProduct(carrier, attained, feProducts, giProducts, uwProducts);
+
+  // No FE product and only UW products -> informational
+  if (!product && uwProducts.length && !feProducts.length && !giProducts.length) {
+    return { tier: "uw", product: uwProducts[0].name, prob: null,
+      reasons: [{ txt: "Fully-underwritten line — approval comes from exam/labs/Rx, not these knockouts", cls: "" }].concat(reasons.filter(function(r){return r.cls==="neg";})) };
+  }
+
+  if (!product) {
+    // attained worse than anything the carrier offers
+    if (giProducts.length) {
+      product = { name: giProducts[0].name, cls: "gi" }; attained = "gi";
+      reasons.push({ txt: "Fell to this carrier's guaranteed-issue product", cls: "" });
+    } else {
+      return { tier: "decline", product: "—", prob: 0, reasons: reasons.length ? reasons : [{ txt: "No product matches this risk", cls: "neg" }] };
+    }
+  }
+
+  // 6) probability
+  var base = { level: 90, graded: 80, gi: 97 }[attained] || 70;
+  var prob = Math.max(3, Math.min(99, Math.round(base - probPenalty)));
+  if (attained === "gi") prob = Math.max(prob, 90); // GI is near-automatic within age/face
+
+  return { tier: attained, product: product.name, prob: prob, reasons: reasons };
+}
+
+function pickProduct(carrier, attained, fe, gi, uw) {
+  // want a product whose tier is <= attained-need. Prefer exact match, then better.
+  if (attained === "level") {
+    var lv = fe.find(function (p) { return p.tier === "level"; });
+    return lv || null;
+  }
+  if (attained === "graded") {
+    var g = fe.find(function (p) { return p.tier === "graded"; });
+    if (g) return g;
+    if (gi.length) return { name: gi[0].name, cls: "gi" };
+    return null;
+  }
+  if (attained === "gi") {
+    var gg = fe.find(function (p) { return p.tier === "gi"; });
+    if (gg) return gg;
+    if (gi.length) return { name: gi[0].name, cls: "gi" };
+    return null;
+  }
+  return null; // decline
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function fmt(n) { return (n || 0).toLocaleString("en-US"); }
+
+function run() {
+  var client = readClient();
+  var rows = CARRIERS.map(function (c) {
+    var r = evalCarrier(c, client);
+    r.carrier = c.name; r.verified = c.verified;
+    return r;
+  });
+
+  // sort: approvable first (level<graded<gi<uw<decline), then by probability desc
+  var order = { level: 0, graded: 1, gi: 2, uw: 3, decline: 4 };
+  rows.sort(function (a, b) {
+    if (order[a.tier] !== order[b.tier]) return order[a.tier] - order[b.tier];
+    return (b.prob || 0) - (a.prob || 0);
+  });
+
+  var hideDec = $("hideDeclines").checked;
+  var box = $("results");
+  var visible = rows.filter(function (r) { return !(hideDec && r.tier === "decline"); });
+
+  // summary
+  var nLevel = rows.filter(function (r) { return r.tier === "level"; }).length;
+  var nApprov = rows.filter(function (r) { return r.tier !== "decline" && r.tier !== "uw"; }).length;
+  var who = client.name ? client.name : "This client";
+  // items the engine did NOT score and the agent MUST verify by hand:
+  //   free-text condition notes, med-flagged conditions (seizure/clot), unrecognized meds
+  var unscored = (client.notes || []).slice();
+  medList.forEach(function (m) { if (m.unknown) unscored.push(m.name + " (unrecognized med)"); });
+  $("summaryLine").innerHTML = who + ": <b>" + nApprov + "</b> carrier(s) approvable"
+    + (nLevel ? ", <b>" + nLevel + "</b> at full Level benefit" : "")
+    + ". Sorted best-first. <span style=\"color:var(--text-muted)\">Estimates — verified carriers use the real guide, others use starter rules.</span>";
+  // LOUD, unmissable banner for anything not scored
+  var warn = $("unscoredWarn");
+  if (unscored.length) {
+    warn.style.display = "";
+    warn.innerHTML = '<b>⚠ ' + unscored.length + ' item(s) NOT scored — verify by hand.</b> '
+      + 'The odds below do <u>not</u> account for: ' + esc(unscored.join(", "))
+      + '. Check these against each carrier’s guide before you quote.';
+  } else { warn.style.display = "none"; warn.innerHTML = ""; }
+  $("filterRow").style.display = "";
+
+  if (!visible.length) { box.innerHTML = '<div class="empty">No results to show.</div>'; return; }
+
+  box.innerHTML = visible.map(function (r) {
+    var tclass = "t-" + r.tier;
+    var probHtml = "";
+    if (r.prob != null) {
+      var color = r.prob >= 75 ? "var(--good)" : r.prob >= 50 ? "var(--warn)" : "var(--danger)";
+      probHtml = '<div class="prob"><div class="prob-bar"><div class="prob-fill" style="width:' + r.prob + '%;background:' + color + '"></div></div>'
+        + '<div class="prob-pct" style="color:' + color + '">' + r.prob + '% odds</div></div>';
+    }
+    var reasons = (r.reasons || []).map(function (x) {
+      return '<li class="' + (x.cls || "") + '">' + esc(x.txt) + "</li>";
+    }).join("");
+    var src = r.verified
+      ? '<span class="badge-src src-verified">✓ verified</span>'
+      : '<span class="badge-src src-starter">starter rules</span>';
+    var badgeText = r.levelLabel || TIER_NAME[r.tier];
+    var alsoHtml = (r.alsoUW && r.alsoUW.length)
+      ? '<div class="res-prod" style="margin-top:4px">Also, fully underwritten (decision via exam/labs): ' + esc(r.alsoUW.join(" · ")) + '</div>'
+      : '';
+    return '<div class="res-item">'
+      + '<div class="res-head">'
+      + '<span class="res-carrier">' + esc(r.carrier) + '</span>'
+      + src
+      + '<span class="tierbadge ' + tclass + '">' + esc(badgeText) + '</span>'
+      + '</div>'
+      + '<div class="res-prod">' + (r.product && r.product !== "—" ? "Product: " + esc(r.product) : "No matching product") + '</div>'
+      + probHtml
+      + (reasons ? '<ul class="reasons">' + reasons + '</ul>' : '')
+      + alsoHtml
+      + '</div>';
+  }).join("");
+}
+
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[c]; }); }
+
+/* ============================================================
+   INTAKE STATE  (chips)
+   selConds: key -> { when, via }   freeNotes: [text]   medList: [{name,conds,benign}]
+   ============================================================ */
+var selConds = {}, freeNotes = [], medList = [], benignItems = [];
+var WHENOPTS = [["lt6","< 6 mo"],["6to12","6–12 mo"],["12to24","1–2 yr"],["24to36","2–3 yr"],["gt36","3+ yr"],["ever","unknown"]];
+function cap(s) { return s.replace(/\b\w/g, function (m) { return m.toUpperCase(); }); }
+
+function addCond(key, via) {
+  if (!CONDLABEL[key]) return;
+  if (!selConds[key]) selConds[key] = { when: "ever", via: via || null };
+  else if (!via) selConds[key].via = null;   // a manual add promotes a med-sourced chip to manual
+}
+function addNote(text) {
+  text = (text || "").trim();
+  if (text && freeNotes.indexOf(text) < 0) freeNotes.push(text);
+  renderChips();
+}
+function addMed(name, opts) {
+  opts = opts || {};
+  var lname = name.toLowerCase();
+  if (medList.some(function (m) { return m.name.toLowerCase() === lname; })) return;
+  var med = { name: name,
+    conds: (opts.conds && opts.conds.length) ? opts.conds.slice() : null,
+    benign: !!opts.benign,
+    noteConds: (opts.noteConds && opts.noteConds.length) ? opts.noteConds.slice() : null,
+    unknown: !!opts.unknown };
+  medList.push(med);
+  if (med.conds) med.conds.forEach(function (k) { addCond(k, med.name); });
+  if (med.noteConds) med.noteConds.forEach(function (lbl) { addNote(lbl + " (via " + name + ")"); });
+  renderChips();
+}
+// a recognized no-downgrade condition (e.g. high blood pressure) — handled, not a knockout
+function addBenign(label) {
+  if (benignItems.indexOf(label) < 0) benignItems.push(label);
+  renderChips();
+}
+
+function renderChips() {
+  var cc = $("condChips"); cc.innerHTML = "";
+  Object.keys(selConds).forEach(function (key) {
+    var s = selConds[key];
+    var chip = document.createElement("span"); chip.className = "chip";
+    var lbl = document.createElement("span"); lbl.textContent = CONDLABEL[key] || key; chip.appendChild(lbl);
+    if (s.via) { var v = document.createElement("span"); v.className = "via"; v.textContent = "via " + s.via; chip.appendChild(v); }
+    if (CONDTIMED[key]) {
+      var sel = document.createElement("select");
+      WHENOPTS.forEach(function (o) {
+        var op = document.createElement("option"); op.value = o[0]; op.textContent = o[1];
+        if (o[0] === (s.when || "ever")) op.selected = true; sel.appendChild(op);
+      });
+      sel.addEventListener("change", function () { selConds[key].when = this.value; });
+      chip.appendChild(sel);
+    }
+    var x = document.createElement("span"); x.className = "x"; x.textContent = "×"; x.title = "Remove";
+    x.addEventListener("click", function () { delete selConds[key]; renderChips(); });
+    chip.appendChild(x); cc.appendChild(chip);
+  });
+  freeNotes.forEach(function (note, i) {
+    var chip = document.createElement("span"); chip.className = "chip note warn";
+    var lbl = document.createElement("span"); lbl.textContent = "⚠ " + note; chip.appendChild(lbl);
+    var x = document.createElement("span"); x.className = "x"; x.textContent = "×";
+    x.addEventListener("click", function () { freeNotes.splice(i, 1); renderChips(); });
+    chip.appendChild(x); cc.appendChild(chip);
+  });
+  benignItems.forEach(function (label, i) {
+    var chip = document.createElement("span"); chip.className = "chip ok";
+    var lbl = document.createElement("span"); lbl.textContent = label; chip.appendChild(lbl);
+    var d = document.createElement("span"); d.className = "via"; d.textContent = "no downgrade"; chip.appendChild(d);
+    var x = document.createElement("span"); x.className = "x"; x.textContent = "×";
+    x.addEventListener("click", function () { benignItems.splice(i, 1); renderChips(); });
+    chip.appendChild(x); cc.appendChild(chip);
+  });
+  var mc = $("medChips"); mc.innerHTML = "";
+  medList.forEach(function (m, i) {
+    var chip = document.createElement("span"); chip.className = "chip med" + (m.unknown ? " warn" : "");
+    var lbl = document.createElement("span"); lbl.textContent = m.name; chip.appendChild(lbl);
+    var desc = document.createElement("span"); desc.className = "via";
+    if (m.conds && m.conds.length) desc.textContent = "→ " + m.conds.map(function (k) { return CONDLABEL[k]; }).join(", ");
+    else if (m.noteConds && m.noteConds.length) desc.textContent = "→ " + m.noteConds.join(", ") + " (verify)";
+    else if (m.benign) desc.textContent = "no downgrade";
+    else desc.textContent = "⚠ unrecognized — verify";
+    chip.appendChild(desc);
+    var x = document.createElement("span"); x.className = "x"; x.textContent = "×";
+    x.addEventListener("click", function () {
+      var med = medList[i]; medList.splice(i, 1);
+      if (med.conds) med.conds.forEach(function (k) { if (selConds[k] && selConds[k].via === med.name) delete selConds[k]; });
+      if (med.noteConds) med.noteConds.forEach(function (lbl) { var t = lbl + " (via " + med.name + ")"; var idx = freeNotes.indexOf(t); if (idx >= 0) freeNotes.splice(idx, 1); });
+      renderChips();
+    });
+    chip.appendChild(x); mc.appendChild(chip);
+  });
+}
+
+/* ---- autocomplete ---- */
+function attachAutocomplete(inputId, sugId, getMatches, onPick) {
+  var input = $(inputId), sug = $(sugId), items = [], sel = -1;
+  function close() { sug.classList.remove("on"); sug.innerHTML = ""; items = []; sel = -1; }
+  function paint(q) {
+    items = getMatches(q);
+    if (!items.length) { close(); return; }
+    sug.innerHTML = items.map(function (it, idx) {
+      return '<div class="opt' + (it.add ? " add" : "") + (idx === sel ? " sel" : "") + '" data-i="' + idx + '">'
+        + esc(it.label) + (it.hint ? ' <small>' + esc(it.hint) + '</small>' : '') + '</div>';
+    }).join("");
+    sug.classList.add("on");
+  }
+  input.addEventListener("input", function () { sel = -1; paint(this.value.trim()); });
+  input.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(sel + 1, items.length - 1); paint(input.value.trim()); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(sel - 1, 0); paint(input.value.trim()); }
+    else if (e.key === "Enter") { e.preventDefault(); var pick = items[sel >= 0 ? sel : 0]; if (pick) { onPick(pick); input.value = ""; close(); } }
+    else if (e.key === "Escape") { close(); }
+  });
+  sug.addEventListener("mousedown", function (e) {
+    var opt = e.target.closest ? e.target.closest(".opt") : null; if (!opt) return; e.preventDefault();
+    var it = items[parseInt(opt.getAttribute("data-i"), 10)]; if (it) { onPick(it); input.value = ""; close(); }
+  });
+  input.addEventListener("blur", function () { setTimeout(close, 150); });
+}
+
+/* common conditions that carry NO underwriting downgrade — recognized so
+   they read as "handled", not as scary unknowns. */
+var BENIGN_CONDITIONS = [
+  { label: "High blood pressure", terms: ["high blood pressure", "hypertension", "hbp", "htn", "blood pressure"] },
+  { label: "High cholesterol", terms: ["high cholesterol", "cholesterol", "hyperlipidemia", "hyperlipidema"] },
+  { label: "Acid reflux / GERD", terms: ["acid reflux", "gerd", "heartburn", "reflux"] },
+  { label: "Thyroid condition", terms: ["thyroid", "hypothyroid", "hyperthyroid", "hashimoto", "goiter"] },
+  { label: "Osteoarthritis", terms: ["arthritis", "osteoarthritis", "joint pain", "oa"] },
+  { label: "Asthma", terms: ["asthma"] },
+  { label: "Sleep apnea (CPAP)", terms: ["sleep apnea", "apnea", "cpap"] },
+  { label: "Anxiety", terms: ["anxiety", "anxious", "panic attacks"] },
+  { label: "Depression", terms: ["depression", "depressive", "depressed"] },
+  { label: "Gout", terms: ["gout"] },
+  { label: "Allergies", terms: ["allergy", "allergies", "seasonal allergies", "hay fever"] },
+  { label: "Osteoporosis", terms: ["osteoporosis", "osteopenia"] },
+  { label: "Glaucoma", terms: ["glaucoma"] },
+  { label: "Migraines", terms: ["migraine", "migraines", "headaches"] },
+  { label: "Enlarged prostate (BPH)", terms: ["prostate", "bph", "enlarged prostate"] },
+  { label: "GERD / ulcer", terms: ["ulcer", "gastritis", "h pylori"] }
+];
+
+// Levenshtein (bounded) for typo tolerance
+function lev(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 9;
+  var m = a.length, n = b.length, i, j, prev = [], cur = [];
+  for (j = 0; j <= n; j++) prev[j] = j;
+  for (i = 1; i <= m; i++) {
+    cur[0] = i;
+    for (j = 1; j <= n; j++) {
+      var cost = a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1;
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + cost);
+    }
+    prev = cur.slice();
+  }
+  return prev[n];
+}
+// does query q match term t? substring either way, word-prefix, or typo (edit-distance ≤1–2)
+function termHit(t, q) {
+  if (!q) return false;
+  if (t.indexOf(q) >= 0 || q.indexOf(t) >= 0) return true;
+  var words = t.split(/[\s\/]+/);
+  for (var i = 0; i < words.length; i++) {
+    var w = words[i];
+    if (w.length >= 3 && w.indexOf(q) === 0) return true;
+    if (q.length >= 4 && w.length >= 4 && lev(q, w) <= (q.length >= 7 ? 2 : 1)) return true;
+  }
+  if (q.length >= 5 && lev(q, t) <= 2) return true;
+  return false;
+}
+
+function condMatches(q) {
+  q = q.toLowerCase(); var out = [];
+  if (q) {
+    CONDITIONS.forEach(function (c) {
+      if (selConds[c.key]) return;
+      var terms = [c.label.toLowerCase()].concat(ALIASES[c.key] || []);
+      if (terms.some(function (t) { return termHit(t, q); }))
+        out.push({ label: c.label, hint: c.hint || (ALIASES[c.key] || [])[0] || "", pick: { type: "cond", key: c.key } });
+    });
+    BENIGN_CONDITIONS.forEach(function (b) {
+      if (benignItems.indexOf(b.label) >= 0) return;
+      if (b.terms.some(function (t) { return termHit(t, q); }))
+        out.push({ label: b.label, hint: "usually no downgrade", pick: { type: "benignCond", label: b.label } });
+    });
+  }
+  out = out.slice(0, 8);
+  if (q) out.push({ label: 'Add “' + cap(q) + '” as an unscored note', add: true, pick: { type: "note", text: cap(q) } });
+  return out;
+}
+function medMatches(q) {
+  q = q.toLowerCase(); var out = [], seen = {};
+  if (q) {
+    Object.keys(MEDS).forEach(function (name) {
+      if (termHit(name, q)) { seen[name] = 1;
+        out.push({ label: cap(name), hint: "→ " + MEDS[name].map(function (k) { return CONDLABEL[k]; }).join(", "), pick: { type: "med", name: cap(name), conds: MEDS[name] } }); }
+    });
+    Object.keys(MED_NOTES).forEach(function (name) {
+      if (termHit(name, q) && !seen[name]) { seen[name] = 1;
+        out.push({ label: cap(name), hint: "→ " + MED_NOTES[name].join(", ") + " (verify)", pick: { type: "medNoteCond", name: cap(name), noteConds: MED_NOTES[name] } }); }
+    });
+    BENIGN_MEDS.forEach(function (name) {
+      if (termHit(name, q) && !seen[name]) { seen[name] = 1;
+        out.push({ label: cap(name), hint: "usually no downgrade", pick: { type: "medBenign", name: cap(name) } }); }
+    });
+  }
+  out = out.slice(0, 8);
+  if (q) out.push({ label: 'Add “' + cap(q) + '” (unrecognized med — verify)', add: true, pick: { type: "medUnknown", name: cap(q) } });
+  return out;
+}
+
+attachAutocomplete("condSearch", "condSug", condMatches, function (it) {
+  var p = it.pick;
+  if (p.type === "cond") { addCond(p.key, null); renderChips(); }
+  else if (p.type === "benignCond") { addBenign(p.label); }
+  else if (p.type === "note") { addNote(p.text); }
+});
+attachAutocomplete("medSearch", "medSug", medMatches, function (it) {
+  var p = it.pick;
+  if (p.type === "med") addMed(p.name, { conds: p.conds });
+  else if (p.type === "medNoteCond") addMed(p.name, { noteConds: p.noteConds });
+  else if (p.type === "medBenign") addMed(p.name, { benign: true });
+  else if (p.type === "medUnknown") addMed(p.name, { unknown: true });
+});
+
+/* ============================================================
+   WIRE UP
+   ============================================================ */
+function resetConds() { selConds = {}; freeNotes = []; medList = []; benignItems = []; renderChips(); }
+$("runBtn").addEventListener("click", run);
+$("hideDeclines").addEventListener("change", function () { if ($("results").querySelector(".res-item")) run(); });
+$("clearBtn").addEventListener("click", function () {
+  ["c-name","c-age","c-face","c-wt"].forEach(function (id) { $(id).value = ""; });
+  ["c-gender","c-hft","c-hin"].forEach(function (id) { $(id).value = ""; });
+  $("c-tobacco").value = "none";
+  resetConds();
+  $("results").innerHTML = '<div class="empty">Fill in the client above and press <b>Find carriers</b>.</div>';
+  $("summaryLine").innerHTML = ""; $("filterRow").style.display = "none";
+  $("unscoredWarn").style.display = "none"; $("unscoredWarn").innerHTML = "";
+});
+$("resetCondBtn").addEventListener("click", resetConds);
+renderChips();
+</script>
+</body>
+</html>
