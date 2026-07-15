@@ -184,7 +184,7 @@
 </style>
 </head>
 <body>
-<div class="uc-bar">🚧 UNDER CONSTRUCTION — DO NOT RELY 🚧<span class="uc-sub">Work in progress. Only Foresters PlanRight is verified against its guide; everything else is a rough estimate. Always confirm with the carrier’s field guide before quoting a client.</span></div>
+<div class="uc-bar">🚧 UNDER CONSTRUCTION — DO NOT RELY 🚧<span class="uc-sub">Work in progress. Covers Foresters only (scored from its real guides). Odds are estimates to prioritize where to submit — always confirm with the carrier’s field guide before quoting a client.</span></div>
 <div class="wrap">
   <nav class="hub-tabs">
     <a href="index.html" class="hub-tab">Activity</a>
@@ -204,8 +204,9 @@
   </header>
 
   <div class="banner" id="verifyBanner">
-    <b>⚠ Starter rules.</b> These reflect <b>common final-expense underwriting norms</b>, not your carriers' published field guides.
-    Verify against each carrier's guide before quoting. Send the guides to replace a carrier's rules with exact ones (badge flips to <b>✓ verified</b>).
+    <b>Foresters only, for now.</b> This tool currently covers <b>Foresters</b> — every product is scored from its real field guides (✓ verified):
+    PlanRight (final expense) plus the simplified-issue / non-medical paths for Strong Foundation, Your Term, SMART UL &amp; Advantage Plus II.
+    Other carriers were removed until their guides are added. Send a guide to add a carrier.
   </div>
 
   <!-- ===== Client intake ===== -->
@@ -282,12 +283,14 @@
   <div class="card">
     <h2>How the score works <span class="hint">— read me</span></h2>
     <div style="font-size:13px;color:var(--text-secondary);display:flex;flex-direction:column;gap:6px;">
-      <div><span class="tierbadge t-level">Level</span> Full immediate death benefit day one — best case.</div>
-      <div><span class="tierbadge t-graded">Graded / Modified</span> Reduced benefit first 2 years (ROP or %). Client still approvable, just not immediate.</div>
-      <div><span class="tierbadge t-gi">Guaranteed Issue</span> No health questions — approves regardless, but 2-yr waiting period &amp; lower comp. The fallback.</div>
-      <div><span class="tierbadge t-uw">Full UW</span> Fully-underwritten product (labs/exam/Rx-check). Not auto-scored here — decision comes from the exam.</div>
-      <div><span class="tierbadge t-decline">Decline</span> A knockout on this carrier’s starter rules. Verify — another carrier may still take them.</div>
-      <div style="color:var(--text-muted);margin-top:4px;">Probability = confidence the client lands at (or above) the shown tier, based on how far conditions/build sit from the cutoffs. It is an estimate to prioritize where to submit — not a guarantee of approval.</div>
+      <div style="font-weight:600;color:var(--text-primary)">Final expense (PlanRight)</div>
+      <div><span class="tierbadge t-level">Level</span> Full immediate death benefit day one — best case (Preferred or Standard).</div>
+      <div><span class="tierbadge t-graded">Graded / Basic</span> Reduced benefit first 2 years. Client still approvable, just not immediate.</div>
+      <div style="font-weight:600;color:var(--text-primary);margin-top:4px;">Simplified issue / non-medical (Term, UL, WL)</div>
+      <div><span class="tierbadge t-level">Non-Med Standard</span> Issues <b>without a medical exam</b> up to the product’s non-med face limit — if there’s no ratable impairment and build is in range.</div>
+      <div><span class="tierbadge t-uw">Exam required</span> Non-med path is blocked (an impairment, build, or face over the non-med limit). Goes to full underwriting — decision comes from labs/exam, so it’s not scored here.</div>
+      <div><span class="tierbadge t-decline">Decline / Not issued</span> Outside issue age, or a hard knockout on the guide.</div>
+      <div style="color:var(--text-muted);margin-top:4px;">Probability = confidence the client lands at (or above) the shown result, based on how far conditions/build sit from the cutoffs. It is an estimate to prioritize where to submit — not a guarantee of approval.</div>
     </div>
   </div>
 </div>
@@ -956,39 +959,89 @@ function feProd(name, tier, build) { return { name: name, cls: "fe", tier: tier,
 function giProd(name)  { return { name: name, cls: "gi" }; }
 function uwProd(name)  { return { name: name, cls: "uw" }; }
 
+/* ---- FORESTERS simplified-issue / NON-MEDICAL products ----
+   Strong Foundation (WL), Your Term, SMART UL, Advantage Plus II.
+   From Foresters Underwriting Guide 506305 US (04/26). We score ONLY the
+   non-medical path: issues WITHOUT an exam up to a face limit, IF the client
+   has no ratable impairment and build is within the non-med chart. Anything
+   else routes to full underwriting (exam) — shown as "Exam required", not scored. */
+var FORESTERS_SI_BUILD = { // inches -> [min, max]  (non-medical build chart, guide pg 10)
+  56:[74,189],57:[77,196],58:[79,203],59:[82,210],60:[85,217],61:[88,224],62:[91,232],
+  63:[94,239],64:[97,247],65:[100,255],66:[103,263],67:[106,271],68:[109,279],69:[112,287],
+  70:[115,296],71:[119,304],72:[122,313],73:[126,322],74:[129,330],75:[132,339],76:[136,349],
+  77:[140,358],78:[143,367],79:[147,377],80:[151,386],81:[154,396]
+};
+// conditions that make the NON-MEDICAL path unavailable (→ full underwriting / decline)
+var FORESTERS_NONMED_DECLINE = {
+  heartAttack:1, stentBypass:1, chf:1, stroke:1, afib:1, aneurysm:1, angina:1,
+  insulin:1, diabComplications:1, copd:1, oxygen:1, cancerInternal:1, cancerMeta:1,
+  dementia:1, parkinsons:1, alsMs:1, dialysis:1, kidney:1, liver:1, lupus:1,
+  adl:1, nursing:1, wheelchair:1, terminal:1, hiv:1, transplant:1, substance:1, mental:1, felony:1
+};
+// per-product non-medical face limit by age (guide pg 6)
+var FORESTERS_SI_PRODUCTS = [
+  { name:"Strong Foundation", type:"Whole Life", limit:function(a){ return a<=55?500000:(a<=80?250000:0); } },
+  { name:"Your Term", type:"Term", limit:function(a){ return a<=55?400000:(a<=80?150000:0); } },
+  { name:"SMART UL", type:"Universal Life", limit:function(a){ return a<=15?150000:(a<=55?400000:(a<=75?150000:0)); } },
+  { name:"Advantage Plus II", type:"Universal Life", limit:function(a){ return a<=15?150000:(a<=55?400000:(a<=75?150000:0)); } }
+];
+
+function evalSI(prod, client) {
+  var label = prod.name + " · " + prod.type + " (SI)";
+  var age = client.age;
+  var lim = (!isNaN(age)) ? prod.limit(age) : prod.limit(45); // assume mid-band if age unknown
+  if (!isNaN(age) && lim === 0) {
+    return { product: label, tier: "decline", levelLabel: "Not issued at this age", prob: 0,
+      reasons: [{ txt: "Age " + age + " outside issue range for " + prod.name, cls: "neg" }] };
+  }
+  var blockers = [];
+  Object.keys(client.conds).forEach(function (k) {
+    if (client.conds[k].yes && FORESTERS_NONMED_DECLINE[k]) blockers.push(CONDLABEL[k] || k);
+  });
+  var buildBlock = null, buildBorder = false;
+  if (client.inches && !isNaN(client.weight)) {
+    var row = FORESTERS_SI_BUILD[client.inches];
+    if (!row) buildBlock = "height outside non-med build chart";
+    else if (client.weight > row[1]) buildBlock = "weight " + client.weight + " over non-med max " + row[1];
+    else if (client.weight < row[0]) buildBlock = "weight " + client.weight + " under non-med min " + row[0];
+    else if (client.weight > row[1] - 10) buildBorder = true;
+  }
+  var faceOver = (!isNaN(client.face) && client.face > lim);
+
+  if (blockers.length || buildBlock || faceOver) {
+    var why = [];
+    if (faceOver) why.push({ txt: "Non-med not available — face $" + fmt(client.face) + " over non-med limit $" + fmt(lim), cls: "neg" });
+    if (buildBlock) why.push({ txt: "Non-med not available — " + buildBlock, cls: "neg" });
+    if (blockers.length) why.push({ txt: "Non-med not available — impairment: " + blockers.join(", "), cls: "neg" });
+    why.push({ txt: "→ Fully-underwritten path (exam/labs) — not scored here", cls: "" });
+    return { product: label, tier: "uw", levelLabel: "Exam required", prob: null, reasons: why };
+  }
+  // non-med eligible
+  var tob = client.tobacco && client.tobacco !== "none";
+  var cls = "Non-Med Standard · " + (tob ? "Tobacco" : "Non-Tobacco");
+  var prob = tob ? 84 : 90;
+  var reasons = [{ txt: "No non-med impairments — issues without exam up to $" + fmt(lim), cls: "pos" }];
+  if (client.conds.diabetes && client.conds.diabetes.yes) { reasons.push({ txt: "Controlled diabetes — non-med eligible (diabetes rating worksheet applies)", cls: "" }); prob -= 8; }
+  if (buildBorder) { reasons.push({ txt: "Build near non-med ceiling", cls: "" }); prob -= 6; }
+  if (tob) reasons.push({ txt: "Tobacco rate class", cls: "" });
+  return { product: label, tier: "level", levelLabel: cls, prob: Math.max(45, prob), reasons: reasons };
+}
+
+// Foresters returns ONE row per product: PlanRight (FE) + the four SI products.
+function evalForesters(client) {
+  var rows = [];
+  var pr = evalProfile(FORESTERS, client);
+  pr.product = "PlanRight · Final Expense (SI)";
+  pr.alsoUW = null;
+  rows.push(pr);
+  FORESTERS_SI_PRODUCTS.forEach(function (p) { rows.push(evalSI(p, client)); });
+  return rows;
+}
+
+// Only carriers with a real, encoded guide are shown. Others are removed until
+// their guides are added. Each carrier's evalMulti returns one row PER product.
 var CARRIERS = [
-  { name: "American Home Life (AHL)", verified: false, age: [50,85], face: [2000,35000],
-    products: [ feProd("FE", "level", "standard") ] },
-
-  { name: "Mutual of Omaha", verified: false, age: [45,85], face: [2000,40000],
-    products: [ feProd("Living Promise", "level", "standard"), feProd("Living Promise (Graded)", "graded", "lenient"), uwProd("Term"), uwProd("IULe"), uwProd("Accum UL Answers") ] },
-
-  { name: "Corebridge Financial", verified: false, age: [50,85], face: [5000,25000],
-    products: [ feProd("Simplinow Legacy Max SIWL", "level", "standard"), giProd("GIWL Whole Life"), uwProd("Max Accumulator IUL") ] },
-
-  { name: "Liberty Bankers", verified: false, age: [45,85], face: [3000,40000],
-    products: [ feProd("SI Market PermaLife Preferred", "level", "lenient"), feProd("SI Market PermaLife Standard", "graded", "lenient"), feProd("Modified Whole Life", "graded", "lenient") ] },
-
-  { name: "United Home Life", verified: false, age: [20,80], face: [5000,50000],
-    products: [ feProd("Express Issue Premier WL", "level", "strict"), feProd("Express Issue Deluxe WL", "level", "standard"), feProd("Express Issue Graded WL", "graded", "lenient"), giProd("Guaranteed Issue Whole Life"), uwProd("Provider Whole Life"), uwProd("Term") ] },
-
-  { name: "Foresters", verified: true, profile: FORESTERS, age: [50,85], face: [2000,35000],
-    products: [ feProd("PlanRight Whole Life", "level", "standard"), uwProd("Strong Foundation"), uwProd("Your Term"), uwProd("SMART UL"), uwProd("Advantage Plus II") ] },
-
-  { name: "Transamerica", verified: false, age: [45,85], face: [1000,50000],
-    products: [ feProd("Immediate Solution WL", "level", "standard"), feProd("Easy Solution WL", "graded", "lenient"), uwProd("Trendsetter Super Term"), uwProd("FFIUL") ] },
-
-  { name: "American-Amicable", verified: false, age: [50,85], face: [2500,35000],
-    products: [ feProd("Home Protector", "level", "standard"), feProd("Survivor Protector", "level", "standard"), feProd("Dignity Solutions & Family Legacy", "graded", "lenient"), feProd("Guaranteed Guardian", "gi"), uwProd("SecureLife Plus"), uwProd("Term Made Simple") ] },
-
-  { name: "Elco Mutual", verified: false, age: [45,85], face: [2000,35000],
-    products: [ feProd("FE Immediate", "level", "standard"), feProd("Life Pay WL 0-75", "graded", "lenient"), uwProd("Limited Pay WL") ] },
-
-  { name: "F&G", verified: false, age: [18,80], face: [10000,1000000],
-    products: [ uwProd("Pathsetter"), uwProd("Everlast"), uwProd("Exccudex") ] },
-
-  { name: "Kansas City Life", verified: false, age: [18,85], face: [10000,1000000],
-    products: [ uwProd("Signature Term Simplified Issue"), uwProd("IUL (All) Fully Underwritten"), uwProd("Cashback Life (UW)") ] }
+  { name: "Foresters", verified: true, evalMulti: evalForesters }
 ];
 
 /* ============================================================
@@ -1188,10 +1241,10 @@ function fmt(n) { return (n || 0).toLocaleString("en-US"); }
 
 function run() {
   var client = readClient();
-  var rows = CARRIERS.map(function (c) {
-    var r = evalCarrier(c, client);
-    r.carrier = c.name; r.verified = c.verified;
-    return r;
+  var rows = [];
+  CARRIERS.forEach(function (c) {
+    var rs = c.evalMulti ? c.evalMulti(client) : [evalCarrier(c, client)];
+    rs.forEach(function (r) { r.carrier = c.name; r.verified = c.verified; rows.push(r); });
   });
 
   // sort: approvable first (level<graded<gi<uw<decline), then by probability desc
@@ -1206,16 +1259,16 @@ function run() {
   var visible = rows.filter(function (r) { return !(hideDec && r.tier === "decline"); });
 
   // summary
-  var nLevel = rows.filter(function (r) { return r.tier === "level"; }).length;
-  var nApprov = rows.filter(function (r) { return r.tier !== "decline" && r.tier !== "uw"; }).length;
+  var nIssue = rows.filter(function (r) { return r.tier !== "decline" && r.tier !== "uw"; }).length;
+  var nExam = rows.filter(function (r) { return r.tier === "uw"; }).length;
   var who = client.name ? client.name : "This client";
   // items the engine did NOT score and the agent MUST verify by hand:
   //   free-text condition notes, med-flagged conditions (seizure/clot), unrecognized meds
   var unscored = (client.notes || []).slice();
   medList.forEach(function (m) { if (m.unknown) unscored.push(m.name + " (unrecognized med)"); });
-  $("summaryLine").innerHTML = who + ": <b>" + nApprov + "</b> carrier(s) approvable"
-    + (nLevel ? ", <b>" + nLevel + "</b> at full Level benefit" : "")
-    + ". Sorted best-first. <span style=\"color:var(--text-muted)\">Estimates — verified carriers use the real guide, others use starter rules.</span>";
+  $("summaryLine").innerHTML = who + " · Foresters: <b>" + nIssue + "</b> product(s) can issue no-exam"
+    + (nExam ? ", <b>" + nExam + "</b> need a full-underwriting exam" : "")
+    + ". <span style=\"color:var(--text-muted)\">Simplified-issue / non-medical paths are scored; fully-underwritten paths show “Exam required”.</span>";
   // LOUD, unmissable banner for anything not scored
   var warn = $("unscoredWarn");
   if (unscored.length) {
@@ -1248,11 +1301,11 @@ function run() {
       : '';
     return '<div class="res-item">'
       + '<div class="res-head">'
-      + '<span class="res-carrier">' + esc(r.carrier) + '</span>'
+      + '<span class="res-carrier">' + esc(r.product || r.carrier) + '</span>'
       + src
       + '<span class="tierbadge ' + tclass + '">' + esc(badgeText) + '</span>'
       + '</div>'
-      + '<div class="res-prod">' + (r.product && r.product !== "—" ? "Product: " + esc(r.product) : "No matching product") + '</div>'
+      + '<div class="res-prod">' + esc(r.carrier) + '</div>'
       + probHtml
       + (reasons ? '<ul class="reasons">' + reasons + '</ul>' : '')
       + alsoHtml
