@@ -165,7 +165,8 @@
     </div>
   </div>
 
-  <div class="card">
+  <button class="btn" id="addToggle" style="align-self:flex-start">+ Add carrier</button>
+  <div class="card" id="carrierCard" style="display:none">
     <h2 id="carrierFormTitle">Add a carrier</h2>
     <form id="carrierForm" class="form-grid">
       <div class="field"><label for="c-name">Carrier</label><input type="text" id="c-name" required placeholder="Foresters"></div>
@@ -176,9 +177,8 @@
       <div class="field"><label for="c-password">Password <span style="color:var(--text-muted)">(optional)</span></label>
         <div class="pw-wrap"><input type="password" id="c-password" autocomplete="new-password" placeholder=""><button type="button" class="mini" id="c-pw-toggle">Show</button></div>
       </div>
-      <div class="field"><label for="c-notes">Notes</label><input type="text" id="c-notes" class="wide" placeholder=""></div>
       <button type="submit" class="btn" id="carrierSubmit">Add carrier</button>
-      <button type="button" class="btn secondary" id="carrierCancel" style="display:none">Cancel</button>
+      <button type="button" class="btn secondary" id="carrierCancel">Cancel</button>
     </form>
     <div class="security-note">Passwords are stored in your private cloud account (only you can see them). For maximum safety you can leave the password blank and let your browser fill it — the link, IDs and username still copy in one tap.</div>
   </div>
@@ -232,7 +232,6 @@
       rows += credRow("Agent ID", c.agentId, c.id, "text");
       rows += credRow("Username", c.username, c.id, "text");
       rows += credRow("Password", c.password, c.id, "password");
-      if (c.notes) rows += credRow("Notes", c.notes, c.id, "notes");
       var openBtn = c.url ? '<a class="mini open" href="' + esc(withProto(c.url)) + '" target="_blank" rel="noopener noreferrer">Open ↗</a>' : "";
       return '<div class="carrier-card">' +
         '<div class="carrier-head"><div class="carrier-name">' + esc(c.name || "Carrier") + "</div>" +
@@ -272,19 +271,20 @@
     $("c-password").type = "password"; $("c-pw-toggle").textContent = "Show";
     $("carrierFormTitle").textContent = "Add a carrier";
     $("carrierSubmit").textContent = "Add carrier";
-    $("carrierCancel").style.display = "none";
   }
+  function showForm() { $("carrierCard").style.display = ""; $("addToggle").style.display = "none"; }
+  function hideForm() { $("carrierCard").style.display = "none"; $("addToggle").style.display = ""; }
+  $("addToggle").addEventListener("click", function () { resetForm(); showForm(); $("c-name").focus(); });
   function startEdit(id) {
     var c = state.carriers.find(function (x) { return x.id === id; });
     if (!c) return;
     editingId = id;
     $("c-name").value = c.name || ""; $("c-url").value = c.url || ""; $("c-producer").value = c.producer || "";
     $("c-agentid").value = c.agentId || ""; $("c-username").value = c.username || ""; $("c-password").value = c.password || "";
-    $("c-notes").value = c.notes || "";
     $("carrierFormTitle").textContent = "Edit — " + (c.name || "");
     $("carrierSubmit").textContent = "Save changes";
-    $("carrierCancel").style.display = "";
-    $("carrierForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    showForm();
+    $("carrierCard").scrollIntoView({ behavior: "smooth", block: "center" });
   }
   $("c-pw-toggle").addEventListener("click", function () {
     var el = $("c-password"); var show = el.type === "password";
@@ -296,13 +296,13 @@
       id: editingId || uid(),
       name: $("c-name").value.trim(), url: $("c-url").value.trim(), producer: $("c-producer").value.trim(),
       agentId: $("c-agentid").value.trim(), username: $("c-username").value.trim(),
-      password: $("c-password").value, notes: $("c-notes").value.trim()
+      password: $("c-password").value
     };
     if (editingId) { var i = state.carriers.findIndex(function (x) { return x.id === editingId; }); if (i >= 0) state.carriers[i] = rec; }
     else state.carriers.push(rec);
-    save(); resetForm(); render();
+    save(); resetForm(); hideForm(); render();
   });
-  $("carrierCancel").addEventListener("click", resetForm);
+  $("carrierCancel").addEventListener("click", function () { resetForm(); hideForm(); });
 
   /* ---------- delegated clicks ---------- */
   document.addEventListener("click", function (ev) {
