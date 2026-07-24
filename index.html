@@ -421,7 +421,7 @@
           <tr>
             <th>When</th><th>Lead type</th><th>State</th>
             <th class="num">Pickup</th><th class="num">2+ min</th><th class="num">5+ min</th>
-            <th class="num">Present.</th><th class="num">Appt</th><th class="num">Sold</th>
+            <th class="num">Appt</th><th class="num">Present.</th><th class="num">Sold</th>
             <th>Notes</th><th></th>
           </tr>
         </thead>
@@ -449,8 +449,8 @@
     { key: "pickup",       label: "Pickups" },
     { key: "conv2",        label: "Convos 2+ min" },
     { key: "conv5",        label: "Convos 5+ min" },
-    { key: "presentation", label: "Presentations" },
     { key: "appointment",  label: "Appointments set" },
+    { key: "presentation", label: "Presentations" },
     { key: "sold",         label: "Sold deals" }
   ];
 
@@ -951,8 +951,8 @@
       tr.appendChild(mark(e.pickup));
       tr.appendChild(mark(e.conv2));
       tr.appendChild(mark(e.conv5));
-      tr.appendChild(mark(e.presentation));
       tr.appendChild(mark(e.appointment));
+      tr.appendChild(mark(e.presentation));
       tr.appendChild(mark(e.sold));
       tr.appendChild(td(e.notes || ""));
       var delTd = document.createElement("td");
@@ -979,7 +979,7 @@
 
   /* ---------------- CSV export ---------------- */
   $("exportBtn").onclick = function () {
-    var header = ["Date", "Time", "Lead Type", "State", "Pickup", "Conv 2+ min", "Conv 5+ min", "Presentation", "Appointment Set", "Sold", "Notes"];
+    var header = ["Date", "Time", "Lead Type", "State", "Pickup", "Conv 2+ min", "Conv 5+ min", "Appointment Set", "Presentation", "Sold", "Notes"];
     function esc(v) {
       v = String(v == null ? "" : v);
       return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -991,7 +991,7 @@
         d.toLocaleDateString(), d.toLocaleTimeString(),
         e.leadType, e.state,
         e.pickup ? 1 : 0, e.conv2 ? 1 : 0, e.conv5 ? 1 : 0,
-        e.presentation ? 1 : 0, e.appointment ? 1 : 0, e.sold ? 1 : 0,
+        e.appointment ? 1 : 0, e.presentation ? 1 : 0, e.sold ? 1 : 0,
         e.notes || ""
       ].map(esc).join(","));
     });
