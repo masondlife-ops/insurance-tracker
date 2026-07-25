@@ -102,8 +102,13 @@
   .npn-row input { width: 180px; }
   .carriers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
   .carrier-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .carrier-card.sortable-ghost { opacity: .4; }
+  .carrier-card.sortable-chosen { border-color: var(--series-1); }
   .carrier-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
-  .carrier-name { font-size: 16px; font-weight: 650; }
+  .carrier-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .drag-handle { cursor: grab; color: var(--text-muted); font-size: 15px; line-height: 1; padding: 2px 3px; flex: none; user-select: none; touch-action: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .carrier-name { font-size: 16px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .carrier-actions { display: flex; gap: 5px; flex: none; }
   .cred { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--grid); }
   .cred:first-of-type { border-top: none; }
@@ -172,7 +177,6 @@
       <div class="field"><label for="c-name">Carrier</label><input type="text" id="c-name" required placeholder="Foresters"></div>
       <div class="field"><label for="c-url">Portal link</label><input type="text" id="c-url" class="wide" placeholder="https://…"></div>
       <div class="field"><label for="c-producer">Producer #</label><input type="text" id="c-producer" placeholder=""></div>
-      <div class="field"><label for="c-agentid">Agent ID</label><input type="text" id="c-agentid" placeholder=""></div>
       <div class="field"><label for="c-username">Username</label><input type="text" id="c-username" autocomplete="off" placeholder=""></div>
       <div class="field"><label for="c-password">Password <span style="color:var(--text-muted)">(optional)</span></label>
         <div class="pw-wrap"><input type="password" id="c-password" autocomplete="new-password" placeholder=""><button type="button" class="mini" id="c-pw-toggle">Show</button></div>
@@ -196,7 +200,15 @@
   function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
 
   function seedState() { return { npn: "", carriers: [] }; }
-  function load() { try { var raw = localStorage.getItem(STORE_KEY); if (raw) return JSON.parse(raw); } catch (e) {} return seedState(); }
+  // fold any old "Agent ID" values into Producer # (Agent ID field was removed)
+  function migrateCarriers(carriers) {
+    var changed = false;
+    (carriers || []).forEach(function (c) {
+      if (c.agentId != null) { if (!c.producer) c.producer = c.agentId; delete c.agentId; changed = true; }
+    });
+    return changed;
+  }
+  function load() { try { var raw = localStorage.getItem(STORE_KEY); if (raw) { var s = JSON.parse(raw); migrateCarriers(s.carriers); return s; } } catch (e) {} return seedState(); }
   function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); cloudScheduleSave(); }
   var state = load();
   var editingId = null;
@@ -229,18 +241,39 @@
       var rows = "";
       rows += credRow("Portal", c.url, c.id, "url");
       rows += credRow("Producer #", c.producer, c.id, "text");
-      rows += credRow("Agent ID", c.agentId, c.id, "text");
       rows += credRow("Username", c.username, c.id, "text");
       rows += credRow("Password", c.password, c.id, "password");
       var openBtn = c.url ? '<a class="mini open" href="' + esc(withProto(c.url)) + '" target="_blank" rel="noopener noreferrer">Open ↗</a>' : "";
-      return '<div class="carrier-card">' +
-        '<div class="carrier-head"><div class="carrier-name">' + esc(c.name || "Carrier") + "</div>" +
+      return '<div class="carrier-card" data-id="' + c.id + '">' +
+        '<div class="carrier-head"><div class="carrier-title"><span class="drag-handle" title="Drag to reorder">⠿</span><div class="carrier-name">' + esc(c.name || "Carrier") + "</div></div>" +
         '<div class="carrier-actions">' + openBtn +
           '<button class="btn icon" data-edit="' + c.id + '" title="Edit">&#9998;</button>' +
           '<button class="btn icon" data-del="' + c.id + '" title="Delete">&#10005;</button>' +
         "</div></div>" + rows + "</div>";
     }).join("");
     $("carriersEmpty").style.display = state.carriers.length ? "none" : "";
+    ensureSortable();
+  }
+
+  /* ---------- drag to reorder ---------- */
+  var sortable = null;
+  function ensureSortable() {
+    if (sortable || !window.Sortable) return;
+    sortable = window.Sortable.create($("carriersGrid"), {
+      animation: 150, handle: ".drag-handle",
+      onEnd: function () {
+        var ids = [].slice.call($("carriersGrid").querySelectorAll(".carrier-card")).map(function (el) { return el.getAttribute("data-id"); });
+        state.carriers.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        save(); render();
+      }
+    });
+  }
+  function loadSortable() {
+    if (window.Sortable) { ensureSortable(); return; }
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js";
+    s.onload = ensureSortable;
+    document.head.appendChild(s);
   }
 
   function credRow(label, value, cid, type) {
@@ -280,7 +313,7 @@
     if (!c) return;
     editingId = id;
     $("c-name").value = c.name || ""; $("c-url").value = c.url || ""; $("c-producer").value = c.producer || "";
-    $("c-agentid").value = c.agentId || ""; $("c-username").value = c.username || ""; $("c-password").value = c.password || "";
+    $("c-username").value = c.username || ""; $("c-password").value = c.password || "";
     $("carrierFormTitle").textContent = "Edit — " + (c.name || "");
     $("carrierSubmit").textContent = "Save changes";
     showForm();
@@ -295,7 +328,7 @@
     var rec = {
       id: editingId || uid(),
       name: $("c-name").value.trim(), url: $("c-url").value.trim(), producer: $("c-producer").value.trim(),
-      agentId: $("c-agentid").value.trim(), username: $("c-username").value.trim(),
+      username: $("c-username").value.trim(),
       password: $("c-password").value
     };
     if (editingId) { var i = state.carriers.findIndex(function (x) { return x.id === editingId; }); if (i >= 0) state.carriers[i] = rec; }
@@ -346,7 +379,7 @@
       var d = res.data && res.data.data;
       var cloudHas = d && ((d.carriers && d.carriers.length) || (d.npn && d.npn.length));
       var localHas = (state.carriers && state.carriers.length) || (state.npn && state.npn.length);
-      if (cloudHas) { state = d; if (!state.carriers) state.carriers = []; localStorage.setItem(STORE_KEY, JSON.stringify(state)); setSyncPill("Saved", "saved"); }
+      if (cloudHas) { state = d; if (!state.carriers) state.carriers = []; var chg = migrateCarriers(state.carriers); localStorage.setItem(STORE_KEY, JSON.stringify(state)); setSyncPill("Saved", "saved"); if (chg) cloudScheduleSave(); }
       else if (localHas) { cloudPush(); }
       else { setSyncPill("Saved", "saved"); }
     });
@@ -397,6 +430,7 @@
   } else {
     updateThemeBtn(); render();
   }
+  loadSortable();
 })();
 </script>
 </body>
