@@ -1,0 +1,1695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undeniable Co &mdash; Deals &amp; PNL</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+</head>
+<body>
+<!-- APP-START -->
+<script>
+  // ===== Cloud sync config =====
+  // Filled in after creating the free Supabase project (one-time setup).
+  // Leave blank to run in local-only mode (data stays in this browser).
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+  };
+
+  // Apply a saved theme choice before first paint to avoid a flash
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b;
+    --danger-soft: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-1-soft: rgba(57,135,229,0.20);
+      --good: #0ca30c;
+      --good-soft: rgba(12,163,12,0.16);
+      --danger: #e66767;
+      --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-1-soft: rgba(57,135,229,0.20);
+    --good: #0ca30c;
+    --good-soft: rgba(12,163,12,0.16);
+    --danger: #e66767;
+    --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b;
+    --danger-soft: rgba(208,59,59,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.45;
+    padding: 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .month-nav { display: flex; align-items: center; gap: 4px; }
+  .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+  /* ---------- PNL tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .tile .t-label { font-size: 12px; color: var(--text-muted); }
+  .tile .t-value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tile .t-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .tile.profit-pos { border-color: var(--good); background: var(--good-soft); }
+  .tile.profit-pos .t-value { color: var(--good); }
+  .tile.profit-neg { border-color: var(--danger); background: var(--danger-soft); }
+  .tile.profit-neg .t-value { color: var(--danger); }
+
+  /* ---------- Forms ---------- */
+  .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="date"], input[type="text"], input[type="number"],
+  input[type="email"], input[type="password"] {
+    font: inherit; font-size: 14px;
+    color: var(--text-primary);
+    background: var(--page);
+    border: 1px solid var(--baseline);
+    border-radius: 7px;
+    padding: 7px 9px;
+  }
+  input.narrow { width: 108px; }
+  input.wide { width: 170px; }
+  .check { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: 14px; color: var(--text-secondary); }
+  .check input { width: 16px; height: 16px; accent-color: var(--series-1); }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--series-1);
+    background: var(--series-1);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--baseline);
+  }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.icon {
+    background: transparent; border-color: var(--baseline); color: var(--text-secondary);
+    padding: 5px 10px; font-size: 14px; line-height: 1;
+  }
+  .theme-toggle {
+    position: relative;
+    width: 30px; height: 16px;
+    flex: none;
+    align-self: center;
+    margin-left: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--grid);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.7;
+  }
+  .theme-toggle:hover { opacity: 1; }
+  .theme-toggle .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: left .15s ease, background .15s ease;
+  }
+  .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
+  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+  .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
+  .settings-row input { width: 80px; }
+  .com-row { display: flex; align-items: center; gap: 8px; }
+  .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+  .com-note.warn { color: #c2790a; }
+  td.struck { text-decoration: line-through; color: var(--text-muted); }
+
+  /* ---------- Goal bar ---------- */
+  .goal-set { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .goal-set input { width: 110px; }
+  .goal-track { height: 14px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
+  .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+  .goal-fill.reached { background: var(--good); }
+  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .goal-meta .hit { color: var(--good); font-weight: 650; }
+
+  /* ---------- Activity funnel ---------- */
+  .funnel { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; }
+  .f-stage { flex: 1; min-width: 58px; text-align: center; padding: 4px 2px; }
+  .f-count { font-size: 22px; font-weight: 650; color: var(--series-1); font-variant-numeric: tabular-nums; }
+  .f-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .f-conv { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; white-space: nowrap; padding: 0 3px; }
+  .funnel-tiles { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .funnel-tiles .tile { flex: 1; min-width: 130px; }
+  .funnel-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
+
+  /* ---------- Monthly trend ---------- */
+  .trend { display: flex; align-items: stretch; gap: 12px; height: 150px; }
+  .tc { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+  .tc-val { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tc-plot { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 46px; }
+  .tc-up { flex: 1; display: flex; align-items: flex-end; }
+  .tc-down { flex: 1; display: flex; align-items: flex-start; border-top: 1px solid var(--baseline); }
+  .tc-bar { width: 100%; }
+  .tc-bar.pos { background: var(--series-1); border-radius: 4px 4px 0 0; }
+  .tc-bar.neg { background: var(--danger); border-radius: 0 0 4px 4px; }
+  .tc:not(.tc-cur) .tc-bar { opacity: .5; }
+  .tc-mo { font-size: 12px; color: var(--text-muted); margin-top: 6px; white-space: nowrap; }
+  .tc-cur .tc-mo { color: var(--series-1); font-weight: 650; }
+  @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
+  :root[data-theme="dark"] .com-note.warn { color: #f5b451; }
+  :root[data-theme="light"] .com-note.warn { color: #c2790a; }
+
+  /* ---------- Tables ---------- */
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 7px 10px; text-align: left; white-space: nowrap; }
+  th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
+  td { border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.notes { white-space: normal; min-width: 140px; max-width: 260px; color: var(--text-secondary); }
+  tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--baseline); }
+  .status-chip {
+    display: inline-block; font-size: 12px; font-weight: 600;
+    padding: 2px 9px; border-radius: 999px;
+    background: var(--series-1-soft); color: var(--series-1);
+  }
+  .status-chip.issued { background: var(--good-soft); color: var(--good); }
+  .status-chip.declined, .status-chip.cancelled, .status-chip.chargeback { background: var(--danger-soft); color: var(--danger); }
+  .muted { color: var(--text-muted); }
+  td.pos { color: var(--good); font-weight: 650; }
+  td.neg { color: var(--danger); font-weight: 650; }
+  .chip {
+    font: inherit; font-size: 12.5px; font-weight: 600;
+    padding: 4px 12px; border-radius: 999px;
+    border: 1px solid var(--baseline);
+    background: transparent; color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .chip.on { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-head h2 { margin-bottom: 0; }
+  .scope-toggle { display: flex; gap: 6px; }
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 10px 0; }
+  .row-actions { display: flex; gap: 6px; }
+
+  .quick-add { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 12px; }
+
+  /* ---------- Auth (cloud sync) ---------- */
+  .auth-gate {
+    position: fixed; inset: 0; z-index: 100;
+    display: none; align-items: center; justify-content: center;
+    background: var(--page); padding: 20px;
+  }
+  .auth-gate.show { display: flex; }
+  .auth-card {
+    width: 100%; max-width: 360px;
+    background: var(--surface-1); border: 1px solid var(--border);
+    border-radius: 12px; padding: 24px;
+    display: flex; flex-direction: column; gap: 14px;
+  }
+  .auth-card h2 { font-size: 18px; font-weight: 650; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .auth-card input { width: 100%; }
+  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+  .sync-pill {
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap;
+  }
+  .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
+  .sync-pill.saved { color: var(--good); border-color: var(--good); }
+  .sync-pill.err { color: var(--danger); border-color: var(--danger); }
+
+  /* ---------- Hub tab bar ---------- */
+  .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
+  .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
+  .hub-tab.is-active { background: var(--series-1); color: #fff; }
+  .hub-tab:not(.is-active):hover { color: var(--text-primary); }
+
+  /* ---------- Undeniable Co branding ---------- */
+  .brandbar { display: flex; align-items: center; gap: 18px; background: #000; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 20px; }
+  .brand-logo { height: 84px; width: auto; flex: none; display: block; }
+  .brand-copy { min-width: 0; }
+  .brand-hi { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
+  .brand-user { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: #f0f0f0; }
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .brand-user { background: linear-gradient(180deg,#ffffff 0%,#d2d2d2 45%,#8e8e8e 62%,#ededed 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+  }
+  .brand-tag { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #6f6f6f; margin-top: 5px; }
+  @media (max-width: 640px) {
+    .brandbar { gap: 12px; padding: 12px 14px; }
+    .brand-logo { height: 58px; }
+    .brand-user { font-size: 20px; }
+    .brand-tag { display: none; }
+  }
+</style>
+
+<div class="auth-gate" id="authGate">
+  <form class="auth-card" id="authForm">
+    <h2 id="authTitle">Log in</h2>
+    <p class="auth-sub">Your deals and PNL sync across all your devices.</p>
+    <div>
+      <label for="authEmail">Email</label>
+      <input type="email" id="authEmail" autocomplete="email" required>
+    </div>
+    <div>
+      <label for="authPass">Password</label>
+      <input type="password" id="authPass" autocomplete="current-password" required minlength="6">
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="btn" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch"></div>
+  </form>
+</div>
+
+<div class="wrap">
+  <div class="brandbar">
+    <img class="brand-logo" src="logo.png" alt="Undeniable Co">
+    <div class="brand-copy">
+      <div class="brand-hi">Welcome</div>
+      <div class="brand-user">SexyBeast69</div>
+      <div class="brand-tag">Built different. Proven always.</div>
+    </div>
+  </div>
+  <nav class="hub-tabs">
+    <a href="index.html" class="hub-tab">Activity</a>
+    <a href="pnl.html" class="hub-tab is-active">Deals &amp; PNL</a>
+    <a href="carriers.html" class="hub-tab">Carrier links</a>
+  </nav>
+  <header>
+    <div>
+      <h1>Deals &amp; PNL</h1>
+    <div class="sub">Deals, expenses, and profit roll up automatically by month</div>
+    </div>
+    <div class="toolbar">
+      <div class="month-nav">
+        <button class="btn icon" id="prevMonth" title="Previous month">&#9664;</button>
+        <span class="label" id="monthLabel"></span>
+        <button class="btn icon" id="nextMonth" title="Next month">&#9654;</button>
+      </div>
+      <button class="btn secondary small" id="exportCsv">Export CSV</button>
+      <button class="btn secondary small" id="importBtn">Import CSV</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" style="display:none">
+      <button class="btn secondary small" id="backupBtn">Backup</button>
+      <button class="btn secondary small" id="restoreBtn">Restore</button>
+      <input type="file" id="restoreFile" accept=".json" style="display:none">
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+      <span class="sync-pill" id="syncPill" style="display:none"></span>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+    </div>
+  </header>
+
+  <div class="tiles" id="tiles"></div>
+
+  <div class="card" id="goalCard">
+    <div class="card-head">
+      <h2>Monthly goal <span class="hint">issued AP</span></h2>
+      <div class="goal-set"><span>Goal:</span> $<input type="number" id="goalInput" min="0" step="100" placeholder="0"></div>
+    </div>
+    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
+  </div>
+
+  <div class="card" id="funnelCard"></div>
+  <div class="card" id="trendCard"></div>
+
+  <div class="card">
+    <h2 id="dealFormTitle">Add a deal</h2>
+    <form id="dealForm" class="form-grid">
+      <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
+      <div class="field"><label for="d-client">Client name</label><input type="text" id="d-client" class="wide" required placeholder="Client"></div>
+      <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
+      <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
+      <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
+      <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
+      <div class="field"><label for="d-com">Commission ($)</label><div class="com-row"><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div></div>
+      <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
+      <div class="field"><label for="d-status">Status</label>
+        <select id="d-status">
+          <option>Submitted</option>
+          <option>Pending</option>
+          <option>Issued</option>
+          <option>Declined</option>
+          <option>Cancelled</option>
+          <option>Chargeback</option>
+        </select>
+      </div>
+      <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
+      <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
+      <button type="submit" class="btn" id="dealSubmit">Add deal</button>
+      <button type="button" class="btn secondary" id="dealCancel" style="display:none">Cancel</button>
+    </form>
+    <datalist id="productList"></datalist>
+    <datalist id="carrierList"></datalist>
+    <datalist id="leadList"></datalist>
+    <div class="settings-row">
+      <span>Your contract level:</span>
+      <select id="contractLevel" style="width:auto"><option value="">Set level…</option></select>
+      <span>&mdash; auto-calculates the upfront commission (first 9 months) from the carrier's comp guide. You can always type over it.</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Deals <span class="hint" id="dealCount"></span></h2>
+    <div class="table-scroll">
+      <table id="dealsTable">
+        <thead>
+          <tr>
+            <th>Date</th><th>Client</th><th>Product</th><th>Carrier</th>
+            <th class="num">Face</th><th class="num">Monthly</th><th class="num">AP</th><th class="num">Com</th>
+            <th>Lead type</th><th>Status</th><th>In force</th><th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="dealsBody"></tbody>
+        <tfoot id="dealsFoot"></tfoot>
+      </table>
+    </div>
+    <div class="empty" id="dealsEmpty" style="display:none">No deals this month yet.</div>
+  </div>
+
+  <div class="card">
+    <h2>Expenses <span class="hint" id="expCount"></span></h2>
+    <form id="expForm" class="quick-add">
+      <div class="field"><label for="e-date">Date</label><input type="date" id="e-date" required></div>
+      <div class="field"><label for="e-item">Item</label><input type="text" id="e-item" class="wide" list="itemList" required placeholder="Goat leads"></div>
+      <div class="field"><label for="e-kind">Type</label>
+        <select id="e-kind">
+          <option value="lead">Lead purchase</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field" id="e-lead-field"><label for="e-lead">Lead type</label><input type="text" id="e-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
+      <div class="field"><label for="e-price">Price ($)</label><input type="number" id="e-price" class="narrow" min="0" step="0.01" required placeholder="0"></div>
+      <button type="submit" class="btn" id="expSubmit">Add expense</button>
+      <button type="button" class="btn secondary" id="expCancel" style="display:none">Cancel</button>
+    </form>
+    <datalist id="itemList"></datalist>
+    <div class="table-scroll">
+      <table id="expTable">
+        <thead><tr><th>Date</th><th>Item</th><th>Type</th><th class="num">Price</th><th></th></tr></thead>
+        <tbody id="expBody"></tbody>
+        <tfoot id="expFoot"></tfoot>
+      </table>
+    </div>
+    <div class="empty" id="expEmpty" style="display:none">No expenses this month yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Lead ROI</h2>
+      <div class="scope-toggle">
+        <button class="chip on" data-roi-scope="month" type="button">This month</button>
+        <button class="chip" data-roi-scope="all" type="button">All time</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Lead type</th><th class="num">Spend</th><th class="num">Deals</th><th class="num">AP</th><th class="num">Commission</th><th class="num">ROI</th></tr></thead>
+        <tbody id="roiBody"></tbody>
+        <tfoot id="roiFoot"></tfoot>
+      </table>
+    </div>
+    <div class="empty" id="roiEmpty" style="display:none">No lead purchases or deals yet — mark an expense as a lead purchase to track ROI.</div>
+  </div>
+
+  <div class="card">
+    <h2>Spend by item <span class="hint">this month</span></h2>
+    <div class="table-scroll">
+      <table><thead><tr><th>Item</th><th class="num">Buys</th><th class="num">Total</th></tr></thead>
+      <tbody id="spendBody"></tbody></table>
+    </div>
+    <div class="empty" id="spendEmpty" style="display:none">No expenses this month yet.</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var STORE_KEY = "insurance-pnl-v1";
+
+  /* ---------- state ---------- */
+
+  function seedState() {
+    return { deals: [], expenses: [] };
+  }
+
+  // expenses saved before the lead/other split get a best-guess kind,
+  // and known lead buys get tied to a matching lead type from existing deals
+  function migrate(s) {
+    (s.expenses || []).forEach(function (e) {
+      if (!e.kind) {
+        e.kind = /lead/i.test(e.item || "") ? "lead" : "other";
+        if (e.kind === "lead" && !e.lead) {
+          var stem = (e.item || "").toLowerCase().replace(/leads?/g, "").trim();
+          var match = (s.deals || []).map(function (d) { return d.lead; }).find(function (l) {
+            return l && stem && l.toLowerCase().indexOf(stem) !== -1;
+          });
+          if (match) e.lead = match;
+        }
+      }
+      if (e.lead == null) e.lead = "";
+    });
+    return s;
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORE_KEY);
+      if (raw) return migrate(JSON.parse(raw));
+    } catch (e) {}
+    return seedState();
+  }
+
+  function save() {
+    localStorage.setItem(STORE_KEY, JSON.stringify(state));
+    cloudScheduleSave();
+  }
+
+  var state = load();
+  var editingId = null;
+  save();
+
+  /* ---------- month handling ---------- */
+
+  function todayStr() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  var currentMonth = todayStr().slice(0, 7); // "YYYY-MM"
+
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function monthLabel(ym) {
+    var p = ym.split("-");
+    return MONTHS[parseInt(p[1], 10) - 1] + " " + p[0];
+  }
+  function shiftMonth(ym, delta) {
+    var p = ym.split("-");
+    var y = parseInt(p[0], 10), m = parseInt(p[1], 10) - 1 + delta;
+    y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
+    return y + "-" + String(m + 1).padStart(2, "0");
+  }
+  function inMonth(rec) { return (rec.date || "").slice(0, 7) === currentMonth; }
+
+  /* ---------- helpers ---------- */
+
+  function money(n) {
+    if (n === null || n === undefined || n === "" || isNaN(n)) return "—";
+    return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function pct(v) {
+    if (v === null || v === undefined || isNaN(v)) return "—";
+    var r = Math.round(v * 10) / 10;
+    return (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r).toLocaleString("en-US", { maximumFractionDigits: 1 }) + "%";
+  }
+  function num(v) {
+    if (v === "" || v === null || v === undefined) return null;
+    var n = parseFloat(v);
+    return isNaN(n) ? null : n;
+  }
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function byDate(a, b) { return a.date < b.date ? -1 : a.date > b.date ? 1 : 0; }
+  function $(id) { return document.getElementById(id); }
+
+  /* ---------- render ---------- */
+
+  function monthDeals() { return state.deals.filter(inMonth).sort(byDate); }
+  function monthExpenses() { return state.expenses.filter(inMonth).sort(byDate); }
+
+  function sum(arr, f) { return arr.reduce(function (t, r) { return t + (num(f(r)) || 0); }, 0); }
+  // commission that actually counts as income — a charged-back deal earns $0
+  // (it still stays in the list and in Submitted AP, just not in commission/profit/ROI)
+  function earnedCom(d) { return d.status === "Chargeback" ? 0 : (num(d.com) || 0); }
+
+  function renderTiles() {
+    var deals = monthDeals(), exps = monthExpenses();
+    var submittedAP = sum(deals, function (d) { return d.ap; });
+    var issued = deals.filter(function (d) { return d.status === "Issued"; });
+    var issuedAP = sum(issued, function (d) { return d.ap; });
+    var commission = sum(deals, earnedCom);
+    var expenses = sum(exps, function (e) { return e.price; });
+    var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
+    var profit = commission - expenses;
+    var profitClass = profit > 0 ? "profit-pos" : profit < 0 ? "profit-neg" : "";
+    var profitSign = profit > 0 ? "+" : profit < 0 ? "−" : "";
+    var expSub = exps.length + (exps.length === 1 ? " item" : " items");
+    if (leadSpend > 0) expSub += " · " + money(leadSpend) + " on leads";
+    var avgAP = deals.length ? submittedAP / deals.length : null;
+    var roi = leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null;
+    var roiClass = roi === null ? "" : roi > 0 ? "profit-pos" : roi < 0 ? "profit-neg" : "";
+
+    $("tiles").innerHTML =
+      tile("Total sales", String(deals.length), issued.length + " issued", "") +
+      tile("Submitted AP", money(submittedAP), "", "") +
+      tile("Avg AP / sale", avgAP === null ? "—" : money(avgAP), "", "") +
+      tile("Issued AP", money(issuedAP), "", "") +
+      tile("Commission", money(commission), "", "") +
+      tile("Expenses", money(expenses), expSub, "") +
+      tile("Profit", profitSign + money(Math.abs(profit)), "commission − expenses", profitClass) +
+      tile("ROI", pct(roi), roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", roiClass);
+  }
+  function tile(label, value, sub, cls) {
+    return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
+      (sub ? '<div class="t-sub">' + sub + "</div>" : "") + "</div>";
+  }
+
+  function fmtDay(dateStr) {
+    var p = dateStr.split("-");
+    return parseInt(p[1], 10) + "/" + parseInt(p[2], 10);
+  }
+
+  function renderDeals() {
+    var deals = monthDeals();
+    var body = $("dealsBody");
+    body.innerHTML = deals.map(function (d) {
+      var chipCls = (d.status || "").toLowerCase();
+      return "<tr>" +
+        "<td>" + fmtDay(d.date) + "</td>" +
+        "<td>" + esc(d.client) + "</td>" +
+        "<td>" + esc(d.policy) + "</td>" +
+        "<td>" + esc(d.carrier) + "</td>" +
+        '<td class="num">' + money(d.face) + "</td>" +
+        '<td class="num">' + money(d.monthly) + "</td>" +
+        '<td class="num">' + money(d.ap) + "</td>" +
+        '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
+        "<td>" + esc(d.lead) + "</td>" +
+        '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span></td>" +
+        "<td>" + (d.inforce ? "Y" : "—") + "</td>" +
+        '<td class="notes">' + esc(d.notes) + "</td>" +
+        '<td><div class="row-actions">' +
+          '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
+          '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
+        "</div></td></tr>";
+    }).join("");
+
+    var foot = $("dealsFoot");
+    if (deals.length) {
+      foot.innerHTML = "<tr><td colspan=\"4\">Total</td>" +
+        '<td class="num">' + money(sum(deals, function (d) { return d.face; })) + "</td>" +
+        '<td class="num">' + money(sum(deals, function (d) { return d.monthly; })) + "</td>" +
+        '<td class="num">' + money(sum(deals, function (d) { return d.ap; })) + "</td>" +
+        '<td class="num">' + money(sum(deals, earnedCom)) + "</td>" +
+        '<td colspan="5"></td></tr>';
+    } else foot.innerHTML = "";
+
+    $("dealsEmpty").style.display = deals.length ? "none" : "";
+    $("dealCount").textContent = deals.length ? "(" + deals.length + ")" : "";
+  }
+
+  function renderExpenses() {
+    var exps = monthExpenses();
+    $("expBody").innerHTML = exps.map(function (e) {
+      var typeCell = e.kind === "lead"
+        ? '<span class="status-chip">Lead' + (e.lead ? " · " + esc(e.lead) : "") + "</span>"
+        : '<span class="muted">Other</span>';
+      return "<tr><td>" + fmtDay(e.date) + "</td><td>" + esc(e.item) + "</td>" +
+        "<td>" + typeCell + "</td>" +
+        '<td class="num">' + money(e.price) + "</td>" +
+        '<td><div class="row-actions">' +
+          '<button class="btn icon" data-edit-exp="' + e.id + '" title="Edit">&#9998;</button>' +
+          '<button class="btn icon" data-del-exp="' + e.id + '" title="Delete">&#10005;</button>' +
+        "</div></td></tr>";
+    }).join("");
+    $("expFoot").innerHTML = exps.length
+      ? '<tr><td colspan="3">Total</td><td class="num">' + money(sum(exps, function (e) { return e.price; })) + "</td><td></td></tr>"
+      : "";
+    $("expEmpty").style.display = exps.length ? "none" : "";
+    $("expCount").textContent = exps.length ? "(" + exps.length + ")" : "";
+  }
+
+  var roiScope = "month";
+
+  function roiCell(com, spend) {
+    if (!(spend > 0)) return '<td class="num muted">—</td>';
+    var v = (com - spend) / spend * 100;
+    var cls = v > 0 ? "pos" : v < 0 ? "neg" : "";
+    return '<td class="num ' + cls + '">' + pct(v) + "</td>";
+  }
+
+  function renderROI() {
+    var deals = roiScope === "month" ? monthDeals() : state.deals.slice();
+    var leadExps = (roiScope === "month" ? monthExpenses() : state.expenses.slice())
+      .filter(function (e) { return e.kind === "lead"; });
+
+    var rows = {};
+    function row(k) { return rows[k] = rows[k] || { spend: 0, n: 0, ap: 0, com: 0 }; }
+    leadExps.forEach(function (e) { row(e.lead || "(unassigned)").spend += num(e.price) || 0; });
+    deals.forEach(function (d) {
+      var r = row(d.lead || "(unassigned)");
+      r.n++; r.ap += num(d.ap) || 0; r.com += earnedCom(d);
+    });
+
+    var keys = Object.keys(rows).sort(function (a, b) {
+      return (rows[b].com - rows[b].spend) - (rows[a].com - rows[a].spend);
+    });
+    $("roiBody").innerHTML = keys.map(function (k) {
+      var r = rows[k];
+      return "<tr><td>" + esc(k) + '</td><td class="num">' + money(r.spend) +
+        '</td><td class="num">' + r.n + '</td><td class="num">' + money(r.ap) +
+        '</td><td class="num">' + money(r.com) + "</td>" + roiCell(r.com, r.spend) + "</tr>";
+    }).join("");
+
+    if (keys.length) {
+      var t = { spend: 0, n: 0, ap: 0, com: 0 };
+      keys.forEach(function (k) {
+        var r = rows[k];
+        t.spend += r.spend; t.n += r.n; t.ap += r.ap; t.com += r.com;
+      });
+      $("roiFoot").innerHTML = "<tr><td>Total</td>" +
+        '<td class="num">' + money(t.spend) + '</td><td class="num">' + t.n +
+        '</td><td class="num">' + money(t.ap) + '</td><td class="num">' + money(t.com) + "</td>" +
+        roiCell(t.com, t.spend) + "</tr>";
+    } else {
+      $("roiFoot").innerHTML = "";
+    }
+    $("roiEmpty").style.display = keys.length ? "none" : "";
+  }
+
+  function renderSpend() {
+    var exps = monthExpenses();
+    var byItem = {};
+    exps.forEach(function (e) {
+      var k = e.item || "(none)";
+      byItem[k] = byItem[k] || { n: 0, total: 0 };
+      byItem[k].n++; byItem[k].total += num(e.price) || 0;
+    });
+    var itemKeys = Object.keys(byItem).sort(function (a, b) { return byItem[b].total - byItem[a].total; });
+    $("spendBody").innerHTML = itemKeys.map(function (k) {
+      var r = byItem[k];
+      return "<tr><td>" + esc(k) + '</td><td class="num">' + r.n + '</td><td class="num">' + money(r.total) + "</td></tr>";
+    }).join("");
+    $("spendEmpty").style.display = itemKeys.length ? "none" : "";
+  }
+
+  function renderDatalists() {
+    updateProductList();
+    fillList("carrierList", [], Object.keys(COMP_CARRIERS));
+    fillList("leadList", state.deals.map(function (d) { return d.lead; }).concat(state.expenses.map(function (e) { return e.lead; })), ["Goat aged $3", "Unknown", "Referral"]);
+    fillList("itemList", state.expenses.map(function (e) { return e.item; }), ["Goat leads", "Ringy"]);
+  }
+  function fillList(id, values, seeds) {
+    var seen = {};
+    var all = seeds.concat(values).filter(function (v) {
+      if (!v || seen[v]) return false;
+      seen[v] = true; return true;
+    });
+    $(id).innerHTML = all.map(function (v) { return '<option value="' + esc(v) + '">'; }).join("");
+  }
+
+  function render() {
+    $("monthLabel").textContent = monthLabel(currentMonth);
+    renderTiles();
+    renderDeals();
+    renderExpenses();
+    renderROI();
+    renderSpend();
+    renderDatalists();
+    refreshContractLevel();
+    renderGoal();
+    renderFunnel();
+    renderTrend();
+  }
+
+  /* ---------- month analytics: goal, funnel, trend ---------- */
+
+  var activityBlob = null; // {entries, dials} pulled from the Activity tracker's cloud row
+
+  function dealsInMonth(ym) { return state.deals.filter(function (d) { return (d.date || "").slice(0, 7) === ym; }); }
+  function expensesInMonth(ym) { return state.expenses.filter(function (e) { return (e.date || "").slice(0, 7) === ym; }); }
+  function monthIssuedAP(ym) { return sum(dealsInMonth(ym).filter(function (d) { return d.status === "Issued"; }), function (d) { return d.ap; }); }
+  function monthProfit(ym) {
+    return sum(dealsInMonth(ym), earnedCom) - sum(expensesInMonth(ym), function (e) { return e.price; });
+  }
+  function moneyK(n) {
+    var a = Math.abs(n), s;
+    if (a >= 1000) s = "$" + (a / 1000).toFixed(a >= 10000 ? 0 : 1) + "k";
+    else s = "$" + Math.round(a);
+    return (n < 0 ? "−" : "") + s;
+  }
+  var SHORT_MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  function shortMonth(ym) { var p = ym.split("-"); return SHORT_MO[parseInt(p[1], 10) - 1] + " " + p[0].slice(2); }
+
+  /* goal (issued AP, per-month target) */
+  function updateGoalBar() {
+    var issued = monthIssuedAP(currentMonth);
+    var goals = (state.settings && state.settings.goals) || {};
+    var goal = num(goals[currentMonth]);
+    var fill = $("goalFill"), now = $("goalNow"), rem = $("goalRemain");
+    if (goal && goal > 0) {
+      var pv = issued / goal * 100;
+      fill.style.width = Math.min(100, pv).toFixed(1) + "%";
+      fill.className = "goal-fill" + (issued >= goal ? " reached" : "");
+      now.textContent = money(issued) + " of " + money(goal);
+      rem.innerHTML = issued >= goal
+        ? '<span class="hit">Goal hit — ' + Math.round(pv) + "%</span>"
+        : (Math.round(pv) + "% · " + money(goal - issued) + " to go");
+    } else {
+      fill.style.width = "0"; fill.className = "goal-fill";
+      now.textContent = money(issued) + " issued";
+      rem.textContent = "Set a monthly goal →";
+    }
+  }
+  function renderGoal() {
+    var goals = (state.settings && state.settings.goals) || {};
+    var goal = goals[currentMonth];
+    $("goalInput").value = (goal == null ? "" : goal);
+    updateGoalBar();
+  }
+  $("goalInput").addEventListener("input", function () {
+    state.settings = state.settings || {};
+    state.settings.goals = state.settings.goals || {};
+    var v = num(this.value);
+    if (v == null) delete state.settings.goals[currentMonth]; else state.settings.goals[currentMonth] = v;
+    save();
+    updateGoalBar();
+  });
+
+  /* funnel (activity → deals → dollars) */
+  function activityMonth(ym) {
+    var b = activityBlob || {};
+    var dm = b.dials || {};
+    var dials = 0;
+    Object.keys(dm).forEach(function (k) { if (String(k).slice(0, 7) === ym) dials += (+dm[k] || 0); });
+    var ents = (b.entries || []).filter(function (e) {
+      var d = new Date(e.ts);
+      return (d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")) === ym;
+    });
+    var c = function (f) { return ents.filter(function (e) { return e[f]; }).length; };
+    return { dials: dials, pickups: c("pickup"), convos: c("conv2"), presentations: c("presentation"),
+             hasData: (dials > 0 || ents.length > 0) };
+  }
+  function renderFunnel() {
+    var a = activityMonth(currentMonth);
+    var deals = monthDeals();
+    var dealCount = deals.length;
+    var commission = sum(deals, earnedCom);
+    var leadSpend = sum(expensesInMonth(currentMonth).filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
+    var stages = [
+      { n: "Dials", v: a.dials }, { n: "Pickups", v: a.pickups }, { n: "Convos", v: a.convos },
+      { n: "Presentations", v: a.presentations }, { n: "Deals", v: dealCount }
+    ];
+    var html = '<div class="card-head"><h2>Activity → deals → dollars <span class="hint">this month</span></h2></div><div class="funnel">';
+    stages.forEach(function (s, i) {
+      html += '<div class="f-stage"><div class="f-count">' + s.v + '</div><div class="f-name">' + s.n + "</div></div>";
+      if (i < stages.length - 1) {
+        var prev = s.v, next = stages[i + 1].v;
+        html += '<div class="f-conv">→ ' + (prev > 0 ? Math.round(next / prev * 100) + "%" : "—") + "</div>";
+      }
+    });
+    html += "</div>";
+    var costPerSale = dealCount > 0 ? leadSpend / dealCount : null;
+    var revPerDial = a.dials > 0 ? commission / a.dials : null;
+    var closeRate = a.presentations > 0 ? Math.round(dealCount / a.presentations * 100) + "%" : "—";
+    html += '<div class="funnel-tiles">'
+      + tile("Cost per sale", costPerSale == null ? "—" : money(costPerSale), leadSpend > 0 ? money(leadSpend) + " in leads" : "", "")
+      + tile("Revenue per dial", revPerDial == null ? "—" : money(revPerDial), commission > 0 ? money(commission) + " commission" : "", "")
+      + tile("Presentation → deal", closeRate, a.presentations > 0 ? dealCount + " of " + a.presentations : "", "")
+      + "</div>";
+    if (!a.hasData) html += '<div class="funnel-note">No call activity logged this month yet — log calls on the Activity tab and they\'ll flow in here.</div>';
+    $("funnelCard").innerHTML = html;
+  }
+
+  /* monthly profit trend (last 6 months, zero-baseline) */
+  function renderTrend() {
+    var months = [];
+    for (var i = 5; i >= 0; i--) months.push(shiftMonth(currentMonth, -i));
+    var profits = months.map(monthProfit);
+    var maxMag = Math.max.apply(null, profits.map(function (p) { return Math.abs(p); }));
+    if (!(maxMag > 0)) maxMag = 1;
+    var html = '<div class="card-head"><h2>Monthly profit trend <span class="hint">last 6 months</span></h2></div><div class="trend">';
+    months.forEach(function (ym, idx) {
+      var p = profits[idx], cur = ym === currentMonth;
+      var upH = p > 0 ? (p / maxMag * 100) : 0, dnH = p < 0 ? (Math.abs(p) / maxMag * 100) : 0;
+      html += '<div class="tc' + (cur ? " tc-cur" : "") + '"><div class="tc-val">' + moneyK(p) + "</div>"
+        + '<div class="tc-plot"><div class="tc-up"><div class="tc-bar pos" style="height:' + upH.toFixed(1) + '%"></div></div>'
+        + '<div class="tc-down"><div class="tc-bar neg" style="height:' + dnH.toFixed(1) + '%"></div></div></div>'
+        + '<div class="tc-mo">' + shortMonth(ym) + "</div></div>";
+    });
+    html += "</div>";
+    $("trendCard").innerHTML = html;
+  }
+
+  /* ---------- commission comp guide (FFG Carrier Comp Guide, rev 2/9/2026) ---------- */
+  // Row order aligns with COMP_LEVELS (145 -> 80). Values are comp % per contract level.
+  var COMP_LEVELS = [145,140,135,130,125,120,115,110,105,100,95,90,85,80];
+  var COMP_CARRIERS = {
+    "United Home Life": { products:{
+      "Express Issue Premier WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Express Issue Deluxe WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Express Issue Graded WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Guaranteed Issue Whole Life":[85,80,75,70,65,60,55,50,45,40,35,30,25,25],
+      "Provider Whole Life":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Term":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Accidental":[110,105,100,95,90,85,80,75,70,65,60,55,50,45]
+    }},
+    "American Home Life (AHL)": { products:{
+      "FE":[135,130,125,120,115,110,105,100,90,85,80,75,70,65]  // verified vs PDF page 2 (2/9/2026); 100->90 jump at level 105 is correct
+    }},
+    "Elco Mutual": { products:{
+      "FE Immediate":[125,120,120,115,115,110,110,105,105,100,100,95,95,90],
+      "Life Pay WL 0-75":[110,105,105,100,100,95,95,90,90,85,85,80,80,75],
+      "Limited Pay WL":[90,85,85,80,80,75,75,70,70,65,65,60,60,55]
+    }},
+    "Liberty Bankers": { products:{
+      "SI Market PermaLife Preferred":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "SI Market PermaLife Standard":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
+      "Modified Whole Life":[88,87.5,85,80,77.5,75,70,67.5,65,62.5,60,55,50,47.5],
+      "Flex 4 Life Paid Up 100":[117,115,110,105,100,95,90,85,80,75,70,65,60,55]
+    }},
+    "F&G": { products:{
+      "Pathsetter":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Everlast":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Exccudex":[135,130,125,120,115,110,105,100,95,90,85,80,75,70]
+    }},
+    "Kansas City Life": { products:{
+      "Signature Term Simplified Issue":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "IUL (All) Fully Underwritten":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Signature Term":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Cashback Life (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Level 30 A (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Signature Term 30 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
+      "Longevity Term 85 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55]
+    }},
+    "Foresters": { plus:true, products:{
+      "Strong Foundation":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
+      "Your Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "SmartUL":[115,110,105,100,95,90,87.5,85,82.5,80,77.5,75,72.5,70],
+      "Accidental Death Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Advantage Plus":[110,105,100,95,90,85,80,75,70,65,60,57.5,55,52.5],
+      "Planright":{ r:[135,130,125,120,115,110,105,100,95,90,85,80,75,70], noPlus:true }
+    }},
+    "Corebridge Financial": { products:{
+      "GIWL Whole Life":[90,80,75,70,65,60,55,50,45,45,45,45,45,45],
+      "Simplinow Legacy Max SIWL":[127,122,117,112,107,102,97,92,87,82,77,72,67,62],
+      "Max Accumulator IUL":[110,105,100,95,90,85,80,75,70,65,60,55,50,50]
+    }},
+    "Mutual of Omaha": { products:{
+      "IULe":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Living Promise":[125,120,115,110,105,100,95,90,86,82,78,74,70,65],
+      "Term":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
+      "GA Advantage":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
+      "Childrens WL":[107,105,102,100,97,95,92,90,85,80,75,70,65,60],
+      "Accum UL Answers":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
+      "Income Advantage and Life UL":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
+      "Critical Advantage":[102,99,96,92,89,85,81,77,73,69,65,61,57,53]
+    }},
+    "American-Amicable": { products:{
+      "Express UL":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
+      "Home Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "OBA":[105,100,95,90,85,80,75,70,65,60,55,50,45,40],
+      "SecureLife Plus":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Security Protector":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
+      "Survivor Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
+      "Term Made Simple":[100,95,90,85,80,75,70,65,60,55,50,45,40,40],
+      "Dignity Solutions & Family Legacy":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
+      "Express Term":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
+      "Bonusmaster":[5.5,5.25,5,4.75,4.5,4.25,4,4,3.5,3.5,3,2,0,0],
+      "Guaranteed Guardian":[80,75,75,70,65,60,55,50,45,40,35,30,0,0]
+    }},
+    "Transamerica": { products:{
+      "Trendsetter Super Term":[105,102,100,90,85,80,75,73,70,67,65,63,60,57],
+      "Trendsetter LB Term":[115,110,105,100,90,85,80,75,70,65,60,55,50,45],
+      "Lifetime WL":[142,140,135,130,120,115,110,105,100,95,90,85,80,75],
+      "Immediate Solution WL":[125,122,120,115,105,100,95,90,85,80,75,70,65,63],
+      "10 Pay Solution WL":[107,105,102,100,90,85,80,75,70,65,63,60,57,53],
+      "Easy Solution WL":[78,75,70,65,60,55,50,45,40,38,35,33,30,27],
+      "Express Solution":[140,137,135,130,120,115,110,105,100,95,90,85,80,75],
+      "FFIUL":[117,110,107,105,100,95,90,85,80,75,70,65,60,55]
+    }}
+  };
+
+  function normKey(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
+  function findCarrierKey(carrier) {
+    var n = normKey(carrier);
+    if (!n) return null;
+    var keys = Object.keys(COMP_CARRIERS);
+    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
+    return null;
+  }
+  function findProductKey(carrierObj, product) {
+    var n = normKey(product);
+    if (!n) return null;
+    var keys = Object.keys(carrierObj.products);
+    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
+    return null;
+  }
+  // returns { rate, base, bonus, bonusIncluded, verify } or null
+  function compLookup(carrier, product, level) {
+    if (!carrier || !product || level == null || level === "") return null;
+    var ckey = findCarrierKey(carrier);
+    if (!ckey) return null;
+    var c = COMP_CARRIERS[ckey];
+    var pkey = findProductKey(c, product);
+    if (!pkey) return null;
+    var li = COMP_LEVELS.indexOf(parseInt(level, 10));
+    if (li < 0) return null;
+    var pv = c.products[pkey];                       // array of rates, or { r:[...], noPlus:true }
+    var rates = Array.isArray(pv) ? pv : pv.r;
+    var noPlus = !Array.isArray(pv) && !!pv.noPlus;  // product opts out of its carrier's +5
+    var base = rates[li];
+    var bonus = (c.plus && !c.bonusIncluded && !noPlus) ? 5 : 0;
+    return { rate: base + bonus, base: base, bonus: bonus, bonusIncluded: !!c.bonusIncluded, verify: !!c.verify };
+  }
+
+  // settings (lazy; persists via save() and cloud sync)
+  function getSetting(k) { return (state.settings || {})[k]; }
+  function setSetting(k, v) { state.settings = state.settings || {}; state.settings[k] = v; save(); }
+
+  function updateProductList() {
+    var ckey = findCarrierKey($("d-carrier").value);
+    if (ckey) {
+      fillList("productList", Object.keys(COMP_CARRIERS[ckey].products), []);
+    } else {
+      fillList("productList", state.deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE"]);
+    }
+  }
+
+  // auto-fill commission from the comp guide (upfront = AP × comp% × 9/12);
+  // never clobbers a commission the user typed (comAutoFilled tracks that)
+  var comAutoFilled = false;
+  function recalcCommission() {
+    var note = $("comNote");
+    var info = compLookup($("d-carrier").value, $("d-policy").value, getSetting("contractLevel"));
+    if (!info) { if (note) { note.textContent = ""; note.className = "com-note"; } return; }
+    var ap = num($("d-ap").value);
+    var comEl = $("d-com");
+    if (ap != null && (comEl.value === "" || comAutoFilled)) {
+      comEl.value = (ap * info.rate / 100 * 9 / 12).toFixed(2);
+      comAutoFilled = true;
+    }
+    if (note) {
+      note.textContent = "auto · " + info.rate + "% × 9 mo"
+        + (info.bonus ? " (incl +5%)" : "")
+        + (info.verify ? "  ⚠ verify AHL" : "");
+      note.className = "com-note" + (info.verify ? " warn" : "");
+    }
+  }
+
+  function refreshContractLevel() {
+    var sel = $("contractLevel");
+    if (!sel) return;
+    var saved = getSetting("contractLevel");
+    sel.value = (saved == null ? "" : String(saved));
+  }
+
+  (function initContractLevel() {
+    var sel = $("contractLevel");
+    COMP_LEVELS.forEach(function (l) {
+      var o = document.createElement("option"); o.value = l; o.textContent = l; sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () {
+      setSetting("contractLevel", this.value);
+      recalcCommission();
+    });
+  })();
+
+  /* ---------- deal form ---------- */
+
+  function defaultDateForMonth() {
+    var t = todayStr();
+    return t.slice(0, 7) === currentMonth ? t : currentMonth + "-01";
+  }
+
+  function resetDealForm() {
+    editingId = null;
+    apAutoFilled = false;
+    comAutoFilled = false;
+    $("dealForm").reset();
+    $("d-date").value = defaultDateForMonth();
+    $("dealFormTitle").textContent = "Add a deal";
+    $("dealSubmit").textContent = "Add deal";
+    $("dealCancel").style.display = "none";
+    updateProductList();
+    recalcCommission();
+  }
+
+  function startEdit(id) {
+    var d = state.deals.find(function (x) { return x.id === id; });
+    if (!d) return;
+    editingId = id;
+    apAutoFilled = false;
+    comAutoFilled = false;
+    $("d-date").value = d.date;
+    $("d-client").value = d.client || "";
+    $("d-policy").value = d.policy || "";
+    $("d-carrier").value = d.carrier || "";
+    $("d-face").value = d.face != null ? d.face : "";
+    $("d-monthly").value = d.monthly != null ? d.monthly : "";
+    $("d-ap").value = d.ap != null ? d.ap : "";
+    $("d-com").value = d.com != null ? d.com : "";
+    $("d-lead").value = d.lead || "";
+    $("d-status").value = d.status || "Submitted";
+    $("d-inforce").checked = !!d.inforce;
+    $("d-notes").value = d.notes || "";
+    $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
+    $("dealSubmit").textContent = "Save changes";
+    $("dealCancel").style.display = "";
+    updateProductList();
+    recalcCommission();
+    $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  $("dealForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var rec = {
+      id: editingId || uid(),
+      date: $("d-date").value,
+      client: $("d-client").value.trim(),
+      policy: $("d-policy").value.trim(),
+      carrier: $("d-carrier").value.trim(),
+      face: num($("d-face").value),
+      monthly: num($("d-monthly").value),
+      ap: num($("d-ap").value),
+      com: num($("d-com").value),
+      lead: $("d-lead").value.trim(),
+      status: $("d-status").value,
+      inforce: $("d-inforce").checked,
+      notes: $("d-notes").value.trim()
+    };
+    if (editingId) {
+      var i = state.deals.findIndex(function (x) { return x.id === editingId; });
+      if (i >= 0) state.deals[i] = rec;
+    } else {
+      state.deals.push(rec);
+    }
+    save();
+    currentMonth = rec.date.slice(0, 7);
+    resetDealForm();
+    render();
+  });
+
+  $("dealCancel").addEventListener("click", function () { resetDealForm(); });
+
+  // auto-fill AP from monthly premium (AP = monthly × 12), then auto-calc commission
+  // from the comp guide; neither ever overwrites a value the user typed themselves
+  var apAutoFilled = false;
+  $("d-monthly").addEventListener("input", function () {
+    var m = num(this.value);
+    var apEl = $("d-ap");
+    if (m != null && (apEl.value === "" || apAutoFilled)) {
+      apEl.value = (m * 12).toFixed(2);
+      apAutoFilled = true;
+    }
+    recalcCommission();
+  });
+  $("d-ap").addEventListener("input", function () { apAutoFilled = false; recalcCommission(); });
+  $("d-com").addEventListener("input", function () { comAutoFilled = false; });
+  $("d-carrier").addEventListener("input", function () { updateProductList(); recalcCommission(); });
+  $("d-policy").addEventListener("input", recalcCommission);
+
+  /* ---------- expense form ---------- */
+
+  var editingExpId = null;
+
+  function syncLeadField() {
+    $("e-lead-field").style.display = $("e-kind").value === "lead" ? "" : "none";
+  }
+  $("e-kind").addEventListener("change", syncLeadField);
+
+  function resetExpForm() {
+    editingExpId = null;
+    $("expForm").reset();
+    $("e-date").value = defaultDateForMonth();
+    syncLeadField();
+    $("expSubmit").textContent = "Add expense";
+    $("expCancel").style.display = "none";
+  }
+
+  function startEditExp(id) {
+    var e = state.expenses.find(function (x) { return x.id === id; });
+    if (!e) return;
+    editingExpId = id;
+    $("e-date").value = e.date;
+    $("e-item").value = e.item || "";
+    $("e-kind").value = e.kind === "lead" ? "lead" : "other";
+    $("e-lead").value = e.lead || "";
+    $("e-price").value = e.price != null ? e.price : "";
+    syncLeadField();
+    $("expSubmit").textContent = "Save changes";
+    $("expCancel").style.display = "";
+    $("expForm").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  $("expCancel").addEventListener("click", function () { resetExpForm(); });
+
+  $("expForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var kind = $("e-kind").value;
+    var rec = {
+      id: editingExpId || uid(),
+      date: $("e-date").value,
+      item: $("e-item").value.trim(),
+      kind: kind,
+      lead: kind === "lead" ? $("e-lead").value.trim() : "",
+      price: num($("e-price").value)
+    };
+    if (editingExpId) {
+      var i = state.expenses.findIndex(function (x) { return x.id === editingExpId; });
+      if (i >= 0) state.expenses[i] = rec;
+    } else {
+      state.expenses.push(rec);
+    }
+    save();
+    currentMonth = rec.date.slice(0, 7);
+    resetExpForm();
+    render();
+  });
+
+  /* ---------- table actions (event delegation) ---------- */
+
+  document.addEventListener("click", function (ev) {
+    var btn = ev.target.closest("button");
+    if (!btn) return;
+    if (btn.dataset.edit) startEdit(btn.dataset.edit);
+    if (btn.dataset.delDeal) {
+      var d = state.deals.find(function (x) { return x.id === btn.dataset.delDeal; });
+      if (d && confirm("Delete deal for " + (d.client || "this client") + "?")) {
+        state.deals = state.deals.filter(function (x) { return x.id !== btn.dataset.delDeal; });
+        if (editingId === btn.dataset.delDeal) resetDealForm();
+        save(); render();
+      }
+    }
+    if (btn.dataset.editExp) startEditExp(btn.dataset.editExp);
+    if (btn.dataset.delExp) {
+      state.expenses = state.expenses.filter(function (x) { return x.id !== btn.dataset.delExp; });
+      if (editingExpId === btn.dataset.delExp) resetExpForm();
+      save(); render();
+    }
+    if (btn.dataset.roiScope) {
+      roiScope = btn.dataset.roiScope;
+      document.querySelectorAll("[data-roi-scope]").forEach(function (b) {
+        b.classList.toggle("on", b.dataset.roiScope === roiScope);
+      });
+      renderROI();
+    }
+  });
+
+  /* ---------- month nav ---------- */
+
+  $("prevMonth").addEventListener("click", function () {
+    currentMonth = shiftMonth(currentMonth, -1);
+    $("d-date").value = defaultDateForMonth();
+    $("e-date").value = defaultDateForMonth();
+    render();
+  });
+  $("nextMonth").addEventListener("click", function () {
+    currentMonth = shiftMonth(currentMonth, 1);
+    $("d-date").value = defaultDateForMonth();
+    $("e-date").value = defaultDateForMonth();
+    render();
+  });
+
+  /* ---------- export / backup / restore ---------- */
+
+  function csvCell(v) {
+    var s = String(v == null ? "" : v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function download(name, content, type) {
+    var blob = new Blob([content], { type: type });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $("exportCsv").addEventListener("click", function () {
+    var deals = monthDeals(), exps = monthExpenses();
+    var rows = [];
+    rows.push(["DEALS — " + monthLabel(currentMonth)]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","In force","Notes"]);
+    deals.forEach(function (d) {
+      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.inforce ? "Y" : "N", d.notes]);
+    });
+    rows.push([]);
+    rows.push(["EXPENSES"]);
+    rows.push(["Date","Item","Type","Lead type","Price"]);
+    exps.forEach(function (e) { rows.push([e.date, e.item, e.kind === "lead" ? "Lead" : "Other", e.lead, e.price]); });
+    rows.push([]);
+    var commission = sum(deals, earnedCom);
+    var expenses = sum(exps, function (e) { return e.price; });
+    var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
+    rows.push(["PNL"]);
+    rows.push(["Total sales","Submitted AP","Avg AP per sale","Issued AP","Commission","Expenses","Lead spend","Profit","ROI %"]);
+    var submittedAP = sum(deals, function (d) { return d.ap; });
+    rows.push([
+      deals.length,
+      submittedAP,
+      deals.length ? (submittedAP / deals.length).toFixed(2) : "",
+      sum(deals.filter(function (d) { return d.status === "Issued"; }), function (d) { return d.ap; }),
+      commission, expenses, leadSpend, commission - expenses,
+      leadSpend > 0 ? ((commission - leadSpend) / leadSpend * 100).toFixed(1) : ""
+    ]);
+    var csv = rows.map(function (r) { return r.map(csvCell).join(","); }).join("\n");
+    download("pnl-" + currentMonth + ".csv", csv, "text/csv");
+  });
+
+  /* ---------- CSV import ---------- */
+
+  function parseCSV(text) {
+    var rows = [], row = [], cur = "", inQ = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (inQ) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false;
+        } else cur += c;
+      } else if (c === '"') inQ = true;
+      else if (c === ",") { row.push(cur); cur = ""; }
+      else if (c === "\n" || c === "\r") {
+        if (c === "\r" && text[i + 1] === "\n") i++;
+        row.push(cur); rows.push(row); row = []; cur = "";
+      } else cur += c;
+    }
+    if (cur !== "" || row.length) { row.push(cur); rows.push(row); }
+    return rows;
+  }
+
+  function pad2(n) { return String(n).padStart(2, "0"); }
+  function normDate(s) {
+    s = String(s == null ? "" : s).trim();
+    var m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (m) return m[1] + "-" + pad2(m[2]) + "-" + pad2(m[3]);
+    m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+    if (m) return (m[3].length === 2 ? "20" + m[3] : m[3]) + "-" + pad2(m[1]) + "-" + pad2(m[2]);
+    return null;
+  }
+  function moneyNum(s) {
+    if (s == null || String(s).trim() === "") return null;
+    var n = parseFloat(String(s).replace(/[$,\s]/g, ""));
+    return isNaN(n) ? null : n;
+  }
+  function headerIndex(lower, names) {
+    for (var i = 0; i < lower.length; i++) {
+      if (names.indexOf(lower[i]) !== -1) return i;
+    }
+    return -1;
+  }
+
+  $("importBtn").addEventListener("click", function () { $("importFile").click(); });
+  $("importFile").addEventListener("change", function () {
+    var file = this.files[0];
+    this.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var rows = parseCSV(String(reader.result));
+      var addedDeals = 0, addedExps = 0, dupes = 0, lastDate = null;
+      var mode = null, cols = null;
+      var dealKeys = {}, expKeys = {};
+      state.deals.forEach(function (d) {
+        dealKeys[d.date + "|" + (d.client || "").toLowerCase() + "|" + (d.ap == null ? "" : d.ap)] = 1;
+      });
+      state.expenses.forEach(function (e) {
+        expKeys[e.date + "|" + (e.item || "").toLowerCase() + "|" + (e.price == null ? "" : e.price)] = 1;
+      });
+
+      rows.forEach(function (r) {
+        var joined = r.join(" ").trim();
+        if (!joined) return;
+        var lower = r.map(function (c) { return c.trim().toLowerCase(); });
+        if (headerIndex(lower, ["date"]) !== -1 && headerIndex(lower, ["client", "client name", "name"]) !== -1) {
+          mode = "deals";
+          cols = {
+            date: headerIndex(lower, ["date"]),
+            client: headerIndex(lower, ["client", "client name", "name"]),
+            policy: headerIndex(lower, ["product", "policy", "policy type"]),
+            carrier: headerIndex(lower, ["carrier"]),
+            face: headerIndex(lower, ["face", "face ($)", "face $"]),
+            monthly: headerIndex(lower, ["monthly", "monthly ($)", "monthly $"]),
+            ap: headerIndex(lower, ["ap", "ap ($)", "ap $", "annual premium"]),
+            com: headerIndex(lower, ["commission", "com", "com ($)", "commission ($)"]),
+            lead: headerIndex(lower, ["lead type", "lead"]),
+            status: headerIndex(lower, ["status", "app status"]),
+            inforce: headerIndex(lower, ["in force", "in force (y/n)", "inforce"]),
+            notes: headerIndex(lower, ["notes", "note"])
+          };
+          return;
+        }
+        if (headerIndex(lower, ["date"]) !== -1 && headerIndex(lower, ["item"]) !== -1 && headerIndex(lower, ["price", "amount", "cost"]) !== -1) {
+          mode = "exp";
+          cols = {
+            date: headerIndex(lower, ["date"]),
+            item: headerIndex(lower, ["item"]),
+            kind: headerIndex(lower, ["type"]),
+            lead: headerIndex(lower, ["lead type", "lead"]),
+            price: headerIndex(lower, ["price", "amount", "cost"])
+          };
+          return;
+        }
+        if (/^pnl\b/i.test(joined)) { mode = null; cols = null; return; }
+        if (!mode || !cols) return;
+
+        var get = function (k) { return cols[k] >= 0 && cols[k] < r.length ? String(r[cols[k]]).trim() : ""; };
+        var date = normDate(get("date"));
+        if (!date) return;
+
+        if (mode === "deals") {
+          var client = get("client");
+          if (!client) return;
+          var ap = moneyNum(get("ap"));
+          var key = date + "|" + client.toLowerCase() + "|" + (ap == null ? "" : ap);
+          if (dealKeys[key]) { dupes++; return; }
+          dealKeys[key] = 1;
+          state.deals.push({
+            id: uid(), date: date, client: client,
+            policy: get("policy"), carrier: get("carrier"),
+            face: moneyNum(get("face")), monthly: moneyNum(get("monthly")),
+            ap: ap, com: moneyNum(get("com")),
+            lead: get("lead"),
+            status: get("status") || "Submitted",
+            inforce: /^(y|yes|true|1)/i.test(get("inforce")),
+            notes: get("notes")
+          });
+          addedDeals++; lastDate = date;
+        } else {
+          var item = get("item");
+          if (!item) return;
+          var price = moneyNum(get("price"));
+          var key2 = date + "|" + item.toLowerCase() + "|" + (price == null ? "" : price);
+          if (expKeys[key2]) { dupes++; return; }
+          expKeys[key2] = 1;
+          var kindRaw = get("kind");
+          var kind = kindRaw ? (/lead/i.test(kindRaw) ? "lead" : "other") : (/lead/i.test(item) ? "lead" : "other");
+          state.expenses.push({
+            id: uid(), date: date, item: item, kind: kind,
+            lead: kind === "lead" ? get("lead") : "",
+            price: price
+          });
+          addedExps++; lastDate = date;
+        }
+      });
+
+      if (!addedDeals && !addedExps) {
+        alert(dupes
+          ? "Nothing new to import — all " + dupes + " matching rows are already in the tracker."
+          : "Couldn't find deals or expenses in that file.\n\nIt needs a header row like:\nDate, Client, Policy, Carrier, Face, Monthly, AP, Commission, Lead type, Status, In force, Notes\n\nor for expenses:\nDate, Item, Type, Lead type, Price");
+        return;
+      }
+      save();
+      if (lastDate) currentMonth = lastDate.slice(0, 7);
+      render();
+      alert("Imported " + addedDeals + (addedDeals === 1 ? " deal" : " deals") + " and " +
+        addedExps + (addedExps === 1 ? " expense" : " expenses") +
+        (dupes ? " (" + dupes + " duplicate" + (dupes === 1 ? "" : "s") + " skipped)" : "") + ".");
+    };
+    reader.readAsText(file);
+  });
+
+  $("backupBtn").addEventListener("click", function () {
+    download("pnl-backup-" + todayStr() + ".json", JSON.stringify(state, null, 2), "application/json");
+  });
+
+  $("restoreBtn").addEventListener("click", function () { $("restoreFile").click(); });
+  $("restoreFile").addEventListener("change", function () {
+    var file = this.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try {
+        var data = JSON.parse(reader.result);
+        if (!data || !Array.isArray(data.deals) || !Array.isArray(data.expenses)) throw new Error("bad file");
+        if (confirm("Replace all current data with this backup?")) {
+          state = migrate(data);
+          save(); render();
+        }
+      } catch (e) {
+        alert("That file doesn't look like a valid backup.");
+      }
+    };
+    reader.readAsText(file);
+    this.value = "";
+  });
+
+  /* ---------- theme toggle ---------- */
+
+  var THEME_KEY = "agentHub.theme.v1";
+
+  function effectiveTheme() {
+    return document.documentElement.getAttribute("data-theme") ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }
+  function updateThemeBtn() {
+    var dark = effectiveTheme() === "dark";
+    $("themeBtn").classList.toggle("dark", dark);
+    $("themeBtn").setAttribute("aria-checked", dark ? "true" : "false");
+  }
+  $("themeBtn").addEventListener("click", function () {
+    var next = effectiveTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    updateThemeBtn();
+  });
+
+  /* ---------- cloud sync (optional) ---------- */
+
+  var CLOUD_TABLE = "pnl_state";
+  var cloudCfg = window.HUB_CLOUD || {};
+  var cloudOn = !!(cloudCfg.url && cloudCfg.anonKey);
+  var sb = null, cloudUser = null, cloudSaveTimer = null, authMode = "signin";
+
+  function setSyncPill(txt, cls) {
+    var el = $("syncPill");
+    if (!el) return;
+    if (!txt) { el.style.display = "none"; return; }
+    el.style.display = "";
+    el.textContent = txt;
+    el.className = "sync-pill" + (cls ? " " + cls : "");
+  }
+
+  // called from save(); no-op unless we're signed in to the cloud
+  function cloudScheduleSave() {
+    if (!cloudOn || !cloudUser) return;
+    setSyncPill("Saving…", "saving");
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(cloudPush, 700);
+  }
+
+  function cloudPush() {
+    if (!cloudOn || !cloudUser) return;
+    sb.from(CLOUD_TABLE).upsert(
+      { user_id: cloudUser.id, data: state, updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    ).then(function (res) {
+      setSyncPill(res.error ? "Sync error" : "Saved", res.error ? "err" : "saved");
+    });
+  }
+
+  // read the Activity tracker's cloud row (same account) so the funnel can tie calls → deals
+  function fetchActivity() {
+    if (!cloudOn || !cloudUser) return;
+    sb.from("activity_state").select("data").eq("user_id", cloudUser.id).maybeSingle()
+      .then(function (res) {
+        if (!res.error && res.data && res.data.data) activityBlob = res.data.data;
+        renderFunnel();
+      });
+  }
+
+  function cloudPull() {
+    return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
+      .then(function (res) {
+        if (res.error) throw res.error;
+        var cloudData = res.data && res.data.data;
+        var cloudHas = cloudData && (((cloudData.deals || []).length) || ((cloudData.expenses || []).length));
+        var localHas = ((state.deals || []).length) || ((state.expenses || []).length);
+        if (cloudHas) {
+          state = migrate(cloudData);
+          localStorage.setItem(STORE_KEY, JSON.stringify(state));
+          setSyncPill("Saved", "saved");
+        } else if (localHas) {
+          cloudPush(); // first device to sign in — seed the cloud from this device
+        } else {
+          setSyncPill("Saved", "saved");
+        }
+      });
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    var signin = mode === "signin";
+    $("authTitle").textContent = signin ? "Log in" : "Create account";
+    $("authSubmit").textContent = signin ? "Log in" : "Create account";
+    $("authPass").setAttribute("autocomplete", signin ? "current-password" : "new-password");
+    $("authErr").textContent = "";
+    $("authSwitch").innerHTML = signin
+      ? 'New here? <a id="authToSignup">Create an account</a>'
+      : 'Already have an account? <a id="authToSignin">Log in</a>';
+    var a = document.getElementById(signin ? "authToSignup" : "authToSignin");
+    if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+  }
+
+  function onAuthed(user) {
+    cloudUser = user;
+    $("authGate").classList.remove("show");
+    $("acctBox").classList.add("show");
+    $("acctEmail").textContent = user.email || "";
+    setSyncPill("Loading…", "saving");
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); });
+  }
+
+  function onSignedOut() {
+    cloudUser = null;
+    $("acctBox").classList.remove("show");
+    setSyncPill("", "");
+    // clear this device so the next person who logs in can't see prior data
+    state = seedState();
+    localStorage.removeItem(STORE_KEY);
+    render();
+    $("authGate").classList.add("show");
+    setAuthMode("signin");
+  }
+
+  function initCloud() {
+    setAuthMode("signin");
+    $("authForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var email = $("authEmail").value.trim();
+      var pass = $("authPass").value;
+      $("authErr").textContent = "";
+      $("authSubmit").disabled = true;
+      var op = authMode === "signin"
+        ? sb.auth.signInWithPassword({ email: email, password: pass })
+        : sb.auth.signUp({ email: email, password: pass });
+      op.then(function (res) {
+        $("authSubmit").disabled = false;
+        if (res.error) { $("authErr").textContent = res.error.message; return; }
+        if (authMode === "signup" && res.data && !res.data.session) {
+          $("authErr").textContent = "Account created — check your email to confirm, then log in.";
+          setAuthMode("signin");
+        }
+        // the signed-in case is handled by onAuthStateChange below
+      });
+    });
+    $("logoutBtn").addEventListener("click", function () { sb.auth.signOut(); });
+
+    sb.auth.onAuthStateChange(function (_evt, session) {
+      if (session && session.user) { if (!cloudUser) onAuthed(session.user); }
+      else if (cloudUser !== null) onSignedOut();
+    });
+
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session && session.user) onAuthed(session.user);
+      else $("authGate").classList.add("show");
+    });
+  }
+
+  function loadSupabaseSdk(cb) {
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    s.onload = cb;
+    s.onerror = function () { cloudOn = false; afterBoot(); }; // blocked/offline → local-only
+    document.head.appendChild(s);
+  }
+
+  /* ---------- boot ---------- */
+
+  function afterBoot() {
+    updateThemeBtn();
+    $("d-date").value = defaultDateForMonth();
+    $("e-date").value = defaultDateForMonth();
+    syncLeadField();
+    render();
+  }
+
+  if (cloudOn) {
+    updateThemeBtn(); // theme the login gate before sign-in
+    loadSupabaseSdk(function () {
+      sb = window.supabase.createClient(cloudCfg.url, cloudCfg.anonKey);
+      initCloud();
+    });
+  } else {
+    afterBoot();
+  }
+})();
+</script>
+<!-- APP-END -->
+</body>
+</html>

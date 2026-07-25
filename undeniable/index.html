@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undeniable Co &mdash; Activity</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<style>
+  :root {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --danger: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: dark;
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-1-soft: rgba(57,135,229,0.20);
+      --good: #0ca30c;
+      --danger: #e66767;
+    }
+  }
+  /* Manual override picked with the 🌙/☀️ button — beats the system setting */
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-1-soft: rgba(57,135,229,0.20);
+    --good: #0ca30c;
+    --danger: #e66767;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --surface-1: #fcfcfb;
+    --page: #f9f9f7;
+    --text-primary: #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted: #898781;
+    --grid: #e1e0d9;
+    --baseline: #c3c2b7;
+    --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #006300;
+    --danger: #d03b3b;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.45;
+    padding: 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* ---------- Log form ---------- */
+  .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="datetime-local"], input[type="text"], input[type="date"], input[type="number"],
+  input[type="email"], input[type="password"] {
+    font: inherit; font-size: 14px;
+    color: var(--text-primary);
+    background: var(--page);
+    border: 1px solid var(--baseline);
+    border-radius: 7px;
+    padding: 7px 9px;
+    min-width: 130px;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  .chip {
+    font: inherit; font-size: 14px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    border: 1px solid var(--baseline);
+    background: var(--surface-1);
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+  .chip.on {
+    background: var(--series-1);
+    border-color: var(--series-1);
+    color: #ffffff;
+    font-weight: 600;
+  }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--series-1);
+    background: var(--series-1);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--baseline);
+    font-weight: 500;
+  }
+  .btn:active { transform: translateY(1px); }
+  .theme-toggle {
+    position: relative;
+    width: 30px; height: 16px;
+    flex: none;
+    align-self: center;
+    margin-left: 4px;
+    border-radius: 999px;
+    border: 1px solid var(--grid);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    opacity: 0.7;
+  }
+  .theme-toggle:hover { opacity: 1; }
+  .theme-toggle .knob {
+    position: absolute; top: 2px; left: 2px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    transition: left .15s ease, background .15s ease;
+  }
+  .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
+  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+  .saved-note { color: var(--good); font-size: 13px; font-weight: 600; margin-left: 10px; opacity: 0; transition: opacity .3s; }
+  .saved-note.show { opacity: 1; }
+
+  /* ---------- Period tabs ---------- */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab {
+    font: inherit; font-size: 14px;
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+  .tab.on {
+    background: var(--surface-1);
+    border-color: var(--border);
+    color: var(--text-primary);
+    font-weight: 650;
+  }
+
+  /* ---------- Stat tiles ---------- */
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; }
+  .tile {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .tile .t-label { font-size: 12px; color: var(--text-muted); }
+  .tile .t-value { font-size: 28px; font-weight: 650; margin-top: 2px; }
+  .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .rate .t-value { font-size: 22px; }
+  .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* ---------- Breakdown charts ---------- */
+  .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .chart-controls .lbl { font-size: 13px; color: var(--text-muted); }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
+  .hbar-row { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .hbar-name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  .hbar-track { position: relative; height: 18px; }
+  .hbar-fill {
+    position: absolute; left: 0; top: 0; bottom: 0;
+    background: var(--series-1);
+    border-radius: 0 4px 4px 0;
+    min-width: 2px;
+  }
+  .hbar-val { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+  .cols { display: flex; align-items: flex-end; gap: 6px; height: 120px; border-bottom: 1px solid var(--baseline); padding: 0 4px; }
+  .col-slot { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
+  .col-fill { width: 100%; max-width: 22px; background: var(--series-1); border-radius: 4px 4px 0 0; min-height: 2px; }
+  .col-fill.zero { background: var(--grid); }
+  .col-x { display: flex; gap: 6px; padding: 4px 4px 0; }
+  .col-x span { flex: 1; text-align: center; font-size: 10px; color: var(--text-muted); }
+  .empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+
+  /* ---------- Log table ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--baseline); white-space: nowrap; }
+  td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+  td.num, th.num { text-align: center; }
+  .dot { color: var(--series-1); font-weight: 700; }
+  .del {
+    font: inherit; font-size: 12px;
+    background: none; border: none;
+    color: var(--danger); cursor: pointer; padding: 2px 6px;
+  }
+  .table-scroll { overflow-x: auto; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
+
+  .tooltip {
+    position: fixed; pointer-events: none; z-index: 10;
+    background: var(--text-primary); color: var(--page);
+    font-size: 12px; padding: 5px 9px; border-radius: 6px;
+    opacity: 0; transition: opacity .1s;
+    white-space: nowrap;
+  }
+  @media (max-width: 640px) {
+    body { padding: 10px; }
+    .hbar-row { grid-template-columns: 90px 1fr 32px; }
+  }
+
+  /* ---------- Hub tab bar ---------- */
+  .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
+  .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
+  .hub-tab.is-active { background: var(--series-1); color: #fff; }
+  .hub-tab:not(.is-active):hover { color: var(--text-primary); }
+
+  /* ---------- Auth (cloud sync) ---------- */
+  .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
+  .auth-gate.show { display: flex; }
+  .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .auth-card h2 { font-size: 18px; font-weight: 650; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .auth-card input { width: 100%; }
+  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+  .sync-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap; }
+  .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
+  .sync-pill.saved { color: var(--good); border-color: var(--good); }
+  .sync-pill.err { color: var(--danger); border-color: var(--danger); }
+
+  /* ---------- Undeniable Co branding ---------- */
+  .brandbar { display: flex; align-items: center; gap: 18px; background: #000; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 20px; }
+  .brand-logo { height: 84px; width: auto; flex: none; display: block; }
+  .brand-copy { min-width: 0; }
+  .brand-hi { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
+  .brand-user { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: #f0f0f0; }
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .brand-user { background: linear-gradient(180deg,#ffffff 0%,#d2d2d2 45%,#8e8e8e 62%,#ededed 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+  }
+  .brand-tag { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #6f6f6f; margin-top: 5px; }
+  @media (max-width: 640px) {
+    .brandbar { gap: 12px; padding: 12px 14px; }
+    .brand-logo { height: 58px; }
+    .brand-user { font-size: 20px; }
+    .brand-tag { display: none; }
+  }
+</style>
+<script>
+  // ===== Cloud sync config (shared across the hub) =====
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+  };
+
+  // Apply a saved theme choice before first paint to avoid a flash
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+</head>
+<body>
+<div class="auth-gate" id="authGate">
+  <form class="auth-card" id="authForm">
+    <h2 id="authTitle">Log in</h2>
+    <p class="auth-sub">Your call activity and PNL sync across all your devices.</p>
+    <div>
+      <label for="authEmail">Email</label>
+      <input type="email" id="authEmail" autocomplete="email" required>
+    </div>
+    <div>
+      <label for="authPass">Password</label>
+      <input type="password" id="authPass" autocomplete="current-password" required minlength="6">
+    </div>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="btn" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch"></div>
+  </form>
+</div>
+
+<div class="wrap">
+  <div class="brandbar">
+    <img class="brand-logo" src="logo.png" alt="Undeniable Co">
+    <div class="brand-copy">
+      <div class="brand-hi">Welcome</div>
+      <div class="brand-user">SexyBeast69</div>
+      <div class="brand-tag">Built different. Proven always.</div>
+    </div>
+  </div>
+  <nav class="hub-tabs">
+    <a href="index.html" class="hub-tab is-active">Activity</a>
+    <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
+    <a href="carriers.html" class="hub-tab">Carrier links</a>
+  </nav>
+  <header>
+    <div>
+      <h1>Agent Activity Tracker</h1>
+      <div class="sub">Log every dial — the dashboard rolls it up by day, week, and month.</div>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+      <span class="saved-note" id="importNote"></span>
+      <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
+      <button class="btn secondary" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
+      <button class="btn secondary" id="exportBtn">Export CSV</button>
+      <input type="file" id="importFile" accept=".csv,text/csv" hidden>
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+      <span class="sync-pill" id="syncPill" style="display:none"></span>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary" id="logoutBtn">Log out</button></div>
+    </div>
+  </header>
+
+  <!-- ============ LOG A CALL ============ -->
+  <section class="card">
+    <h2>Log a call</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="fTime">Date &amp; time</label>
+        <input type="datetime-local" id="fTime">
+      </div>
+      <div class="field">
+        <label for="fLead">Lead type</label>
+        <select id="fLead"></select>
+      </div>
+      <div class="field">
+        <label for="fState">State</label>
+        <select id="fState"></select>
+      </div>
+      <div class="field" style="flex:1; min-width:160px;">
+        <label for="fNotes">Notes (optional)</label>
+        <input type="text" id="fNotes" placeholder="Client name, follow-up, etc." style="width:100%;">
+      </div>
+    </div>
+    <div class="chips" id="chips"></div>
+    <div>
+      <button class="btn" id="saveBtn">Save call</button>
+      <span class="saved-note" id="savedNote">Saved ✓</span>
+    </div>
+  </section>
+
+  <!-- ============ DAILY DIALS ============ -->
+  <section class="card">
+    <h2>End of day — total dials</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label for="dDate">Day</label>
+        <input type="date" id="dDate">
+      </div>
+      <div class="field">
+        <label for="dCount">Total calls made</label>
+        <input type="number" id="dCount" min="0" step="1" placeholder="e.g. 120">
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <button class="btn" id="dialsSaveBtn">Save dials</button>
+      </div>
+      <div class="field">
+        <label>&nbsp;</label>
+        <span class="saved-note" id="dialsSavedNote">Saved ✓</span>
+      </div>
+    </div>
+    <div class="empty" id="dialsHint" style="padding:8px 0 0;"></div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="tabs" id="tabs"></div>
+
+  <div class="tiles" id="tiles"></div>
+
+  <section class="card">
+    <h2>Conversion rates</h2>
+    <div class="rates" id="rates"></div>
+  </section>
+
+  <section class="card">
+    <div class="chart-controls">
+      <span class="lbl">Break down</span>
+      <select id="metricSel"></select>
+      <span class="lbl" id="periodEcho"></span>
+    </div>
+    <div class="charts">
+      <div>
+        <h2>By lead type</h2>
+        <div id="chartLead"></div>
+      </div>
+      <div>
+        <h2>By state</h2>
+        <div id="chartState"></div>
+      </div>
+      <div>
+        <h2>By time of day</h2>
+        <div id="chartHour"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CALL LOG ============ -->
+  <section class="card">
+    <div class="toolbar">
+      <h2 style="margin:0;">Call log <span id="logCount" style="color:var(--text-muted); font-weight:400; text-transform:none;"></span></h2>
+      <button class="btn secondary" id="manageLeadsBtn">Edit lead types</button>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>When</th><th>Lead type</th><th>State</th>
+            <th class="num">Pickup</th><th class="num">2+ min</th><th class="num">5+ min</th>
+            <th class="num">Appt</th><th class="num">Present.</th><th class="num">Sold</th>
+            <th>Notes</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="logBody"></tbody>
+      </table>
+    </div>
+  </section>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------------- Data ---------------- */
+  var STORE_KEY = "agentTracker.entries.v1";
+  var LEADS_KEY = "agentTracker.leadTypes.v1";
+  var DIALS_KEY = "agentTracker.dials.v1";
+
+  var DEFAULT_LEAD_TYPES = ["Goat Aged", "Londen Fresh", "General Mortgage", "LifeJacket", "Goat fresh", "Self Gen"];
+
+  var STATES = ["N/A","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
+
+  var METRICS = [
+    { key: "pickup",       label: "Pickups" },
+    { key: "conv2",        label: "Convos 2+ min" },
+    { key: "conv5",        label: "Convos 5+ min" },
+    { key: "appointment",  label: "Appointments set" },
+    { key: "presentation", label: "Presentations" },
+    { key: "sold",         label: "Sold deals" }
+  ];
+
+  function load(key, fallback) {
+    try {
+      var raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : fallback;
+    } catch (e) { return fallback; }
+  }
+  function save(key, val) {
+    localStorage.setItem(key, JSON.stringify(val));
+    cloudScheduleSave();
+  }
+
+  var entries = load(STORE_KEY, []);
+  var leadTypes = load(LEADS_KEY, DEFAULT_LEAD_TYPES.slice());
+  var dials = load(DIALS_KEY, {}); // { "YYYY-MM-DD": count }
+
+  /* ---------------- Helpers ---------------- */
+  function $(id) { return document.getElementById(id); }
+
+  function pad(n) { return (n < 10 ? "0" : "") + n; }
+
+  function toLocalInputValue(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) +
+      "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+
+  function startOfDay(d)  { var x = new Date(d); x.setHours(0,0,0,0); return x; }
+  function startOfWeek(d) { // Monday
+    var x = startOfDay(d);
+    var dow = (x.getDay() + 6) % 7;
+    x.setDate(x.getDate() - dow);
+    return x;
+  }
+  function startOfMonth(d) { var x = startOfDay(d); x.setDate(1); return x; }
+
+  var PERIODS = [
+    { key: "day",   label: "Today",      from: function () { return startOfDay(new Date()); } },
+    { key: "week",  label: "This Week",  from: function () { return startOfWeek(new Date()); } },
+    { key: "month", label: "This Month", from: function () { return startOfMonth(new Date()); } },
+    { key: "all",   label: "All Time",   from: function () { return new Date(0); } }
+  ];
+  var activePeriod = "day";
+  var customDay = null; // "YYYY-MM-DD" when viewing a specific past day
+
+  function filtered() {
+    if (customDay) {
+      return entries.filter(function (e) { return dateKey(new Date(e.ts)) === customDay; });
+    }
+    var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from().getTime();
+    return entries.filter(function (e) { return new Date(e.ts).getTime() >= from; });
+  }
+
+  function dateKey(d) {
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  }
+
+  function dialsInPeriod() {
+    if (customDay) return dials[customDay] || 0;
+    var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from();
+    var total = 0;
+    Object.keys(dials).forEach(function (k) {
+      if (new Date(k + "T12:00:00") >= from) total += dials[k];
+    });
+    return total;
+  }
+
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " +
+           d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  }
+
+  function pct(n, d) { return d > 0 ? Math.round((n / d) * 100) + "%" : "–"; }
+
+  /* ---------------- Log form ---------------- */
+  var chipState = {};
+
+  var DEFAULT_LEAD = "General Mortgage";
+
+  function resetForm() {
+    $("fTime").value = toLocalInputValue(new Date());
+    $("fNotes").value = "";
+    if (leadTypes.indexOf(DEFAULT_LEAD) > -1) $("fLead").value = DEFAULT_LEAD;
+    $("fState").value = "N/A";
+    METRICS.forEach(function (m) { chipState[m.key] = false; });
+    renderChips();
+  }
+
+  function renderLeadOptions() {
+    var sel = $("fLead");
+    sel.innerHTML = "";
+    leadTypes.forEach(function (t) {
+      var o = document.createElement("option");
+      o.value = t; o.textContent = t;
+      sel.appendChild(o);
+    });
+  }
+
+  function renderStateOptions() {
+    var sel = $("fState");
+    sel.innerHTML = "";
+    STATES.forEach(function (s) {
+      var o = document.createElement("option");
+      o.value = s; o.textContent = s;
+      sel.appendChild(o);
+    });
+  }
+
+  // Checking a deeper outcome implies the shallower ones (a 5-min convo was picked up, etc.)
+  var IMPLIES = {
+    conv2: ["pickup"],
+    conv5: ["conv2", "pickup"],
+    presentation: ["pickup"],
+    appointment: ["pickup"],
+    sold: ["pickup"]
+  };
+
+  function toggleChip(key) {
+    chipState[key] = !chipState[key];
+    if (chipState[key] && IMPLIES[key]) {
+      IMPLIES[key].forEach(function (k) { chipState[k] = true; });
+    }
+    if (!chipState.pickup) {
+      METRICS.forEach(function (m) { chipState[m.key] = false; });
+    }
+    renderChips();
+  }
+
+  function renderChips() {
+    var box = $("chips");
+    box.innerHTML = "";
+    METRICS.forEach(function (m) {
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = "chip" + (chipState[m.key] ? " on" : "");
+      b.textContent = (chipState[m.key] ? "✓ " : "") + m.label;
+      b.onclick = function () { toggleChip(m.key); };
+      box.appendChild(b);
+    });
+  }
+
+  $("saveBtn").onclick = function () {
+    var ts = $("fTime").value ? new Date($("fTime").value).toISOString() : new Date().toISOString();
+    var entry = {
+      id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+      ts: ts,
+      leadType: $("fLead").value,
+      state: $("fState").value,
+      notes: $("fNotes").value.trim()
+    };
+    METRICS.forEach(function (m) { entry[m.key] = !!chipState[m.key]; });
+    // A logged call with nothing selected still counts as a pickup —
+    // total dials (entered at end of day) covers the calls nobody answered.
+    var anySelected = METRICS.some(function (m) { return entry[m.key]; });
+    if (!anySelected) entry.pickup = true;
+    entries.push(entry);
+    entries.sort(function (a, b) { return new Date(a.ts) - new Date(b.ts); });
+    save(STORE_KEY, entries);
+    resetForm();
+    renderAll();
+    var note = $("savedNote");
+    note.classList.add("show");
+    setTimeout(function () { note.classList.remove("show"); }, 1500);
+  };
+
+  /* ---------------- Daily dials ---------------- */
+  function updateDialBtn() {
+    var n = dials[dateKey(new Date())] || 0;
+    $("dialBtn").textContent = "＋ Dial · " + n + " today";
+  }
+
+  $("dialBtn").onclick = function () {
+    var k = dateKey(new Date());
+    dials[k] = (dials[k] || 0) + 1;
+    save(DIALS_KEY, dials);
+    refreshDialsForm();
+    renderAll();
+  };
+
+  function refreshDialsForm() {
+    var k = $("dDate").value;
+    var existing = dials[k];
+    $("dCount").value = existing != null ? existing : "";
+    $("dialsHint").textContent = existing != null
+      ? "Saved for this day: " + existing + " dials. Enter a new number to overwrite."
+      : "Nothing saved for this day yet.";
+  }
+
+  $("dialsSaveBtn").onclick = function () {
+    var k = $("dDate").value;
+    if (!k) { alert("Pick a day first."); return; }
+    var n = parseInt($("dCount").value, 10);
+    if (isNaN(n) || n < 0) { alert("Enter how many calls you made (0 or more)."); return; }
+    if (n === 0) { delete dials[k]; } else { dials[k] = n; }
+    save(DIALS_KEY, dials);
+    refreshDialsForm();
+    renderAll();
+    var note = $("dialsSavedNote");
+    note.classList.add("show");
+    setTimeout(function () { note.classList.remove("show"); }, 1500);
+  };
+
+  $("manageLeadsBtn").onclick = function () {
+    var current = leadTypes.join(", ");
+    var input = prompt("Lead types (comma-separated). Edit the list and press OK:", current);
+    if (input === null) return;
+    var next = input.split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    if (next.length === 0) return;
+    leadTypes = next;
+    save(LEADS_KEY, leadTypes);
+    renderLeadOptions();
+  };
+
+  /* ---------------- Dashboard ---------------- */
+  // The tab bar is built once and kept — rebuilding it on every render
+  // destroyed the date input mid-typing (focus loss after each keystroke).
+  var tabButtons = [], dayLabel = null, dayInput = null, dayBackBtn = null, dayFwdBtn = null;
+
+  function shiftDay(key, delta) {
+    var p = key.split("-");
+    var d = new Date(+p[0], +p[1] - 1, +p[2]);
+    d.setDate(d.getDate() + delta);
+    return dateKey(d);
+  }
+
+  function buildTabs() {
+    var box = $("tabs");
+    PERIODS.forEach(function (p) {
+      var b = document.createElement("button");
+      b.className = "tab";
+      b.textContent = p.label;
+      b.onclick = function () {
+        customDay = null;
+        dayInput.value = "";
+        activePeriod = p.key;
+        renderAll();
+      };
+      tabButtons.push({ key: p.key, el: b });
+      box.appendChild(b);
+    });
+    dayLabel = document.createElement("span");
+    dayLabel.className = "tab";
+    dayLabel.style.display = "inline-flex";
+    dayLabel.style.alignItems = "center";
+    dayLabel.style.gap = "6px";
+    dayLabel.style.cursor = "default";
+    dayLabel.style.flexWrap = "wrap";
+    var dayText = document.createElement("span");
+    dayText.style.whiteSpace = "nowrap";
+    dayText.textContent = "Pick a day:";
+    dayLabel.appendChild(dayText);
+    var stepBtnCss = "font:inherit; font-size:12px; color:var(--text-secondary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 8px; cursor:pointer;";
+    dayBackBtn = document.createElement("button");
+    dayBackBtn.type = "button";
+    dayBackBtn.textContent = "◀";
+    dayBackBtn.title = "Previous day";
+    dayBackBtn.style.cssText = stepBtnCss;
+    dayBackBtn.onclick = function () {
+      customDay = shiftDay(customDay || dateKey(new Date()), -1);
+      renderAll();
+    };
+    dayLabel.appendChild(dayBackBtn);
+    dayInput = document.createElement("input");
+    dayInput.type = "date";
+    dayInput.max = dateKey(new Date());
+    dayInput.style.cssText = "font:inherit; font-size:13px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
+    dayInput.onchange = function () {
+      if (!dayInput.value) {
+        if (customDay) { customDay = null; renderAll(); }
+        return;
+      }
+      // A half-typed year reads as e.g. 0002 — wait until it looks real
+      var year = parseInt(dayInput.value.slice(0, 4), 10);
+      if (year < 2000) return;
+      customDay = dayInput.value;
+      renderAll();
+    };
+    dayLabel.appendChild(dayInput);
+    dayFwdBtn = document.createElement("button");
+    dayFwdBtn.type = "button";
+    dayFwdBtn.textContent = "▶";
+    dayFwdBtn.title = "Next day";
+    dayFwdBtn.style.cssText = stepBtnCss;
+    dayFwdBtn.onclick = function () {
+      if (!customDay || customDay >= dateKey(new Date())) return;
+      customDay = shiftDay(customDay, 1);
+      renderAll();
+    };
+    dayLabel.appendChild(dayFwdBtn);
+    box.appendChild(dayLabel);
+  }
+
+  function renderTabs() {
+    if (!dayInput) buildTabs();
+    tabButtons.forEach(function (t) {
+      t.el.className = "tab" + (!customDay && t.key === activePeriod ? " on" : "");
+    });
+    dayLabel.className = "tab" + (customDay ? " on" : "");
+    // Don't touch the field while the user is typing in it
+    if (document.activeElement !== dayInput && dayInput.value !== (customDay || "")) {
+      dayInput.value = customDay || "";
+    }
+    var atToday = !customDay || customDay >= dateKey(new Date());
+    dayFwdBtn.disabled = atToday;
+    dayFwdBtn.style.opacity = atToday ? "0.4" : "1";
+    dayFwdBtn.style.cursor = atToday ? "default" : "pointer";
+  }
+
+  function count(rows, key) {
+    return rows.reduce(function (n, e) { return n + (e[key] ? 1 : 0); }, 0);
+  }
+
+  function renderTiles(rows) {
+    var box = $("tiles");
+    box.innerHTML = "";
+    var defs = [{ key: "_dials", label: "Total dials" }].concat(METRICS);
+    defs.forEach(function (m) {
+      var v = m.key === "_dials" ? dialsInPeriod() : count(rows, m.key);
+      var t = document.createElement("div");
+      t.className = "tile";
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
+      t.querySelector(".t-label").textContent = m.label;
+      t.querySelector(".t-value").textContent = v;
+      box.appendChild(t);
+    });
+  }
+
+  function renderRates(rows) {
+    var totalDials = dialsInPeriod();
+    var pickups = count(rows, "pickup");
+    var pres = count(rows, "presentation");
+    var sold = count(rows, "sold");
+    var appts = count(rows, "appointment");
+    var defs = [
+      { label: "Pickup rate",        val: pct(pickups, totalDials), sub: pickups + " of " + totalDials + " dials" },
+      { label: "Presentation rate",  val: pct(pres, pickups),  sub: pres + " of " + pickups + " pickups" },
+      { label: "Close rate",         val: pct(sold, pres),     sub: sold + " of " + pres + " presentations" },
+      { label: "Appointment rate",   val: pct(appts, pickups), sub: appts + " of " + pickups + " pickups" },
+      { label: "Sold per dial",      val: pct(sold, totalDials), sub: sold + " of " + totalDials + " dials" }
+    ];
+    var box = $("rates");
+    box.innerHTML = "";
+    defs.forEach(function (d) {
+      var t = document.createElement("div");
+      t.className = "tile rate";
+      t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div><div class="t-sub"></div>';
+      t.querySelector(".t-label").textContent = d.label;
+      t.querySelector(".t-value").textContent = d.val;
+      t.querySelector(".t-sub").textContent = d.sub;
+      box.appendChild(t);
+    });
+  }
+
+  /* ---------------- Breakdown charts ---------------- */
+  var activeMetric = "pickup";
+
+  function renderMetricSel() {
+    var sel = $("metricSel");
+    sel.innerHTML = "";
+    METRICS.forEach(function (m) {
+      var o = document.createElement("option");
+      o.value = m.key; o.textContent = m.label;
+      sel.appendChild(o);
+    });
+    sel.value = activeMetric;
+    sel.onchange = function () { activeMetric = sel.value; renderCharts(); };
+  }
+
+  function metricHit(e) {
+    return !!e[activeMetric];
+  }
+
+  var tooltip = $("tooltip");
+  function attachTip(el, text) {
+    el.addEventListener("mousemove", function (ev) {
+      tooltip.textContent = text;
+      tooltip.style.opacity = "1";
+      tooltip.style.left = (ev.clientX + 12) + "px";
+      tooltip.style.top = (ev.clientY - 28) + "px";
+    });
+    el.addEventListener("mouseleave", function () { tooltip.style.opacity = "0"; });
+  }
+
+  function renderHBars(containerId, groups) {
+    var box = $(containerId);
+    box.innerHTML = "";
+    var keys = Object.keys(groups).sort(function (a, b) { return groups[b] - groups[a]; });
+    keys = keys.filter(function (k) { return groups[k] > 0; }).slice(0, 8);
+    if (keys.length === 0) {
+      box.innerHTML = '<div class="empty">No data for this period yet.</div>';
+      return;
+    }
+    var max = groups[keys[0]];
+    keys.forEach(function (k) {
+      var row = document.createElement("div");
+      row.className = "hbar-row";
+      var name = document.createElement("div");
+      name.className = "hbar-name"; name.textContent = k;
+      var track = document.createElement("div");
+      track.className = "hbar-track";
+      var fill = document.createElement("div");
+      fill.className = "hbar-fill";
+      fill.style.width = Math.max(2, (groups[k] / max) * 100) + "%";
+      track.appendChild(fill);
+      var val = document.createElement("div");
+      val.className = "hbar-val"; val.textContent = groups[k];
+      attachTip(track, k + ": " + groups[k]);
+      row.appendChild(name); row.appendChild(track); row.appendChild(val);
+      box.appendChild(row);
+    });
+  }
+
+  function renderHourChart(rows) {
+    var box = $("chartHour");
+    box.innerHTML = "";
+    var hits = rows.filter(metricHit);
+    if (hits.length === 0) {
+      box.innerHTML = '<div class="empty">No data for this period yet.</div>';
+      return;
+    }
+    var buckets = {};
+    for (var h = 7; h <= 21; h++) buckets[h] = 0;
+    hits.forEach(function (e) {
+      var h = new Date(e.ts).getHours();
+      if (h < 7) h = 7;
+      if (h > 21) h = 21;
+      buckets[h]++;
+    });
+    var max = Math.max.apply(null, Object.keys(buckets).map(function (k) { return buckets[k]; }));
+    var cols = document.createElement("div");
+    cols.className = "cols";
+    var xaxis = document.createElement("div");
+    xaxis.className = "col-x";
+    Object.keys(buckets).forEach(function (h) {
+      var slot = document.createElement("div");
+      slot.className = "col-slot";
+      var fill = document.createElement("div");
+      var v = buckets[h];
+      fill.className = "col-fill" + (v === 0 ? " zero" : "");
+      fill.style.height = v === 0 ? "2px" : Math.max(4, (v / max) * 100) + "%";
+      var hr = ((h % 12) || 12) + (h < 12 ? "a" : "p");
+      attachTip(slot, hr + ": " + v);
+      slot.appendChild(fill);
+      cols.appendChild(slot);
+      var lab = document.createElement("span");
+      lab.textContent = (h % 3 === 0) ? hr : "";
+      xaxis.appendChild(lab);
+    });
+    box.appendChild(cols);
+    box.appendChild(xaxis);
+  }
+
+  function renderCharts() {
+    var rows = filtered();
+    var hits = rows.filter(metricHit);
+    var byLead = {}, byState = {};
+    hits.forEach(function (e) {
+      byLead[e.leadType] = (byLead[e.leadType] || 0) + 1;
+      byState[e.state] = (byState[e.state] || 0) + 1;
+    });
+    renderHBars("chartLead", byLead);
+    renderHBars("chartState", byState);
+    renderHourChart(rows);
+    if (customDay) {
+      $("periodEcho").textContent = "· " + new Date(customDay + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    } else {
+      var p = PERIODS.filter(function (x) { return x.key === activePeriod; })[0];
+      $("periodEcho").textContent = "· " + p.label;
+    }
+  }
+
+  /* ---------------- Log table ---------------- */
+  function renderLog(rows) {
+    var body = $("logBody");
+    body.innerHTML = "";
+    var shown = rows.slice().reverse();
+    $("logCount").textContent = "(" + shown.length + " in period)";
+    shown.forEach(function (e) {
+      var tr = document.createElement("tr");
+      function td(text, cls) {
+        var c = document.createElement("td");
+        if (cls) c.className = cls;
+        c.textContent = text;
+        return c;
+      }
+      function mark(on) {
+        var c = document.createElement("td");
+        c.className = "num";
+        if (on) { c.innerHTML = '<span class="dot">●</span>'; }
+        return c;
+      }
+      tr.appendChild(td(fmtWhen(e.ts)));
+      tr.appendChild(td(e.leadType));
+      tr.appendChild(td(e.state));
+      tr.appendChild(mark(e.pickup));
+      tr.appendChild(mark(e.conv2));
+      tr.appendChild(mark(e.conv5));
+      tr.appendChild(mark(e.appointment));
+      tr.appendChild(mark(e.presentation));
+      tr.appendChild(mark(e.sold));
+      tr.appendChild(td(e.notes || ""));
+      var delTd = document.createElement("td");
+      var del = document.createElement("button");
+      del.className = "del"; del.textContent = "✕"; del.title = "Delete this entry";
+      del.onclick = function () {
+        if (!confirm("Delete this call entry?")) return;
+        entries = entries.filter(function (x) { return x.id !== e.id; });
+        save(STORE_KEY, entries);
+        renderAll();
+      };
+      delTd.appendChild(del);
+      tr.appendChild(delTd);
+      body.appendChild(tr);
+    });
+    if (shown.length === 0) {
+      var tr = document.createElement("tr");
+      var c = document.createElement("td");
+      c.colSpan = 11; c.className = "empty"; c.textContent = "Nothing in this period yet — log your first call above.";
+      tr.appendChild(c);
+      body.appendChild(tr);
+    }
+  }
+
+  /* ---------------- CSV export ---------------- */
+  $("exportBtn").onclick = function () {
+    var header = ["Date", "Time", "Lead Type", "State", "Pickup", "Conv 2+ min", "Conv 5+ min", "Appointment Set", "Presentation", "Sold", "Notes"];
+    function esc(v) {
+      v = String(v == null ? "" : v);
+      return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+    }
+    var lines = [header.join(",")];
+    entries.forEach(function (e) {
+      var d = new Date(e.ts);
+      lines.push([
+        d.toLocaleDateString(), d.toLocaleTimeString(),
+        e.leadType, e.state,
+        e.pickup ? 1 : 0, e.conv2 ? 1 : 0, e.conv5 ? 1 : 0,
+        e.appointment ? 1 : 0, e.presentation ? 1 : 0, e.sold ? 1 : 0,
+        e.notes || ""
+      ].map(esc).join(","));
+    });
+    var dialKeys = Object.keys(dials).sort();
+    if (dialKeys.length > 0) {
+      lines.push("");
+      lines.push("Daily Dials");
+      lines.push("Date,Total Dials");
+      dialKeys.forEach(function (k) { lines.push(k + "," + dials[k]); });
+    }
+    var blob = new Blob([lines.join("\n")], { type: "text/csv" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "call-tracker-" + new Date().toISOString().slice(0, 10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  /* ---------------- CSV import ---------------- */
+  function parseCSV(text) {
+    var rows = [], row = [], field = "", inQ = false, i = 0;
+    while (i < text.length) {
+      var ch = text[i];
+      if (inQ) {
+        if (ch === '"') {
+          if (text[i + 1] === '"') { field += '"'; i += 2; continue; }
+          inQ = false; i++; continue;
+        }
+        field += ch; i++; continue;
+      }
+      if (ch === '"') { inQ = true; i++; continue; }
+      if (ch === ",") { row.push(field); field = ""; i++; continue; }
+      if (ch === "\n" || ch === "\r") {
+        if (ch === "\r" && text[i + 1] === "\n") i++;
+        row.push(field); rows.push(row); row = []; field = ""; i++; continue;
+      }
+      field += ch; i++;
+    }
+    if (field !== "" || row.length > 0) { row.push(field); rows.push(row); }
+    return rows;
+  }
+
+  function flagOn(v) {
+    v = String(v == null ? "" : v).trim().toLowerCase();
+    return v === "1" || v === "true" || v === "yes" || v === "y" || v === "x" || v === "●";
+  }
+
+  // Signature for duplicate detection: same second + same fields = same call
+  function entrySig(e) {
+    return [
+      Math.floor(new Date(e.ts).getTime() / 1000),
+      e.leadType, e.state,
+      METRICS.map(function (m) { return e[m.key] ? 1 : 0; }).join(""),
+      e.notes || ""
+    ].join("|");
+  }
+
+  var importNoteTimer;
+  function showImportNote(msg, ok) {
+    var el = $("importNote");
+    el.textContent = msg;
+    el.style.color = ok ? "" : "var(--danger)";
+    el.classList.add("show");
+    clearTimeout(importNoteTimer);
+    importNoteTimer = setTimeout(function () { el.classList.remove("show"); }, 6000);
+  }
+
+  function importCSV(text) {
+    var rows = parseCSV(text).filter(function (r) {
+      return r.some(function (c) { return String(c).trim() !== ""; });
+    });
+    if (rows.length === 0) { showImportNote("That file is empty.", false); return; }
+
+    // Split off the "Daily Dials" section the export appends
+    var dialRows = [];
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i][0]).trim().toLowerCase() === "daily dials") {
+        dialRows = rows.slice(i + 1);
+        rows = rows.slice(0, i);
+        break;
+      }
+    }
+    if (dialRows.length > 0 && String(dialRows[0][0]).trim().toLowerCase() === "date") dialRows.shift();
+
+    var added = 0, dups = 0, bad = 0, dialsAdded = 0;
+
+    if (rows.length > 1) {
+      var header = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+      function col(want) {
+        for (var j = 0; j < header.length; j++) {
+          for (var w = 0; w < want.length; w++) {
+            if (header[j].indexOf(want[w]) > -1) return j;
+          }
+        }
+        return -1;
+      }
+      var cDate = col(["date"]), cTime = col(["time"]);
+      var cLead = col(["lead"]), cState = col(["state"]);
+      var cPickup = col(["pickup"]), c2 = col(["2"]), c5 = col(["5"]);
+      var cPres = col(["present"]), cAppt = col(["appointment", "appt"]);
+      var cSold = col(["sold"]), cNotes = col(["note"]);
+      if (cDate === -1) {
+        showImportNote("Couldn't find a Date column — is this a tracker export?", false);
+        return;
+      }
+      var seen = {};
+      entries.forEach(function (e) { seen[entrySig(e)] = true; });
+      function cell(r, c) { return c > -1 && r[c] != null ? String(r[c]).trim() : ""; }
+
+      rows.slice(1).forEach(function (r) {
+        var ds = cell(r, cDate), tstr = cell(r, cTime);
+        if (!ds) { bad++; return; }
+        var d = new Date(ds + (tstr ? " " + tstr : " 12:00:00"));
+        if (isNaN(d)) d = new Date(ds);
+        if (isNaN(d)) { bad++; return; }
+        var e = {
+          id: Date.now() + "-" + Math.random().toString(36).slice(2, 7),
+          ts: d.toISOString(),
+          leadType: cell(r, cLead) || "Unknown",
+          state: cell(r, cState) || "N/A",
+          notes: cell(r, cNotes),
+          pickup: flagOn(cell(r, cPickup)),
+          conv2: flagOn(cell(r, c2)),
+          conv5: flagOn(cell(r, c5)),
+          presentation: flagOn(cell(r, cPres)),
+          appointment: flagOn(cell(r, cAppt)),
+          sold: flagOn(cell(r, cSold))
+        };
+        // Same rule as the log form: a call with no outcome still counts as a pickup
+        if (!METRICS.some(function (m) { return e[m.key]; })) e.pickup = true;
+        var sig = entrySig(e);
+        if (seen[sig]) { dups++; return; }
+        seen[sig] = true;
+        if (leadTypes.indexOf(e.leadType) === -1) leadTypes.push(e.leadType);
+        entries.push(e);
+        added++;
+      });
+    }
+
+    dialRows.forEach(function (r) {
+      var k = String(r[0] == null ? "" : r[0]).trim();
+      var n = parseInt(r[1], 10);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+        var d = new Date(k);
+        if (isNaN(d)) return;
+        k = dateKey(d);
+      }
+      if (isNaN(n) || n < 0) return;
+      // Never overwrite a day you already have numbers for
+      if (dials[k] == null) { dials[k] = n; dialsAdded++; }
+    });
+
+    entries.sort(function (a, b) { return new Date(a.ts) - new Date(b.ts); });
+    save(STORE_KEY, entries);
+    save(LEADS_KEY, leadTypes);
+    save(DIALS_KEY, dials);
+    renderLeadOptions();
+    renderAll();
+
+    var msg = "Imported " + added + " call" + (added === 1 ? "" : "s");
+    if (dialsAdded > 0) msg += " + " + dialsAdded + " day" + (dialsAdded === 1 ? "" : "s") + " of dials";
+    var extra = [];
+    if (dups > 0) extra.push(dups + " duplicate" + (dups === 1 ? "" : "s") + " skipped");
+    if (bad > 0) extra.push(bad + " unreadable row" + (bad === 1 ? "" : "s") + " skipped");
+    if (extra.length > 0) msg += " (" + extra.join(", ") + ")";
+    showImportNote(msg + " ✓", true);
+  }
+
+  $("importBtn").onclick = function () { $("importFile").click(); };
+  $("importFile").onchange = function () {
+    var file = this.files[0];
+    this.value = "";
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      try { importCSV(String(reader.result)); }
+      catch (err) { showImportNote("Import failed: " + err.message, false); }
+    };
+    reader.readAsText(file);
+  };
+
+  /* ---------------- Theme toggle ---------------- */
+  var THEME_KEY = "agentHub.theme.v1";
+
+  function effectiveTheme() {
+    return document.documentElement.getAttribute("data-theme") ||
+      (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+  }
+
+  function updateThemeBtn() {
+    var dark = effectiveTheme() === "dark";
+    $("themeBtn").classList.toggle("dark", dark);
+    $("themeBtn").setAttribute("aria-checked", dark ? "true" : "false");
+  }
+
+  $("themeBtn").onclick = function () {
+    var next = effectiveTheme() === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    updateThemeBtn();
+  };
+
+  /* ---------------- Boot ---------------- */
+  function renderAll() {
+    var rows = filtered();
+    renderTabs();
+    renderTiles(rows);
+    renderRates(rows);
+    renderCharts();
+    renderLog(rows);
+    updateDialBtn();
+  }
+
+  /* ---------------- Cloud sync (optional) ---------------- */
+  var CLOUD_TABLE = "activity_state";
+  var cloudCfg = window.HUB_CLOUD || {};
+  var cloudOn = !!(cloudCfg.url && cloudCfg.anonKey);
+  var sb = null, cloudUser = null, cloudSaveTimer = null, authMode = "signin";
+
+  function activityBlob() { return { entries: entries, leadTypes: leadTypes, dials: dials }; }
+  function applyBlob(b) {
+    entries = Array.isArray(b.entries) ? b.entries : [];
+    leadTypes = (Array.isArray(b.leadTypes) && b.leadTypes.length) ? b.leadTypes : DEFAULT_LEAD_TYPES.slice();
+    dials = (b.dials && typeof b.dials === "object") ? b.dials : {};
+    localStorage.setItem(STORE_KEY, JSON.stringify(entries));
+    localStorage.setItem(LEADS_KEY, JSON.stringify(leadTypes));
+    localStorage.setItem(DIALS_KEY, JSON.stringify(dials));
+  }
+
+  function setSyncPill(txt, cls) {
+    var el = $("syncPill");
+    if (!el) return;
+    if (!txt) { el.style.display = "none"; return; }
+    el.style.display = "";
+    el.textContent = txt;
+    el.className = "sync-pill" + (cls ? " " + cls : "");
+  }
+
+  function cloudScheduleSave() {
+    if (!cloudOn || !cloudUser) return;
+    setSyncPill("Saving…", "saving");
+    clearTimeout(cloudSaveTimer);
+    cloudSaveTimer = setTimeout(cloudPush, 700);
+  }
+
+  function cloudPush() {
+    if (!cloudOn || !cloudUser) return;
+    sb.from(CLOUD_TABLE).upsert(
+      { user_id: cloudUser.id, data: activityBlob(), updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    ).then(function (res) {
+      setSyncPill(res.error ? "Sync error" : "Saved", res.error ? "err" : "saved");
+    });
+  }
+
+  function cloudPull() {
+    return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
+      .then(function (res) {
+        if (res.error) throw res.error;
+        var d = res.data && res.data.data;
+        var cloudHas = d && (((d.entries || []).length) || Object.keys(d.dials || {}).length);
+        var localHas = (entries.length) || Object.keys(dials).length;
+        if (cloudHas) {
+          applyBlob(d);
+          setSyncPill("Saved", "saved");
+        } else if (localHas) {
+          cloudPush(); // first device to sign in — seed the cloud from this device
+        } else {
+          setSyncPill("Saved", "saved");
+        }
+      });
+  }
+
+  function setAuthMode(mode) {
+    authMode = mode;
+    var signin = mode === "signin";
+    $("authTitle").textContent = signin ? "Log in" : "Create account";
+    $("authSubmit").textContent = signin ? "Log in" : "Create account";
+    $("authPass").setAttribute("autocomplete", signin ? "current-password" : "new-password");
+    $("authErr").textContent = "";
+    $("authSwitch").innerHTML = signin
+      ? 'New here? <a id="authToSignup">Create an account</a>'
+      : 'Already have an account? <a id="authToSignin">Log in</a>';
+    var a = document.getElementById(signin ? "authToSignup" : "authToSignin");
+    if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+  }
+
+  function onAuthed(user) {
+    cloudUser = user;
+    $("authGate").classList.remove("show");
+    $("acctBox").classList.add("show");
+    $("acctEmail").textContent = user.email || "";
+    setSyncPill("Loading…", "saving");
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot);
+  }
+
+  function onSignedOut() {
+    cloudUser = null;
+    $("acctBox").classList.remove("show");
+    setSyncPill("", "");
+    // clear this device so the next person who logs in can't see prior data
+    applyBlob({ entries: [], leadTypes: DEFAULT_LEAD_TYPES.slice(), dials: {} });
+    renderAll();
+    $("authGate").classList.add("show");
+    setAuthMode("signin");
+  }
+
+  function initCloud() {
+    setAuthMode("signin");
+    $("authForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var email = $("authEmail").value.trim();
+      var pass = $("authPass").value;
+      $("authErr").textContent = "";
+      $("authSubmit").disabled = true;
+      var op = authMode === "signin"
+        ? sb.auth.signInWithPassword({ email: email, password: pass })
+        : sb.auth.signUp({ email: email, password: pass });
+      op.then(function (res) {
+        $("authSubmit").disabled = false;
+        if (res.error) { $("authErr").textContent = res.error.message; return; }
+        if (authMode === "signup" && res.data && !res.data.session) {
+          $("authErr").textContent = "Account created — check your email to confirm, then log in.";
+          setAuthMode("signin");
+        }
+      });
+    });
+    $("logoutBtn").addEventListener("click", function () { sb.auth.signOut(); });
+
+    sb.auth.onAuthStateChange(function (_evt, session) {
+      if (session && session.user) { if (!cloudUser) onAuthed(session.user); }
+      else if (cloudUser !== null) onSignedOut();
+    });
+
+    sb.auth.getSession().then(function (res) {
+      var session = res.data && res.data.session;
+      if (session && session.user) onAuthed(session.user);
+      else $("authGate").classList.add("show");
+    });
+  }
+
+  function loadSupabaseSdk(cb) {
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    s.onload = cb;
+    s.onerror = function () { cloudOn = false; afterBoot(); }; // blocked/offline → local-only
+    document.head.appendChild(s);
+  }
+
+  /* ---------------- Boot ---------------- */
+  function afterBoot() {
+    updateThemeBtn();
+    renderLeadOptions();
+    renderStateOptions();
+    renderMetricSel();
+    resetForm();
+    $("dDate").value = dateKey(new Date());
+    $("dDate").onchange = refreshDialsForm;
+    refreshDialsForm();
+    renderAll();
+  }
+
+  if (cloudOn) {
+    updateThemeBtn(); // theme the login gate before sign-in
+    loadSupabaseSdk(function () {
+      sb = window.supabase.createClient(cloudCfg.url, cloudCfg.anonKey);
+      initCloud();
+    });
+  } else {
+    afterBoot();
+  }
+})();
+</script>
+</body>
+</html>

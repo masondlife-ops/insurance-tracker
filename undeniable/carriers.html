@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undeniable Co &mdash; Carrier links</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  // ===== Cloud sync config (shared across the hub) =====
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+  };
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+      --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+    --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height: 1.45; padding: 20px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="text"], input[type="url"], input[type="email"], input[type="password"] {
+    font: inherit; font-size: 14px; color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--baseline); border-radius: 7px; padding: 7px 9px;
+  }
+  .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--baseline); }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.icon { background: transparent; border-color: var(--baseline); color: var(--text-secondary); padding: 5px 10px; font-size: 14px; line-height: 1; }
+
+  .theme-toggle { position: relative; width: 30px; height: 16px; flex: none; align-self: center; margin-left: 4px; border-radius: 999px; border: 1px solid var(--grid); background: transparent; cursor: pointer; padding: 0; opacity: 0.7; }
+  .theme-toggle:hover { opacity: 1; }
+  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); transition: left .15s ease, background .15s ease; }
+  .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
+  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+
+  .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
+  .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
+  .hub-tab.is-active { background: var(--series-1); color: #fff; }
+  .hub-tab:not(.is-active):hover { color: var(--text-primary); }
+
+  .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
+  .auth-gate.show { display: flex; }
+  .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .auth-card h2 { font-size: 18px; font-weight: 650; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .auth-card input { width: 100%; }
+  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+  .sync-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap; }
+  .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
+  .sync-pill.saved { color: var(--good); border-color: var(--good); }
+  .sync-pill.err { color: var(--danger); border-color: var(--danger); }
+
+  /* ---------- Carrier cards ---------- */
+  .npn-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .npn-row label { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+  .npn-row input { width: 180px; }
+  .carriers-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .carrier-card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  .carrier-card.sortable-ghost { opacity: .4; }
+  .carrier-card.sortable-chosen { border-color: var(--series-1); }
+  .carrier-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .carrier-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
+  .drag-handle { cursor: grab; color: var(--text-muted); font-size: 15px; line-height: 1; padding: 2px 3px; flex: none; user-select: none; touch-action: none; }
+  .drag-handle:active { cursor: grabbing; }
+  .carrier-name { font-size: 16px; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .carrier-actions { display: flex; gap: 5px; flex: none; }
+  .cred { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--grid); }
+  .cred:first-of-type { border-top: none; }
+  .cred-label { width: 76px; flex: none; color: var(--text-muted); font-size: 12px; }
+  .cred-val { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .cred-val.mask { letter-spacing: 2px; }
+  .cred-val.empty { color: var(--text-muted); font-style: italic; letter-spacing: 0; }
+  .cred-btns { display: flex; gap: 4px; flex: none; }
+  .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
+  .mini:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .mini.copied { color: var(--good); border-color: var(--good); }
+  .mini.open { color: var(--series-1); border-color: var(--series-1); text-decoration: none; }
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 10px 0; }
+
+  /* ---------- Add / edit form ---------- */
+  .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .form-grid .field input { width: 160px; }
+  .form-grid .field input.wide { width: 260px; }
+  .pw-wrap { display: flex; gap: 6px; }
+  .security-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); }
+
+  /* ---------- Undeniable Co branding ---------- */
+  .brandbar { display: flex; align-items: center; gap: 18px; background: #000; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 20px; }
+  .brand-logo { height: 84px; width: auto; flex: none; display: block; }
+  .brand-copy { min-width: 0; }
+  .brand-hi { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
+  .brand-user { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: #f0f0f0; }
+  @supports (-webkit-background-clip: text) or (background-clip: text) {
+    .brand-user { background: linear-gradient(180deg,#ffffff 0%,#d2d2d2 45%,#8e8e8e 62%,#ededed 100%);
+      -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
+  }
+  .brand-tag { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #6f6f6f; margin-top: 5px; }
+  @media (max-width: 640px) {
+    .brandbar { gap: 12px; padding: 12px 14px; }
+    .brand-logo { height: 58px; }
+    .brand-user { font-size: 20px; }
+    .brand-tag { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="auth-gate" id="authGate">
+  <form class="auth-card" id="authForm">
+    <h2 id="authTitle">Log in</h2>
+    <p class="auth-sub">Your carrier logins sync across all your devices.</p>
+    <div><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
+    <div><label for="authPass">Password</label><input type="password" id="authPass" autocomplete="current-password" required minlength="6"></div>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="btn" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch"></div>
+  </form>
+</div>
+
+<div class="wrap">
+  <div class="brandbar">
+    <img class="brand-logo" src="logo.png" alt="Undeniable Co">
+    <div class="brand-copy">
+      <div class="brand-hi">Welcome</div>
+      <div class="brand-user">SexyBeast69</div>
+      <div class="brand-tag">Built different. Proven always.</div>
+    </div>
+  </div>
+  <nav class="hub-tabs">
+    <a href="index.html" class="hub-tab">Activity</a>
+    <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
+    <a href="carriers.html" class="hub-tab is-active">Carrier links</a>
+  </nav>
+  <header>
+    <div>
+      <h1>Carrier links</h1>
+      <div class="sub">Your carrier portals and logins, one tap to copy.</div>
+    </div>
+    <div class="toolbar">
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+      <span class="sync-pill" id="syncPill" style="display:none"></span>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="npn-row">
+      <label for="npnInput">NPN / license #</label>
+      <input type="text" id="npnInput" placeholder="Your national producer number">
+      <button class="mini" data-copy-npn>Copy</button>
+    </div>
+  </div>
+
+  <button class="btn" id="addToggle" style="align-self:flex-start">+ Add carrier</button>
+  <div class="card" id="carrierCard" style="display:none">
+    <h2 id="carrierFormTitle">Add a carrier</h2>
+    <form id="carrierForm" class="form-grid">
+      <div class="field"><label for="c-name">Carrier</label><input type="text" id="c-name" required placeholder="Foresters"></div>
+      <div class="field"><label for="c-url">Portal link</label><input type="text" id="c-url" class="wide" placeholder="https://…"></div>
+      <div class="field"><label for="c-producer">Producer #</label><input type="text" id="c-producer" placeholder=""></div>
+      <div class="field"><label for="c-username">Username</label><input type="text" id="c-username" autocomplete="off" placeholder=""></div>
+      <div class="field"><label for="c-password">Password <span style="color:var(--text-muted)">(optional)</span></label>
+        <div class="pw-wrap"><input type="password" id="c-password" autocomplete="new-password" placeholder=""><button type="button" class="mini" id="c-pw-toggle">Show</button></div>
+      </div>
+      <button type="submit" class="btn" id="carrierSubmit">Add carrier</button>
+      <button type="button" class="btn secondary" id="carrierCancel">Cancel</button>
+    </form>
+    <div class="security-note">Passwords are stored in your private cloud account (only you can see them). For maximum safety you can leave the password blank and let your browser fill it — the link, IDs and username still copy in one tap.</div>
+  </div>
+
+  <div class="carriers-grid" id="carriersGrid"></div>
+  <div class="empty" id="carriersEmpty" style="display:none">No carriers yet — add your first one above.</div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  var STORE_KEY = "agentHub-carriers-v1";
+  function $(id) { return document.getElementById(id); }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+
+  function seedState() { return { npn: "", carriers: [] }; }
+  // fold any old "Agent ID" values into Producer # (Agent ID field was removed)
+  function migrateCarriers(carriers) {
+    var changed = false;
+    (carriers || []).forEach(function (c) {
+      if (c.agentId != null) { if (!c.producer) c.producer = c.agentId; delete c.agentId; changed = true; }
+    });
+    return changed;
+  }
+  function load() { try { var raw = localStorage.getItem(STORE_KEY); if (raw) { var s = JSON.parse(raw); migrateCarriers(s.carriers); return s; } } catch (e) {} return seedState(); }
+  function save() { localStorage.setItem(STORE_KEY, JSON.stringify(state)); cloudScheduleSave(); }
+  var state = load();
+  var editingId = null;
+
+  /* ---------- copy to clipboard ---------- */
+  function copyText(text, btn) {
+    var done = function () {
+      if (!btn) return;
+      var old = btn.textContent; btn.textContent = "Copied"; btn.classList.add("copied");
+      setTimeout(function () { btn.textContent = old; btn.classList.remove("copied"); }, 1100);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () { fallbackCopy(text); done(); });
+    } else { fallbackCopy(text); done(); }
+  }
+  function fallbackCopy(text) {
+    var ta = document.createElement("textarea"); ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  /* ---------- render ---------- */
+  var revealed = {}; // carrierId -> bool (password shown)
+
+  function render() {
+    $("npnInput").value = state.npn || "";
+    var grid = $("carriersGrid");
+    grid.innerHTML = state.carriers.map(function (c) {
+      var rows = "";
+      rows += credRow("Portal", c.url, c.id, "url");
+      rows += credRow("Producer #", c.producer, c.id, "text");
+      rows += credRow("Username", c.username, c.id, "text");
+      rows += credRow("Password", c.password, c.id, "password");
+      var openBtn = c.url ? '<a class="mini open" href="' + esc(withProto(c.url)) + '" target="_blank" rel="noopener noreferrer">Open ↗</a>' : "";
+      return '<div class="carrier-card" data-id="' + c.id + '">' +
+        '<div class="carrier-head"><div class="carrier-title"><span class="drag-handle" title="Drag to reorder">⠿</span><div class="carrier-name">' + esc(c.name || "Carrier") + "</div></div>" +
+        '<div class="carrier-actions">' + openBtn +
+          '<button class="btn icon" data-edit="' + c.id + '" title="Edit">&#9998;</button>' +
+          '<button class="btn icon" data-del="' + c.id + '" title="Delete">&#10005;</button>' +
+        "</div></div>" + rows + "</div>";
+    }).join("");
+    $("carriersEmpty").style.display = state.carriers.length ? "none" : "";
+    ensureSortable();
+  }
+
+  /* ---------- drag to reorder ---------- */
+  var sortable = null;
+  function ensureSortable() {
+    if (sortable || !window.Sortable) return;
+    sortable = window.Sortable.create($("carriersGrid"), {
+      animation: 150, handle: ".drag-handle",
+      onEnd: function () {
+        var ids = [].slice.call($("carriersGrid").querySelectorAll(".carrier-card")).map(function (el) { return el.getAttribute("data-id"); });
+        state.carriers.sort(function (a, b) { return ids.indexOf(a.id) - ids.indexOf(b.id); });
+        save(); render();
+      }
+    });
+  }
+  function loadSortable() {
+    if (window.Sortable) { ensureSortable(); return; }
+    var s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js";
+    s.onload = ensureSortable;
+    document.head.appendChild(s);
+  }
+
+  function credRow(label, value, cid, type) {
+    var has = value != null && value !== "";
+    var display, copyVal = has ? value : "";
+    if (!has) display = '<span class="cred-val empty">—</span>';
+    else if (type === "password") {
+      var shown = revealed[cid];
+      display = '<span class="cred-val' + (shown ? "" : " mask") + '"' + (shown ? ' title="' + esc(value) + '"' : "") + ">" + (shown ? esc(value) : "••••••••") + "</span>";
+    } else display = '<span class="cred-val" title="' + esc(value) + '">' + esc(value) + "</span>";
+
+    var btns = "";
+    if (type === "password" && has) btns += '<button class="mini" data-reveal="' + cid + '">' + (revealed[cid] ? "Hide" : "Show") + "</button>";
+    if (has) btns += '<button class="mini" data-copy="' + encodeURIComponent(copyVal) + '">Copy</button>';
+    return '<div class="cred"><span class="cred-label">' + label + "</span>" + display + '<span class="cred-btns">' + btns + "</span></div>";
+  }
+
+  function withProto(u) { return /^https?:\/\//i.test(u) ? u : "https://" + u; }
+
+  /* ---------- NPN ---------- */
+  $("npnInput").addEventListener("input", function () { state.npn = this.value; save(); });
+  document.querySelector("[data-copy-npn]").addEventListener("click", function () { copyText(state.npn || "", this); });
+
+  /* ---------- carrier form ---------- */
+  function resetForm() {
+    editingId = null;
+    $("carrierForm").reset();
+    $("c-password").type = "password"; $("c-pw-toggle").textContent = "Show";
+    $("carrierFormTitle").textContent = "Add a carrier";
+    $("carrierSubmit").textContent = "Add carrier";
+  }
+  function showForm() { $("carrierCard").style.display = ""; $("addToggle").style.display = "none"; }
+  function hideForm() { $("carrierCard").style.display = "none"; $("addToggle").style.display = ""; }
+  $("addToggle").addEventListener("click", function () { resetForm(); showForm(); $("c-name").focus(); });
+  function startEdit(id) {
+    var c = state.carriers.find(function (x) { return x.id === id; });
+    if (!c) return;
+    editingId = id;
+    $("c-name").value = c.name || ""; $("c-url").value = c.url || ""; $("c-producer").value = c.producer || "";
+    $("c-username").value = c.username || ""; $("c-password").value = c.password || "";
+    $("carrierFormTitle").textContent = "Edit — " + (c.name || "");
+    $("carrierSubmit").textContent = "Save changes";
+    showForm();
+    $("carrierCard").scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+  $("c-pw-toggle").addEventListener("click", function () {
+    var el = $("c-password"); var show = el.type === "password";
+    el.type = show ? "text" : "password"; this.textContent = show ? "Hide" : "Show";
+  });
+  $("carrierForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var rec = {
+      id: editingId || uid(),
+      name: $("c-name").value.trim(), url: $("c-url").value.trim(), producer: $("c-producer").value.trim(),
+      username: $("c-username").value.trim(),
+      password: $("c-password").value
+    };
+    if (editingId) { var i = state.carriers.findIndex(function (x) { return x.id === editingId; }); if (i >= 0) state.carriers[i] = rec; }
+    else state.carriers.push(rec);
+    save(); resetForm(); hideForm(); render();
+  });
+  $("carrierCancel").addEventListener("click", function () { resetForm(); hideForm(); });
+
+  /* ---------- delegated clicks ---------- */
+  document.addEventListener("click", function (ev) {
+    var el = ev.target.closest("[data-copy],[data-reveal],[data-edit],[data-del]");
+    if (!el) return;
+    if (el.hasAttribute("data-copy")) copyText(decodeURIComponent(el.getAttribute("data-copy")), el);
+    else if (el.hasAttribute("data-reveal")) { var id = el.getAttribute("data-reveal"); revealed[id] = !revealed[id]; render(); }
+    else if (el.hasAttribute("data-edit")) startEdit(el.getAttribute("data-edit"));
+    else if (el.hasAttribute("data-del")) {
+      var c = state.carriers.find(function (x) { return x.id === el.getAttribute("data-del"); });
+      if (c && confirm("Delete " + (c.name || "this carrier") + "?")) {
+        state.carriers = state.carriers.filter(function (x) { return x.id !== el.getAttribute("data-del"); });
+        if (editingId === c.id) resetForm();
+        save(); render();
+      }
+    }
+  });
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = "agentHub.theme.v1";
+  function effectiveTheme() { return document.documentElement.getAttribute("data-theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+  function updateThemeBtn() { var d = effectiveTheme() === "dark"; $("themeBtn").classList.toggle("dark", d); $("themeBtn").setAttribute("aria-checked", d ? "true" : "false"); }
+  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+
+  /* ---------- cloud sync ---------- */
+  var CLOUD_TABLE = "carrier_state";
+  var cloudCfg = window.HUB_CLOUD || {};
+  var cloudOn = !!(cloudCfg.url && cloudCfg.anonKey);
+  var sb = null, cloudUser = null, cloudSaveTimer = null, authMode = "signin";
+
+  function setSyncPill(txt, cls) { var el = $("syncPill"); if (!el) return; if (!txt) { el.style.display = "none"; return; } el.style.display = ""; el.textContent = txt; el.className = "sync-pill" + (cls ? " " + cls : ""); }
+  function cloudScheduleSave() { if (!cloudOn || !cloudUser) return; setSyncPill("Saving…", "saving"); clearTimeout(cloudSaveTimer); cloudSaveTimer = setTimeout(cloudPush, 700); }
+  function cloudPush() {
+    if (!cloudOn || !cloudUser) return;
+    sb.from(CLOUD_TABLE).upsert({ user_id: cloudUser.id, data: state, updated_at: new Date().toISOString() }, { onConflict: "user_id" })
+      .then(function (res) { setSyncPill(res.error ? "Sync error" : "Saved", res.error ? "err" : "saved"); });
+  }
+  function cloudPull() {
+    return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle().then(function (res) {
+      if (res.error) throw res.error;
+      var d = res.data && res.data.data;
+      var cloudHas = d && ((d.carriers && d.carriers.length) || (d.npn && d.npn.length));
+      var localHas = (state.carriers && state.carriers.length) || (state.npn && state.npn.length);
+      if (cloudHas) { state = d; if (!state.carriers) state.carriers = []; var chg = migrateCarriers(state.carriers); localStorage.setItem(STORE_KEY, JSON.stringify(state)); setSyncPill("Saved", "saved"); if (chg) cloudScheduleSave(); }
+      else if (localHas) { cloudPush(); }
+      else { setSyncPill("Saved", "saved"); }
+    });
+  }
+  function setAuthMode(mode) {
+    authMode = mode; var signin = mode === "signin";
+    $("authTitle").textContent = signin ? "Log in" : "Create account";
+    $("authSubmit").textContent = signin ? "Log in" : "Create account";
+    $("authPass").setAttribute("autocomplete", signin ? "current-password" : "new-password");
+    $("authErr").textContent = "";
+    $("authSwitch").innerHTML = signin ? 'New here? <a id="authToSignup">Create an account</a>' : 'Already have an account? <a id="authToSignin">Log in</a>';
+    var a = document.getElementById(signin ? "authToSignup" : "authToSignin");
+    if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+  }
+  function onAuthed(user) {
+    cloudUser = user; $("authGate").classList.remove("show"); $("acctBox").classList.add("show"); $("acctEmail").textContent = user.email || "";
+    setSyncPill("Loading…", "saving");
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { updateThemeBtn(); render(); });
+  }
+  function onSignedOut() {
+    cloudUser = null; $("acctBox").classList.remove("show"); setSyncPill("", "");
+    state = seedState(); localStorage.removeItem(STORE_KEY); render();
+    $("authGate").classList.add("show"); setAuthMode("signin");
+  }
+  function initCloud() {
+    setAuthMode("signin");
+    $("authForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var email = $("authEmail").value.trim(), pass = $("authPass").value;
+      $("authErr").textContent = ""; $("authSubmit").disabled = true;
+      var op = authMode === "signin" ? sb.auth.signInWithPassword({ email: email, password: pass }) : sb.auth.signUp({ email: email, password: pass });
+      op.then(function (res) {
+        $("authSubmit").disabled = false;
+        if (res.error) { $("authErr").textContent = res.error.message; return; }
+        if (authMode === "signup" && res.data && !res.data.session) { $("authErr").textContent = "Account created — check your email to confirm, then log in."; setAuthMode("signin"); }
+      });
+    });
+    $("logoutBtn").addEventListener("click", function () { sb.auth.signOut(); });
+    sb.auth.onAuthStateChange(function (_e, session) { if (session && session.user) { if (!cloudUser) onAuthed(session.user); } else if (cloudUser !== null) onSignedOut(); });
+    sb.auth.getSession().then(function (res) { var s = res.data && res.data.session; if (s && s.user) onAuthed(s.user); else $("authGate").classList.add("show"); });
+  }
+  function loadSupabaseSdk(cb) { var s = document.createElement("script"); s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"; s.onload = cb; s.onerror = function () { cloudOn = false; updateThemeBtn(); render(); }; document.head.appendChild(s); }
+
+  /* ---------- boot ---------- */
+  if (cloudOn) {
+    updateThemeBtn();
+    loadSupabaseSdk(function () { sb = window.supabase.createClient(cloudCfg.url, cloudCfg.anonKey); initCloud(); });
+  } else {
+    updateThemeBtn(); render();
+  }
+  loadSortable();
+})();
+</script>
+</body>
+</html>
