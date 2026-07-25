@@ -108,7 +108,7 @@
   .cred { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--grid); }
   .cred:first-of-type { border-top: none; }
   .cred-label { width: 76px; flex: none; color: var(--text-muted); font-size: 12px; }
-  .cred-val { flex: 1; font-size: 14px; word-break: break-all; font-variant-numeric: tabular-nums; }
+  .cred-val { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
   .cred-val.mask { letter-spacing: 2px; }
   .cred-val.empty { color: var(--text-muted); font-style: italic; letter-spacing: 0; }
   .cred-btns { display: flex; gap: 4px; flex: none; }
@@ -249,8 +249,8 @@
     if (!has) display = '<span class="cred-val empty">—</span>';
     else if (type === "password") {
       var shown = revealed[cid];
-      display = '<span class="cred-val' + (shown ? "" : " mask") + '">' + (shown ? esc(value) : "••••••••") + "</span>";
-    } else display = '<span class="cred-val">' + esc(value) + "</span>";
+      display = '<span class="cred-val' + (shown ? "" : " mask") + '"' + (shown ? ' title="' + esc(value) + '"' : "") + ">" + (shown ? esc(value) : "••••••••") + "</span>";
+    } else display = '<span class="cred-val" title="' + esc(value) + '">' + esc(value) + "</span>";
 
     var btns = "";
     if (type === "password" && has) btns += '<button class="mini" data-reveal="' + cid + '">' + (revealed[cid] ? "Hide" : "Show") + "</button>";
