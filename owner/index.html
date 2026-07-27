@@ -189,6 +189,7 @@
           <span class="note">Join code:</span>
           <span class="code-pill" id="joinCode"></span>
           <button class="mini" id="copyCode">Copy</button>
+          <button class="mini" id="deleteAgency" title="Remove this agency">Delete agency</button>
         </div>
       </div>
       <div class="note">Agents enter that code once in their tracker (Deals &amp; PNL tab) to join. You'll see their production numbers here — never their client names or phone numbers.</div>
@@ -460,6 +461,23 @@
       setTimeout(function () { btn.textContent = o; btn.classList.remove("copied"); }, 1100); };
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, done);
     else done();
+  });
+
+  $("deleteAgency").addEventListener("click", function () {
+    if (!agency) return;
+    if (!confirm("Delete " + agency.name + "?\n\nThis removes the agency and disconnects every agent from it. " +
+                 "Nobody loses any of their own deals or data — they just stop sharing numbers with you.")) return;
+    var btn = this; btn.disabled = true;
+    sb.from("agencies").delete().eq("owner_id", user.id).then(function (res) {
+      btn.disabled = false;
+      if (res.error) { alert(res.error.message); return; }
+      agency = null; members = []; summaries = {};
+      $("teamView").style.display = "none";
+      $("monthNav").style.display = "none";
+      $("setupCard").style.display = "";
+      $("agencyTitle").textContent = "Agency Owner Hub";
+      $("agencySub").textContent = "Your team's production, rolled up by month.";
+    });
   });
 
   (function initLevels() {
