@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agency Owner Hub</title>
+<link rel="icon" href="../favicon.ico" sizes="32x32">
+<link rel="icon" type="image/png" sizes="64x64" href="../favicon.png">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<script>
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+  };
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+      --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+    --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height: 1.45; padding: 20px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .month-nav { display: flex; align-items: center; gap: 4px; }
+  .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-head h2 { margin-bottom: 0; }
+
+  .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .tile .t-label { font-size: 12px; color: var(--text-muted); }
+  .tile .t-value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tile .t-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .tile.hero { border-color: var(--good); background: var(--good-soft); }
+  .tile.hero .t-value { color: var(--good); }
+
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="text"], input[type="email"], input[type="password"], input[type="number"] {
+    font: inherit; font-size: 14px; color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--baseline); border-radius: 7px; padding: 7px 9px;
+  }
+  .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--baseline); }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.icon { background: transparent; border-color: var(--baseline); color: var(--text-secondary); padding: 5px 10px; font-size: 14px; line-height: 1; }
+  .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .mini.copied { color: var(--good); border-color: var(--good); }
+
+  .theme-toggle { position: relative; width: 30px; height: 16px; flex: none; align-self: center; margin-left: 4px; border-radius: 999px; border: 1px solid var(--grid); background: transparent; cursor: pointer; padding: 0; opacity: 0.7; }
+  .theme-toggle:hover { opacity: 1; }
+  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); transition: left .15s ease, background .15s ease; }
+  .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
+  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+
+  .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
+  .auth-gate.show { display: flex; }
+  .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .auth-card h2 { font-size: 18px; font-weight: 650; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .auth-card input { width: 100%; }
+  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
+  th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
+  td { border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--baseline); }
+  td.ovr { color: var(--good); font-weight: 650; }
+  .agent-name { font-weight: 600; }
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 10px 0; }
+  .warn { font-size: 12px; color: #c2790a; margin-top: 10px; }
+  @media (prefers-color-scheme: dark) { .warn { color: #f5b451; } }
+  :root[data-theme="dark"] .warn { color: #f5b451; }
+
+  .setup { max-width: 460px; }
+  .setup .field { margin-bottom: 12px; }
+  .setup input { width: 100%; }
+  .code-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .code-pill { font-size: 18px; font-weight: 700; letter-spacing: .12em; padding: 6px 14px; border-radius: 8px; background: var(--series-1-soft); color: var(--series-1); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .note { font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="auth-gate" id="authGate">
+  <form class="auth-card" id="authForm">
+    <h2 id="authTitle">Log in</h2>
+    <p class="auth-sub">Agency owner view — your team's production in one place.</p>
+    <div><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
+    <div><label for="authPass">Password</label><input type="password" id="authPass" autocomplete="current-password" required minlength="6"></div>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="btn" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch"></div>
+  </form>
+</div>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1 id="agencyTitle">Agency Owner Hub</h1>
+      <div class="sub" id="agencySub">Your team's production, rolled up by month.</div>
+    </div>
+    <div class="toolbar">
+      <div class="month-nav" id="monthNav" style="display:none">
+        <button class="btn icon" id="prevMonth" title="Previous month">&#9664;</button>
+        <span class="label" id="monthLabel"></span>
+        <button class="btn icon" id="nextMonth" title="Next month">&#9654;</button>
+      </div>
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+    </div>
+  </header>
+
+  <div class="card" id="errCard" style="display:none">
+    <h2>Setup needed</h2>
+    <div class="note" id="errText"></div>
+  </div>
+
+  <!-- first run: create the agency -->
+  <div class="card setup" id="setupCard" style="display:none">
+    <h2>Set up your agency</h2>
+    <form id="setupForm">
+      <div class="field"><label for="s-name">Agency name</label><input type="text" id="s-name" required placeholder="Undeniable Co"></div>
+      <div class="field"><label for="s-code">Join code <span style="color:var(--text-muted)">— agents enter this once</span></label><input type="text" id="s-code" required placeholder="UNDENIABLE"></div>
+      <div class="auth-err" id="setupErr"></div>
+      <button type="submit" class="btn">Create agency</button>
+    </form>
+  </div>
+
+  <!-- main view -->
+  <div id="teamView" style="display:none">
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
+        <h2>Your agency <span class="hint" id="agencyName"></span></h2>
+        <div class="code-row">
+          <span class="note">Your contract level:</span>
+          <select id="ownerLevel" style="width:auto"><option value="">Set level…</option></select>
+          <span class="note">Join code:</span>
+          <span class="code-pill" id="joinCode"></span>
+          <button class="mini" id="copyCode">Copy</button>
+        </div>
+      </div>
+      <div class="note">Agents enter that code once in their tracker (Deals &amp; PNL tab) to join. You'll see their production numbers here — never their client names or phone numbers.</div>
+    </div>
+
+    <div class="tiles" id="tiles" style="margin-bottom:16px"></div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Production by agent <span class="hint" id="prodHint"></span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Agent</th><th class="num">Level</th><th class="num">Deals</th>
+            <th class="num">Submitted AP</th><th class="num">Issued AP</th>
+            <th class="num">Their comm.</th><th class="num">Your override</th>
+          </tr></thead>
+          <tbody id="prodBody"></tbody>
+          <tfoot id="prodFoot"></tfoot>
+        </table>
+      </div>
+      <div class="empty" id="prodEmpty" style="display:none">No agents have joined yet — share your join code above.</div>
+      <div class="warn" id="prodWarn" style="display:none"></div>
+    </div>
+
+    <div class="card">
+      <h2>Activity by agent <span class="hint">this month</span></h2>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Agent</th><th class="num">Dials</th><th class="num">Pickups</th>
+            <th class="num">Convos</th><th class="num">Appts</th><th class="num">Presentations</th><th class="num">Sold</th>
+          </tr></thead>
+          <tbody id="actBody"></tbody>
+          <tfoot id="actFoot"></tfoot>
+        </table>
+      </div>
+      <div class="empty" id="actEmpty" style="display:none">No call activity logged by your team this month.</div>
+    </div>
+  </div>
+</div>
+
+<script src="../comp-guide.js"></script>
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(n) {
+    if (n === null || n === undefined || isNaN(n)) return "—";
+    return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function num(v) { if (v === "" || v == null) return null; var n = parseFloat(v); return isNaN(n) ? null : n; }
+
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function monthLabel(ym) { var p = ym.split("-"); return MONTHS[parseInt(p[1],10)-1] + " " + p[0]; }
+  function shiftMonth(ym, d) {
+    var p = ym.split("-"), y = parseInt(p[0],10), m = parseInt(p[1],10) - 1 + d;
+    y += Math.floor(m/12); m = ((m%12)+12)%12;
+    return y + "-" + String(m+1).padStart(2,"0");
+  }
+  function todayMonth() { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); }
+  var currentMonth = todayMonth();
+
+  /* ---------- comp lookup (shared comp-guide.js) ---------- */
+  var LEVELS = window.COMP_LEVELS || [];
+  var CARRIERS = window.COMP_CARRIERS || {};
+  function normKey(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
+  function findKey(obj, name) {
+    var n = normKey(name); if (!n) return null;
+    var keys = Object.keys(obj);
+    for (var i = 0; i < keys.length; i++) if (normKey(keys[i]) === n) return keys[i];
+    return null;
+  }
+  // comp % for a carrier/product at a given contract level (honours +5 / noPlus rules)
+  function compRate(carrier, product, level) {
+    if (level == null || level === "") return null;
+    var ck = findKey(CARRIERS, carrier); if (!ck) return null;
+    var c = CARRIERS[ck];
+    var pk = findKey(c.products, product); if (!pk) return null;
+    var li = LEVELS.indexOf(parseInt(level, 10)); if (li < 0) return null;
+    var pv = c.products[pk];
+    var rates = Array.isArray(pv) ? pv : pv.r;
+    var noPlus = !Array.isArray(pv) && !!pv.noPlus;
+    var base = rates[li];
+    if (base == null) return null;
+    return base + ((c.plus && !c.bonusIncluded && !noPlus) ? 5 : 0);
+  }
+  // owner's override on one deal = AP × (ownerComp% − agentComp%) × 9/12
+  function overrideFor(deal, agentLevel, ownerLevel) {
+    var ap = num(deal.ap); if (ap == null) return null;
+    var o = compRate(deal.carrier, deal.product, ownerLevel);
+    var a = compRate(deal.carrier, deal.product, agentLevel);
+    if (o == null || a == null) return null;
+    var spread = o - a;
+    if (spread <= 0) return 0;
+    return ap * spread / 100 * 9 / 12;
+  }
+
+  /* ---------- state ---------- */
+  var sb = null, user = null, agency = null, members = [], summaries = {}, authMode = "signin";
+
+  function tile(label, value, sub, cls) {
+    return '<div class="tile ' + (cls||"") + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
+      (sub ? '<div class="t-sub">' + sub + "</div>" : "") + "</div>";
+  }
+
+  function monthOf(sum, ym) {
+    var m = sum && sum.months && sum.months[ym];
+    return m || { deals: [], activity: {} };
+  }
+
+  function render() {
+    $("monthLabel").textContent = monthLabel(currentMonth);
+    var ownerLevel = agency && agency.owner_level != null ? String(agency.owner_level) : "";
+    $("ownerLevel").value = ownerLevel;
+
+    var rows = members.map(function (m) {
+      var sum = summaries[m.agent_id];
+      var mo = monthOf(sum, currentMonth);
+      var deals = mo.deals || [];
+      var lvl = sum && sum.contractLevel != null ? String(sum.contractLevel) : "";
+      var submitted = 0, issued = 0, theirComm = 0, ovr = 0, unknown = 0;
+      deals.forEach(function (d) {
+        var ap = num(d.ap) || 0;
+        submitted += ap;
+        if (d.status === "Issued") issued += ap;
+        if (d.status !== "Chargeback") theirComm += (num(d.com) || 0);
+        if (d.status === "Chargeback") return;              // charged back: no override either
+        var o = ownerLevel ? overrideFor(d, lvl, ownerLevel) : null;
+        if (o == null) unknown++; else ovr += o;
+      });
+      return { m: m, sum: sum, name: (m.agent_name || "Agent"), level: lvl, n: deals.length,
+               submitted: submitted, issued: issued, theirComm: theirComm, ovr: ovr, unknown: unknown,
+               activity: mo.activity || {} };
+    });
+
+    // sort by override desc, then issued AP
+    rows.sort(function (a, b) { return (b.ovr - a.ovr) || (b.issued - a.issued); });
+
+    var t = { n: 0, submitted: 0, issued: 0, theirComm: 0, ovr: 0, unknown: 0 };
+    rows.forEach(function (r) { t.n += r.n; t.submitted += r.submitted; t.issued += r.issued; t.theirComm += r.theirComm; t.ovr += r.ovr; t.unknown += r.unknown; });
+    var producing = rows.filter(function (r) { return r.n > 0; }).length;
+
+    $("tiles").innerHTML =
+      tile("Agents", String(members.length), producing + " producing this month", "") +
+      tile("Deals", String(t.n), "", "") +
+      tile("Submitted AP", money(t.submitted), "", "") +
+      tile("Issued AP", money(t.issued), "", "") +
+      tile("Team commission", money(t.theirComm), "what your agents earned", "") +
+      tile("Your override", ownerLevel ? money(t.ovr) : "—", ownerLevel ? "contract level spread" : "set your contract level", ownerLevel ? "hero" : "");
+
+    $("prodBody").innerHTML = rows.map(function (r) {
+      return "<tr><td class=\"agent-name\">" + esc(r.name) + "</td>" +
+        '<td class="num">' + (r.level || "—") + "</td>" +
+        '<td class="num">' + r.n + "</td>" +
+        '<td class="num">' + money(r.submitted) + "</td>" +
+        '<td class="num">' + money(r.issued) + "</td>" +
+        '<td class="num">' + money(r.theirComm) + "</td>" +
+        '<td class="num ovr">' + (ownerLevel ? money(r.ovr) : "—") + "</td></tr>";
+    }).join("");
+    $("prodFoot").innerHTML = rows.length
+      ? '<tr><td>Total</td><td class="num"></td><td class="num">' + t.n + '</td><td class="num">' + money(t.submitted) +
+        '</td><td class="num">' + money(t.issued) + '</td><td class="num">' + money(t.theirComm) +
+        '</td><td class="num ovr">' + (ownerLevel ? money(t.ovr) : "—") + "</td></tr>"
+      : "";
+    $("prodEmpty").style.display = members.length ? "none" : "";
+    $("prodHint").textContent = monthLabel(currentMonth);
+    if (t.unknown > 0 && ownerLevel) {
+      $("prodWarn").style.display = "";
+      $("prodWarn").textContent = "⚠ " + t.unknown + " deal" + (t.unknown === 1 ? "" : "s") +
+        " couldn't be scored for override — the carrier/product isn't in the comp guide, or the agent hasn't set their contract level.";
+    } else $("prodWarn").style.display = "none";
+
+    var actRows = rows.filter(function (r) {
+      var a = r.activity; return a && (a.dials || a.pickups || a.convos || a.appointments || a.presentations || a.sold);
+    });
+    $("actBody").innerHTML = actRows.map(function (r) {
+      var a = r.activity;
+      return "<tr><td class=\"agent-name\">" + esc(r.name) + "</td>" +
+        '<td class="num">' + (a.dials||0) + '</td><td class="num">' + (a.pickups||0) + '</td><td class="num">' + (a.convos||0) +
+        '</td><td class="num">' + (a.appointments||0) + '</td><td class="num">' + (a.presentations||0) + '</td><td class="num">' + (a.sold||0) + "</td></tr>";
+    }).join("");
+    var at = { dials:0, pickups:0, convos:0, appointments:0, presentations:0, sold:0 };
+    actRows.forEach(function (r) { Object.keys(at).forEach(function (k) { at[k] += (r.activity[k] || 0); }); });
+    $("actFoot").innerHTML = actRows.length
+      ? '<tr><td>Total</td><td class="num">' + at.dials + '</td><td class="num">' + at.pickups + '</td><td class="num">' + at.convos +
+        '</td><td class="num">' + at.appointments + '</td><td class="num">' + at.presentations + '</td><td class="num">' + at.sold + "</td></tr>"
+      : "";
+    $("actEmpty").style.display = actRows.length ? "none" : "";
+  }
+
+  /* ---------- data loading ---------- */
+  function loadAgency() {
+    return sb.from("agencies").select("*").eq("owner_id", user.id).maybeSingle().then(function (res) {
+      if (res.error) throw res.error;
+      agency = res.data || null;
+      return agency;
+    });
+  }
+  function loadTeam() {
+    if (!agency) return Promise.resolve();
+    return sb.from("agency_members").select("agent_id,agent_name").eq("agency_id", agency.id).then(function (res) {
+      if (res.error) throw res.error;
+      members = res.data || [];
+      if (!members.length) { summaries = {}; return; }
+      var ids = members.map(function (m) { return m.agent_id; });
+      return sb.from("team_summary").select("user_id,data").in("user_id", ids).then(function (r2) {
+        if (r2.error) throw r2.error;
+        summaries = {};
+        (r2.data || []).forEach(function (row) { summaries[row.user_id] = row.data || {}; });
+        // prefer the name the agent set on their own summary
+        members.forEach(function (m) {
+          var s = summaries[m.agent_id];
+          if (s && s.agentName) m.agent_name = s.agentName;
+        });
+      });
+    });
+  }
+  function showTeam() {
+    $("setupCard").style.display = "none";
+    $("teamView").style.display = "";
+    $("monthNav").style.display = "";
+    $("agencyTitle").textContent = agency.name;
+    $("agencySub").textContent = "Team production, rolled up by month.";
+    $("agencyName").textContent = "";
+    $("joinCode").textContent = agency.join_code;
+    render();
+  }
+  function showError(e) {
+    var msg = (e && (e.message || e.hint)) || "Something went wrong loading your agency.";
+    if (/schema cache|does not exist|relation .* does not exist/i.test(msg)) {
+      msg = "The team database tables haven't been created yet. Run supabase-team-setup.sql in your Supabase SQL Editor, then reload this page.";
+    }
+    $("errText").textContent = msg;
+    $("errCard").style.display = "";
+    $("setupCard").style.display = "none";
+    $("teamView").style.display = "none";
+    $("monthNav").style.display = "none";
+  }
+  function refresh() {
+    $("errCard").style.display = "none";
+    return loadAgency().then(function () {
+      if (!agency) { $("setupCard").style.display = ""; $("teamView").style.display = "none"; $("monthNav").style.display = "none"; return; }
+      return loadTeam().then(showTeam);
+    }).catch(showError);
+  }
+
+  /* ---------- setup form ---------- */
+  $("setupForm").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    var name = $("s-name").value.trim();
+    var code = $("s-code").value.trim().toUpperCase();
+    $("setupErr").textContent = "";
+    sb.from("agencies").insert({ owner_id: user.id, name: name, join_code: code }).select().maybeSingle()
+      .then(function (res) {
+        if (res.error) {
+          $("setupErr").textContent = /duplicate|unique/i.test(res.error.message)
+            ? "That join code is already taken — try another." : res.error.message;
+          return;
+        }
+        agency = res.data;
+        refresh();
+      });
+  });
+
+  $("copyCode").addEventListener("click", function () {
+    var btn = this, txt = agency ? agency.join_code : "";
+    var done = function () { var o = btn.textContent; btn.textContent = "Copied"; btn.classList.add("copied");
+      setTimeout(function () { btn.textContent = o; btn.classList.remove("copied"); }, 1100); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(txt).then(done, done);
+    else done();
+  });
+
+  (function initLevels() {
+    var sel = $("ownerLevel");
+    (window.COMP_LEVELS || []).forEach(function (l) {
+      var o = document.createElement("option"); o.value = l; o.textContent = l; sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () {
+      var v = this.value === "" ? null : parseInt(this.value, 10);
+      if (!agency) return;
+      agency.owner_level = v;
+      sb.from("agencies").update({ owner_level: v }).eq("owner_id", user.id).then(function () {});
+      render();
+    });
+  })();
+
+  $("prevMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, -1); render(); });
+  $("nextMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, 1); render(); });
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = "agentHub.theme.v1";
+  function effectiveTheme() { return document.documentElement.getAttribute("data-theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+  function updateThemeBtn() { var d = effectiveTheme() === "dark"; $("themeBtn").classList.toggle("dark", d); $("themeBtn").setAttribute("aria-checked", d ? "true" : "false"); }
+  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+
+  /* ---------- auth ---------- */
+  function setAuthMode(mode) {
+    authMode = mode; var signin = mode === "signin";
+    $("authTitle").textContent = signin ? "Log in" : "Create account";
+    $("authSubmit").textContent = signin ? "Log in" : "Create account";
+    $("authPass").setAttribute("autocomplete", signin ? "current-password" : "new-password");
+    $("authErr").textContent = "";
+    $("authSwitch").innerHTML = signin ? 'New here? <a id="toSignup">Create an account</a>' : 'Already have an account? <a id="toSignin">Log in</a>';
+    var a = document.getElementById(signin ? "toSignup" : "toSignin");
+    if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+  }
+  function onAuthed(u) {
+    user = u;
+    $("authGate").classList.remove("show");
+    $("acctBox").classList.add("show");
+    $("acctEmail").textContent = u.email || "";
+    updateThemeBtn();
+    refresh();
+  }
+  function onSignedOut() {
+    user = null; agency = null; members = []; summaries = {};
+    $("acctBox").classList.remove("show");
+    $("teamView").style.display = "none"; $("setupCard").style.display = "none"; $("monthNav").style.display = "none";
+    $("authGate").classList.add("show"); setAuthMode("signin");
+  }
+  function initCloud() {
+    setAuthMode("signin");
+    $("authForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var email = $("authEmail").value.trim(), pass = $("authPass").value;
+      $("authErr").textContent = ""; $("authSubmit").disabled = true;
+      var op = authMode === "signin" ? sb.auth.signInWithPassword({ email: email, password: pass }) : sb.auth.signUp({ email: email, password: pass });
+      op.then(function (res) {
+        $("authSubmit").disabled = false;
+        if (res.error) { $("authErr").textContent = res.error.message; return; }
+        if (authMode === "signup" && res.data && !res.data.session) { $("authErr").textContent = "Account created — check your email to confirm, then log in."; setAuthMode("signin"); }
+      });
+    });
+    $("logoutBtn").addEventListener("click", function () { sb.auth.signOut(); });
+    sb.auth.onAuthStateChange(function (_e, s) { if (s && s.user) { if (!user) onAuthed(s.user); } else if (user !== null) onSignedOut(); });
+    sb.auth.getSession().then(function (res) {
+      var s = res.data && res.data.session;
+      if (s && s.user) onAuthed(s.user); else { $("authGate").classList.add("show"); updateThemeBtn(); }
+    });
+  }
+  var s = document.createElement("script");
+  s.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  s.onload = function () { sb = window.supabase.createClient(window.HUB_CLOUD.url, window.HUB_CLOUD.anonKey); initCloud(); };
+  document.head.appendChild(s);
+  updateThemeBtn();
+})();
+</script>
+</body>
+</html>

@@ -194,6 +194,8 @@
   .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
   .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
   .settings-row input { width: 80px; }
+  .agency-link { font-size: 13px; color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+  .agency-link:hover { color: var(--text-secondary); }
   .com-row { display: flex; align-items: center; gap: 8px; }
   .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
   .com-note.warn { color: #c2790a; }
@@ -403,6 +405,18 @@
       <select id="contractLevel" style="width:auto"><option value="">Set level…</option></select>
       <span>&mdash; auto-calculates the upfront commission (first 9 months) from the carrier's comp guide. You can always type over it.</span>
     </div>
+    <div class="settings-row" id="agencyRow">
+      <span id="agencyStatus" style="display:none"></span>
+      <a id="agencyToggle" class="agency-link">Join an agency</a>
+      <span id="agencyJoin" style="display:none">
+        <input type="text" id="agencyCode" placeholder="Agency code" style="width:130px">
+        <input type="text" id="agencyMyName" placeholder="Your name" style="width:130px">
+        <button type="button" class="btn secondary small" id="agencyJoinBtn">Join</button>
+        <button type="button" class="btn secondary small" id="agencyCancelBtn">Cancel</button>
+      </span>
+      <button type="button" class="btn secondary small" id="agencyLeaveBtn" style="display:none">Leave</button>
+      <span id="agencyNote" style="display:none"></span>
+    </div>
   </div>
 
   <div class="card">
@@ -478,6 +492,7 @@
   </div>
 </div>
 
+<script src="comp-guide.js"></script>
 <script>
 (function () {
   "use strict";
@@ -520,6 +535,7 @@
   function save() {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
     cloudScheduleSave();
+    teamSchedulePublish();
   }
 
   var state = load();
@@ -890,94 +906,7 @@
     $("trendCard").innerHTML = html;
   }
 
-  /* ---------- commission comp guide (FFG Carrier Comp Guide, rev 2/9/2026) ---------- */
-  // Row order aligns with COMP_LEVELS (145 -> 80). Values are comp % per contract level.
-  var COMP_LEVELS = [145,140,135,130,125,120,115,110,105,100,95,90,85,80];
-  var COMP_CARRIERS = {
-    "United Home Life": { products:{
-      "Express Issue Premier WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Express Issue Deluxe WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Express Issue Graded WL":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Guaranteed Issue Whole Life":[85,80,75,70,65,60,55,50,45,40,35,30,25,25],
-      "Provider Whole Life":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
-      "Term":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
-      "Accidental":[110,105,100,95,90,85,80,75,70,65,60,55,50,45]
-    }},
-    "American Home Life (AHL)": { products:{
-      "FE":[135,130,125,120,115,110,105,100,90,85,80,75,70,65]  // verified vs PDF page 2 (2/9/2026); 100->90 jump at level 105 is correct
-    }},
-    "Elco Mutual": { products:{
-      "FE Immediate":[125,120,120,115,115,110,110,105,105,100,100,95,95,90],
-      "Life Pay WL 0-75":[110,105,105,100,100,95,95,90,90,85,85,80,80,75],
-      "Limited Pay WL":[90,85,85,80,80,75,75,70,70,65,65,60,60,55]
-    }},
-    "Liberty Bankers": { products:{
-      "SI Market PermaLife Preferred":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "SI Market PermaLife Standard":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
-      "Modified Whole Life":[88,87.5,85,80,77.5,75,70,67.5,65,62.5,60,55,50,47.5],
-      "Flex 4 Life Paid Up 100":[117,115,110,105,100,95,90,85,80,75,70,65,60,55]
-    }},
-    "F&G": { products:{
-      "Pathsetter":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Everlast":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Exccudex":[135,130,125,120,115,110,105,100,95,90,85,80,75,70]
-    }},
-    "Kansas City Life": { products:{
-      "Signature Term Simplified Issue":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "IUL (All) Fully Underwritten":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
-      "Signature Term":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
-      "Cashback Life (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
-      "Level 30 A (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
-      "Signature Term 30 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55],
-      "Longevity Term 85 (UW)":[105,100,95,90,85,80,75,70,65,65,60,60,60,55]
-    }},
-    "Foresters": { plus:true, products:{
-      "Strong Foundation":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
-      "Your Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "SmartUL":[115,110,105,100,95,90,87.5,85,82.5,80,77.5,75,72.5,70],
-      "Accidental Death Term":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Advantage Plus":[110,105,100,95,90,85,80,75,70,65,60,57.5,55,52.5],
-      "Planright":{ r:[135,130,125,120,115,110,105,100,95,90,85,80,75,70], noPlus:true }
-    }},
-    "Corebridge Financial": { products:{
-      "GIWL Whole Life":[90,80,75,70,65,60,55,50,45,45,45,45,45,45],
-      "Simplinow Legacy Max SIWL":[127,122,117,112,107,102,97,92,87,82,77,72,67,62],
-      "Max Accumulator IUL":[110,105,100,95,90,85,80,75,70,65,60,55,50,50]
-    }},
-    "Mutual of Omaha": { products:{
-      "IULe":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Living Promise":[125,120,115,110,105,100,95,90,86,82,78,74,70,65],
-      "Term":[145,140,135,130,125,120,115,110,105,100,95,90,85,80],
-      "GA Advantage":[130,125,120,115,110,105,100,95,90,85,80,75,70,65],
-      "Childrens WL":[107,105,102,100,97,95,92,90,85,80,75,70,65,60],
-      "Accum UL Answers":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
-      "Income Advantage and Life UL":[120,115,110,105,100,95,90,85,80,75,70,65,60,55],
-      "Critical Advantage":[102,99,96,92,89,85,81,77,73,69,65,61,57,53]
-    }},
-    "American-Amicable": { products:{
-      "Express UL":[110,105,100,95,90,85,80,75,70,65,60,55,50,45],
-      "Home Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "OBA":[105,100,95,90,85,80,75,70,65,60,55,50,45,40],
-      "SecureLife Plus":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Security Protector":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
-      "Survivor Protector":[135,130,125,120,115,110,105,100,95,90,85,80,75,70],
-      "Term Made Simple":[100,95,90,85,80,75,70,65,60,55,50,45,40,40],
-      "Dignity Solutions & Family Legacy":[125,120,115,110,105,100,95,90,85,80,75,70,65,60],
-      "Express Term":[115,110,105,100,95,90,85,80,75,70,65,60,55,50],
-      "Bonusmaster":[5.5,5.25,5,4.75,4.5,4.25,4,4,3.5,3.5,3,2,0,0],
-      "Guaranteed Guardian":[80,75,75,70,65,60,55,50,45,40,35,30,0,0]
-    }},
-    "Transamerica": { products:{
-      "Trendsetter Super Term":[105,102,100,90,85,80,75,73,70,67,65,63,60,57],
-      "Trendsetter LB Term":[115,110,105,100,90,85,80,75,70,65,60,55,50,45],
-      "Lifetime WL":[142,140,135,130,120,115,110,105,100,95,90,85,80,75],
-      "Immediate Solution WL":[125,122,120,115,105,100,95,90,85,80,75,70,65,63],
-      "10 Pay Solution WL":[107,105,102,100,90,85,80,75,70,65,63,60,57,53],
-      "Easy Solution WL":[78,75,70,65,60,55,50,45,40,38,35,33,30,27],
-      "Express Solution":[140,137,135,130,120,115,110,105,100,95,90,85,80,75],
-      "FFIUL":[117,110,107,105,100,95,90,85,80,75,70,65,60,55]
-    }}
-  };
+  /* Comp guide data lives in comp-guide.js (shared with the agency owner hub). */
 
   function normKey(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
   function findCarrierKey(carrier) {
@@ -1503,6 +1432,121 @@
     updateThemeBtn();
   });
 
+
+  /* ---------- agency roll-up (production numbers only — no client PII) ---------- */
+  var TEAM_TABLE = "team_summary";
+  var membership = null, teamTimer = null;
+
+  // Build the summary the owner sees. Deliberately excludes client, notes, and phone.
+  function buildTeamSummary() {
+    var months = {}, keep = {};
+    for (var i = 0; i < 13; i++) keep[shiftMonth(currentMonth, -i)] = 1;
+    keep[todayStr().slice(0, 7)] = 1;
+
+    (state.deals || []).forEach(function (d) {
+      var ym = (d.date || "").slice(0, 7);
+      if (!ym || !keep[ym]) return;
+      months[ym] = months[ym] || { deals: [], activity: {} };
+      months[ym].deals.push({
+        date: d.date, carrier: d.carrier || "", product: d.policy || "",
+        ap: num(d.ap), com: num(d.com), status: d.status || ""
+      });
+    });
+
+    var ab = activityBlob || {};
+    var dm = ab.dials || {};
+    Object.keys(dm).forEach(function (k) {
+      var ym = String(k).slice(0, 7);
+      if (!keep[ym]) return;
+      months[ym] = months[ym] || { deals: [], activity: {} };
+      months[ym].activity.dials = (months[ym].activity.dials || 0) + (+dm[k] || 0);
+    });
+    (ab.entries || []).forEach(function (e) {
+      var dt = new Date(e.ts);
+      if (isNaN(dt)) return;
+      var ym = dt.getFullYear() + "-" + String(dt.getMonth() + 1).padStart(2, "0");
+      if (!keep[ym]) return;
+      months[ym] = months[ym] || { deals: [], activity: {} };
+      var a = months[ym].activity;
+      if (e.pickup) a.pickups = (a.pickups || 0) + 1;
+      if (e.conv2) a.convos = (a.convos || 0) + 1;
+      if (e.appointment) a.appointments = (a.appointments || 0) + 1;
+      if (e.presentation) a.presentations = (a.presentations || 0) + 1;
+      if (e.sold) a.sold = (a.sold || 0) + 1;
+    });
+
+    return {
+      agentName: (membership && membership.agent_name) || "",
+      contractLevel: getSetting("contractLevel") || null,
+      updatedAt: new Date().toISOString(),
+      months: months
+    };
+  }
+
+  function teamPublish() {
+    if (!cloudOn || !cloudUser || !membership) return;
+    sb.from(TEAM_TABLE).upsert(
+      { user_id: cloudUser.id, data: buildTeamSummary(), updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    ).then(function () {});
+  }
+  function teamSchedulePublish() {
+    if (!cloudOn || !cloudUser || !membership) return;
+    clearTimeout(teamTimer);
+    teamTimer = setTimeout(teamPublish, 1200);
+  }
+
+  var agencyExpanded = false;
+  function renderAgencyRow() {
+    var joined = !!membership;
+    $("agencyStatus").style.display = joined ? "" : "none";
+    $("agencyToggle").style.display = (!joined && !agencyExpanded) ? "" : "none";
+    $("agencyJoin").style.display = (!joined && agencyExpanded) ? "" : "none";
+    $("agencyLeaveBtn").style.display = joined ? "" : "none";
+    $("agencyNote").style.display = (joined || agencyExpanded) ? "" : "none";
+    if (joined) {
+      $("agencyStatus").textContent = "Agency: " + (membership.agency_name || "joined") + (membership.agent_name ? " · " + membership.agent_name : "");
+      $("agencyNote").innerHTML = "&mdash; your production numbers are shared with your agency owner. Client names and phone numbers are never shared.";
+    } else if (agencyExpanded) {
+      $("agencyNote").innerHTML = "&mdash; joining shares your production numbers (deals, AP, commission, activity) with your agency owner. Never client names or phone numbers.";
+    }
+  }
+  $("agencyToggle").addEventListener("click", function () { agencyExpanded = true; renderAgencyRow(); $("agencyCode").focus(); });
+  $("agencyCancelBtn").addEventListener("click", function () { agencyExpanded = false; renderAgencyRow(); });
+
+  function loadMembership() {
+    if (!cloudOn || !cloudUser) return Promise.resolve();
+    return sb.from("agency_members").select("agency_id,agent_name,agency_name").eq("agent_id", cloudUser.id).maybeSingle()
+      .then(function (res) {
+        membership = (res && !res.error && res.data) ? res.data : null;
+        renderAgencyRow();
+        if (membership) teamPublish();
+      }, function () {});
+  }
+
+  $("agencyJoinBtn").addEventListener("click", function () {
+    var code = $("agencyCode").value.trim(), nm = $("agencyMyName").value.trim();
+    if (!code) return;
+    var btn = this; btn.disabled = true;
+    sb.rpc("join_agency", { p_code: code, p_name: nm }).then(function (res) {
+      btn.disabled = false;
+      if (res.error) { alert(res.error.message || "Could not join that agency."); return; }
+      membership = { agency_name: res.data, agent_name: nm };
+      agencyExpanded = false;
+      $("agencyCode").value = ""; $("agencyMyName").value = "";
+      renderAgencyRow();
+      teamPublish();
+    });
+  });
+
+  $("agencyLeaveBtn").addEventListener("click", function () {
+    if (!confirm("Leave this agency? Your owner will stop seeing your numbers.")) return;
+    sb.from("agency_members").delete().eq("agent_id", cloudUser.id).then(function () {
+      sb.from(TEAM_TABLE).delete().eq("user_id", cloudUser.id).then(function () {});
+      membership = null; renderAgencyRow();
+    });
+  });
+
   /* ---------- cloud sync (optional) ---------- */
 
   var CLOUD_TABLE = "pnl_state";
@@ -1544,6 +1588,7 @@
       .then(function (res) {
         if (!res.error && res.data && res.data.data) activityBlob = res.data.data;
         renderFunnel();
+        teamSchedulePublish();
       });
   }
 
@@ -1586,7 +1631,7 @@
     $("acctBox").classList.add("show");
     $("acctEmail").textContent = user.email || "";
     setSyncPill("Loading…", "saving");
-    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); });
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); loadMembership(); });
   }
 
   function onSignedOut() {
