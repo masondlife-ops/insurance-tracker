@@ -25,6 +25,8 @@ alter table public.agencies enable row level security;
 drop policy if exists "owner reads own agency"   on public.agencies;
 drop policy if exists "owner creates own agency" on public.agencies;
 drop policy if exists "owner updates own agency" on public.agencies;
+drop policy if exists "owner deletes own agency" on public.agencies;
+create policy "owner deletes own agency" on public.agencies for delete using (auth.uid() = owner_id);
 create policy "owner reads own agency"   on public.agencies for select using (auth.uid() = owner_id);
 create policy "owner creates own agency" on public.agencies for insert with check (auth.uid() = owner_id);
 create policy "owner updates own agency" on public.agencies for update using (auth.uid() = owner_id) with check (auth.uid() = owner_id);
@@ -61,10 +63,13 @@ alter table public.team_summary enable row level security;
 drop policy if exists "agent reads own summary"    on public.team_summary;
 drop policy if exists "agent writes own summary"   on public.team_summary;
 drop policy if exists "agent updates own summary"  on public.team_summary;
+drop policy if exists "agent deletes own summary"  on public.team_summary;
 drop policy if exists "owner reads member summary" on public.team_summary;
 create policy "agent reads own summary"   on public.team_summary for select using (auth.uid() = user_id);
 create policy "agent writes own summary"  on public.team_summary for insert with check (auth.uid() = user_id);
 create policy "agent updates own summary" on public.team_summary for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+-- needed so "Leave agency" actually removes the agent's published numbers
+create policy "agent deletes own summary" on public.team_summary for delete using (auth.uid() = user_id);
 create policy "owner reads member summary" on public.team_summary for select using (
   exists (
     select 1 from public.agency_members m
