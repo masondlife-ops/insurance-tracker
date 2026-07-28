@@ -1425,7 +1425,8 @@
 
   /* ---------- collapsible expense list ---------- */
   var EXP_KEY = "agentHub.expensesCollapsed.v1";
-  function expCollapsed() { try { return localStorage.getItem(EXP_KEY) === "1"; } catch (e) { return false; } }
+  // collapsed by default; only an explicit "0" (user clicked Show list) keeps it open
+  function expCollapsed() { try { return localStorage.getItem(EXP_KEY) !== "0"; } catch (e) { return true; } }
   function applyExpCollapse() {
     var c = expCollapsed();
     var w = $("expListWrap");
