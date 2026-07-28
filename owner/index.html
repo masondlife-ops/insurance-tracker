@@ -118,6 +118,18 @@
   @media (prefers-color-scheme: dark) { .warn { color: #f5b451; } }
   :root[data-theme="dark"] .warn { color: #f5b451; }
 
+  .goal-set { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .goal-set input { width: 120px; }
+  .goal-track { height: 14px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
+  .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+  .goal-fill.reached { background: var(--good); }
+  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .goal-meta .hit { color: var(--good); font-weight: 650; }
+  td.struck { text-decoration: line-through; color: var(--text-muted); }
+  .status-chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--series-1-soft); color: var(--series-1); }
+  .status-chip.issued { background: var(--good-soft); color: var(--good); }
+  .status-chip.declined, .status-chip.cancelled, .status-chip.chargeback { background: var(--danger-soft); color: var(--danger); }
+
   .setup { max-width: 460px; }
   .setup .field { margin-bottom: 12px; }
   .setup input { width: 100%; }
@@ -144,6 +156,7 @@
     <a href="../index.html" class="hub-tab">Activity</a>
     <a href="../pnl.html" class="hub-tab">Deals &amp; PNL</a>
     <a href="../carriers.html" class="hub-tab">Carrier links</a>
+    <a href="../leaderboard.html" class="hub-tab" id="boardTab" style="display:none">Leaderboard</a>
     <a href="index.html" class="hub-tab is-active">Agency</a>
   </nav>
   <header>
@@ -192,6 +205,15 @@
 
     <div class="card" style="margin-bottom:16px">
       <div class="card-head">
+        <h2>Agency goal <span class="hint">issued AP &middot; your agents see this too</span></h2>
+        <div class="goal-set"><span>Goal:</span> $<input type="number" id="agencyGoalInput" min="0" step="1000" placeholder="0"></div>
+      </div>
+      <div class="goal-track"><div class="goal-fill" id="agencyGoalFill"></div></div>
+      <div class="goal-meta"><span id="agencyGoalNow"></span><span id="agencyGoalRemain"></span></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <div class="card-head">
         <h2>Your agency <span class="hint" id="agencyName"></span></h2>
         <div class="code-row">
           <span class="note">Your contract level:</span>
@@ -235,6 +257,24 @@
         </table>
       </div>
       <div class="empty" id="actEmpty" style="display:none">No call activity logged by your team this month.</div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-head">
+        <h2>All agency deals <span class="hint" id="allDealsHint"></span></h2>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th>Date</th><th>Agent</th><th>Carrier</th><th>Product</th>
+            <th class="num">AP</th><th class="num">Commission</th><th>Status</th>
+          </tr></thead>
+          <tbody id="allDealsBody"></tbody>
+          <tfoot id="allDealsFoot"></tfoot>
+        </table>
+      </div>
+      <div class="empty" id="allDealsEmpty" style="display:none">No deals logged in your agency this month.</div>
+      <div class="note" style="margin-top:10px">Client names and phone numbers are never shared with the agency — only production.</div>
     </div>
   </div>
 </div>
@@ -299,6 +339,7 @@
   /* ---------- state ---------- */
   var sb = null, user = null, agency = null, members = [], summaries = {}, authMode = "signin";
   var personalState = null;   // the owner's OWN tracker (his deals + expenses)
+  var goalTimer = null;
 
   // The owner's own book, for the month in view. Chargebacks earn nothing,
   // same rule the Deals & PNL page uses.
@@ -349,7 +390,7 @@
       });
       return { m: m, sum: sum, name: (m.agent_name || "Agent"), level: lvl, n: deals.length,
                submitted: submitted, issued: issued, theirComm: theirComm, ovr: ovr, unknown: unknown,
-               activity: mo.activity || {} };
+               activity: mo.activity || {}, deals: deals };
     });
 
     // sort by override desc, then issued AP
@@ -422,6 +463,89 @@
         '</td><td class="num">' + at.appointments + '</td><td class="num">' + at.presentations + '</td><td class="num">' + at.sold + "</td></tr>"
       : "";
     $("actEmpty").style.display = actRows.length ? "none" : "";
+
+    renderAgencyGoal(aIssued);
+    renderAllDeals(rows, p);
+  }
+
+  /* ---------- agency goal (issued AP, per month, set by the owner) ---------- */
+  function agencyGoalFor(ym) {
+    var g = (agency && agency.goals) || {};
+    var v = num(g[ym]);
+    return v;
+  }
+  function renderAgencyGoal(issuedTotal) {
+    var goal = agencyGoalFor(currentMonth);
+    $("agencyGoalInput").value = (goal == null ? "" : goal);
+    var fill = $("agencyGoalFill"), now = $("agencyGoalNow"), rem = $("agencyGoalRemain");
+    if (goal && goal > 0) {
+      var pv = issuedTotal / goal * 100;
+      fill.style.width = Math.min(100, pv).toFixed(1) + "%";
+      fill.className = "goal-fill" + (issuedTotal >= goal ? " reached" : "");
+      now.textContent = money(issuedTotal) + " of " + money(goal);
+      rem.innerHTML = issuedTotal >= goal
+        ? '<span class="hit">Goal hit — ' + Math.round(pv) + "%</span>"
+        : (Math.round(pv) + "% · " + money(goal - issuedTotal) + " to go");
+    } else {
+      fill.style.width = "0"; fill.className = "goal-fill";
+      now.textContent = money(issuedTotal) + " issued this month";
+      rem.textContent = "Set a monthly goal →";
+    }
+  }
+  $("agencyGoalInput").addEventListener("input", function () {
+    if (!agency) return;
+    agency.goals = agency.goals || {};
+    var v = num(this.value);
+    if (v == null) delete agency.goals[currentMonth]; else agency.goals[currentMonth] = v;
+    clearTimeout(goalTimer);
+    goalTimer = setTimeout(function () {
+      sb.from("agencies").update({ goals: agency.goals }).eq("owner_id", user.id).then(function () {});
+    }, 600);
+    render();
+  });
+
+  /* ---------- every deal in the agency this month ---------- */
+  function renderAllDeals(rows, personal) {
+    var all = [];
+    rows.forEach(function (r) {
+      (r.deals || []).forEach(function (d) { all.push({ who: r.name, d: d }); });
+    });
+    // the owner's own deals count as agency production too
+    var st = personalState || {};
+    (st.deals || []).forEach(function (d) {
+      if ((d.date || "").slice(0, 7) !== currentMonth) return;
+      all.push({ who: "You", d: { date: d.date, carrier: d.carrier, product: d.policy, ap: d.ap, com: d.com, status: d.status } });
+    });
+    all.sort(function (a, b) { return (b.d.date || "").localeCompare(a.d.date || ""); });
+
+    $("allDealsBody").innerHTML = all.map(function (x) {
+      var d = x.d, cls = String(d.status || "").toLowerCase();
+      var struck = d.status === "Chargeback" ? " struck" : "";
+      return "<tr><td>" + esc(fmtDay(d.date)) + "</td>" +
+        '<td class="agent-name">' + esc(x.who) + "</td>" +
+        "<td>" + esc(d.carrier || "—") + "</td>" +
+        "<td>" + esc(d.product || "—") + "</td>" +
+        '<td class="num">' + money(num(d.ap)) + "</td>" +
+        '<td class="num' + struck + '">' + money(num(d.com)) + "</td>" +
+        '<td><span class="status-chip ' + cls + '">' + esc(d.status || "—") + "</span></td></tr>";
+    }).join("");
+
+    var tAp = 0, tCom = 0;
+    all.forEach(function (x) {
+      tAp += (num(x.d.ap) || 0);
+      if (x.d.status !== "Chargeback") tCom += (num(x.d.com) || 0);
+    });
+    $("allDealsFoot").innerHTML = all.length
+      ? '<tr><td colspan="4">Total</td><td class="num">' + money(tAp) + '</td><td class="num">' + money(tCom) + "</td><td></td></tr>"
+      : "";
+    $("allDealsEmpty").style.display = all.length ? "none" : "";
+    $("allDealsHint").textContent = monthLabel(currentMonth) + (all.length ? " · " + all.length + (all.length === 1 ? " deal" : " deals") : "");
+  }
+
+  function fmtDay(dateStr) {
+    if (!dateStr) return "—";
+    var p = String(dateStr).split("-");
+    return p.length >= 3 ? parseInt(p[1], 10) + "/" + parseInt(p[2], 10) : dateStr;
   }
 
   /* ---------- data loading ---------- */
@@ -563,12 +687,20 @@
     var a = document.getElementById(signin ? "toSignup" : "toSignin");
     if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
   }
+  function revealBoardTab() {
+    if (!sb || !user) return;
+    sb.from("agency_members").select("agency_id").eq("agent_id", user.id).maybeSingle().then(function (res) {
+      if (!res.error && res.data) { var t = $("boardTab"); if (t) t.style.display = ""; }
+    }, function () {});
+  }
+
   function onAuthed(u) {
     user = u;
     $("authGate").classList.remove("show");
     $("acctBox").classList.add("show");
     $("acctEmail").textContent = u.email || "";
     updateThemeBtn();
+    revealBoardTab();
     refresh();
   }
   function onSignedOut() {

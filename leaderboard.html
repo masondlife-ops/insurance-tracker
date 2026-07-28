@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agency Leaderboard</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+  };
+  try {
+    var savedTheme = localStorage.getItem("agentHub.theme.v1");
+    if (savedTheme) document.documentElement.setAttribute("data-theme", savedTheme);
+  } catch (e) {}
+</script>
+<style>
+  :root {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+      --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+      --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19; --page: #0d0d0d; --text-primary: #ffffff; --text-secondary: #c3c2b7;
+    --text-muted: #898781; --grid: #2c2c2a; --baseline: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-1-soft: rgba(57,135,229,0.20); --good: #0ca30c; --good-soft: rgba(12,163,12,0.16);
+    --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
+    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
+    --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height: 1.45; padding: 20px; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 650; }
+  header .sub { color: var(--text-muted); font-size: 13px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .month-nav { display: flex; align-items: center; gap: 4px; }
+  .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-head h2 { margin-bottom: 0; }
+
+  .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
+  .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--baseline); }
+  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.icon { background: transparent; border-color: var(--baseline); color: var(--text-secondary); padding: 5px 10px; font-size: 14px; line-height: 1; }
+  input[type="email"], input[type="password"] {
+    font: inherit; font-size: 14px; color: var(--text-primary); background: var(--page);
+    border: 1px solid var(--baseline); border-radius: 7px; padding: 7px 9px;
+  }
+
+  .theme-toggle { position: relative; width: 30px; height: 16px; flex: none; align-self: center; margin-left: 4px; border-radius: 999px; border: 1px solid var(--grid); background: transparent; cursor: pointer; padding: 0; opacity: 0.7; }
+  .theme-toggle:hover { opacity: 1; }
+  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); transition: left .15s ease, background .15s ease; }
+  .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
+  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+
+  .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
+  .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
+  .hub-tab.is-active { background: var(--series-1); color: #fff; }
+  .hub-tab:not(.is-active):hover { color: var(--text-primary); }
+
+  .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
+  .auth-gate.show { display: flex; }
+  .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
+  .auth-card h2 { font-size: 18px; font-weight: 650; }
+  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .auth-card input { width: 100%; }
+  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
+  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+
+  .goal-track { height: 16px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
+  .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+  .goal-fill.reached { background: var(--good); }
+  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
+  .goal-meta .hit { color: var(--good); font-weight: 650; }
+  .goal-big { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; margin-bottom: 10px; }
+
+  .chips { display: inline-flex; gap: 6px; }
+  .chip { font: inherit; font-size: 12.5px; font-weight: 600; padding: 5px 13px; border-radius: 999px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .chip.on { background: var(--series-1); border-color: var(--series-1); color: #fff; }
+
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  th, td { padding: 9px 10px; text-align: left; white-space: nowrap; }
+  th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
+  td { border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--baseline); }
+  tr.me td { background: var(--series-1-soft); }
+  tr.me .who { font-weight: 700; }
+  .rank { width: 44px; font-weight: 700; color: var(--text-muted); }
+  .rank.top { color: var(--series-1); }
+  .medal { font-size: 15px; }
+  .empty { color: var(--text-muted); font-size: 13.5px; padding: 10px 0; }
+  .note { font-size: 12.5px; color: var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="auth-gate" id="authGate">
+  <form class="auth-card" id="authForm">
+    <h2 id="authTitle">Log in</h2>
+    <p class="auth-sub">See how your agency is tracking this month.</p>
+    <div><label for="authEmail">Email</label><input type="email" id="authEmail" autocomplete="email" required></div>
+    <div><label for="authPass">Password</label><input type="password" id="authPass" autocomplete="current-password" required minlength="6"></div>
+    <div class="auth-err" id="authErr"></div>
+    <button type="submit" class="btn" id="authSubmit">Log in</button>
+    <div class="auth-switch" id="authSwitch"></div>
+  </form>
+</div>
+
+<div class="wrap">
+  <nav class="hub-tabs">
+    <a href="index.html" class="hub-tab">Activity</a>
+    <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
+    <a href="carriers.html" class="hub-tab">Carrier links</a>
+    <a href="leaderboard.html" class="hub-tab is-active">Leaderboard</a>
+    <a href="owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
+  </nav>
+  <header>
+    <div>
+      <h1 id="pageTitle">Agency Leaderboard</h1>
+      <div class="sub" id="pageSub">Where you stand this month.</div>
+    </div>
+    <div class="toolbar">
+      <div class="month-nav" id="monthNav" style="display:none">
+        <button class="btn icon" id="prevMonth" title="Previous month">&#9664;</button>
+        <span class="label" id="monthLabel"></span>
+        <button class="btn icon" id="nextMonth" title="Next month">&#9654;</button>
+      </div>
+      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+    </div>
+  </header>
+
+  <div class="card" id="noAgencyCard" style="display:none">
+    <h2>Not in an agency yet</h2>
+    <div class="note">Go to the <a href="pnl.html" style="color:var(--series-1)">Deals &amp; PNL</a> tab and click &ldquo;Join an agency&rdquo; to enter your agency code. Once you join, your agency&rsquo;s leaderboard and monthly goal show up here.</div>
+  </div>
+
+  <div id="boardView" style="display:none">
+    <div class="card" style="margin-bottom:16px">
+      <h2>Agency goal <span class="hint" id="goalHint">issued AP</span></h2>
+      <div class="goal-big" id="goalBig">—</div>
+      <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+      <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Leaderboard <span class="hint" id="boardHint"></span></h2>
+        <div class="chips">
+          <button class="chip on" id="byIssued" type="button">Issued AP</button>
+          <button class="chip" id="bySubmitted" type="button">Submitted AP</button>
+        </div>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr>
+            <th class="rank">#</th><th>Agent</th>
+            <th class="num">Submitted AP</th><th class="num">Issued AP</th><th class="num">Deals</th>
+          </tr></thead>
+          <tbody id="boardBody"></tbody>
+          <tfoot id="boardFoot"></tfoot>
+        </table>
+      </div>
+      <div class="empty" id="boardEmpty" style="display:none">No production logged in your agency this month yet.</div>
+      <div class="note" style="margin-top:10px">Production only — nobody sees anyone&rsquo;s client names or phone numbers.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function money(n) {
+    if (n === null || n === undefined || isNaN(n)) return "—";
+    return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function num(v) { if (v === "" || v == null) return null; var n = parseFloat(v); return isNaN(n) ? null : n; }
+  var MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  function monthLabel(ym) { var p = ym.split("-"); return MONTHS[parseInt(p[1],10)-1] + " " + p[0]; }
+  function shiftMonth(ym, d) {
+    var p = ym.split("-"), y = parseInt(p[0],10), m = parseInt(p[1],10) - 1 + d;
+    y += Math.floor(m/12); m = ((m%12)+12)%12;
+    return y + "-" + String(m+1).padStart(2,"0");
+  }
+  var currentMonth = (function () { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); })();
+
+  var sb = null, user = null, board = null, sortBy = "issued", authMode = "signin";
+
+  function monthTotals(data, ym) {
+    var mo = (data && data.months && data.months[ym]) || { deals: [] };
+    var submitted = 0, issued = 0, n = 0;
+    (mo.deals || []).forEach(function (d) {
+      var ap = num(d.ap) || 0;
+      submitted += ap; n++;
+      if (d.status === "Issued") issued += ap;
+    });
+    return { submitted: submitted, issued: issued, n: n };
+  }
+
+  function render() {
+    $("monthLabel").textContent = monthLabel(currentMonth);
+    if (!board) return;
+    $("pageTitle").textContent = board.agency_name || "Agency Leaderboard";
+
+    var rows = (board.members || []).map(function (m) {
+      var t = monthTotals(m.data, currentMonth);
+      return { id: m.agent_id, name: m.agent_name || "Agent",
+               submitted: t.submitted, issued: t.issued, n: t.n,
+               me: m.agent_id === user.id };
+    });
+
+    var key = sortBy;
+    rows.sort(function (a, b) { return (b[key] - a[key]) || (b.issued - a.issued) || a.name.localeCompare(b.name); });
+
+    var teamIssued = 0, teamSubmitted = 0, teamDeals = 0;
+    rows.forEach(function (r) { teamIssued += r.issued; teamSubmitted += r.submitted; teamDeals += r.n; });
+
+    // ---- goal ----
+    var goal = num((board.goals || {})[currentMonth]);
+    var fill = $("goalFill");
+    if (goal && goal > 0) {
+      var pv = teamIssued / goal * 100;
+      fill.style.width = Math.min(100, pv).toFixed(1) + "%";
+      fill.className = "goal-fill" + (teamIssued >= goal ? " reached" : "");
+      $("goalBig").textContent = money(teamIssued) + " of " + money(goal);
+      $("goalNow").textContent = Math.round(pv) + "% of the agency goal";
+      $("goalRemain").innerHTML = teamIssued >= goal
+        ? '<span class="hit">Goal hit 🎉</span>'
+        : money(goal - teamIssued) + " to go";
+    } else {
+      fill.style.width = "0"; fill.className = "goal-fill";
+      $("goalBig").textContent = money(teamIssued);
+      $("goalNow").textContent = "issued AP this month";
+      $("goalRemain").textContent = "No goal set by your agency owner yet";
+    }
+    $("goalHint").textContent = "issued AP · " + monthLabel(currentMonth);
+
+    // ---- leaderboard ----
+    var medals = ["🥇", "🥈", "🥉"];
+    $("boardBody").innerHTML = rows.map(function (r, i) {
+      var producing = (r.submitted > 0 || r.issued > 0);
+      var badge = (producing && i < 3) ? '<span class="medal">' + medals[i] + "</span>" : (i + 1);
+      return '<tr class="' + (r.me ? "me" : "") + '">' +
+        '<td class="rank' + (i === 0 && producing ? " top" : "") + '">' + badge + "</td>" +
+        '<td class="who">' + esc(r.name) + (r.me ? " (you)" : "") + "</td>" +
+        '<td class="num">' + money(r.submitted) + "</td>" +
+        '<td class="num">' + money(r.issued) + "</td>" +
+        '<td class="num">' + r.n + "</td></tr>";
+    }).join("");
+    $("boardFoot").innerHTML = rows.length
+      ? '<tr><td></td><td>Agency total</td><td class="num">' + money(teamSubmitted) +
+        '</td><td class="num">' + money(teamIssued) + '</td><td class="num">' + teamDeals + "</td></tr>"
+      : "";
+    $("boardEmpty").style.display = rows.length ? "none" : "";
+    $("boardHint").textContent = rows.length + (rows.length === 1 ? " agent · " : " agents · ") + monthLabel(currentMonth) +
+      " · ranked by " + (sortBy === "issued" ? "issued AP" : "submitted AP");
+  }
+
+  function loadBoard() {
+    return sb.rpc("agency_board").then(function (res) {
+      board = (!res.error && res.data) ? res.data : null;
+      if (!board) {
+        $("noAgencyCard").style.display = "";
+        $("boardView").style.display = "none";
+        $("monthNav").style.display = "none";
+      } else {
+        $("noAgencyCard").style.display = "none";
+        $("boardView").style.display = "";
+        $("monthNav").style.display = "";
+        render();
+      }
+    });
+  }
+
+  $("byIssued").addEventListener("click", function () {
+    sortBy = "issued"; this.classList.add("on"); $("bySubmitted").classList.remove("on"); render();
+  });
+  $("bySubmitted").addEventListener("click", function () {
+    sortBy = "submitted"; this.classList.add("on"); $("byIssued").classList.remove("on"); render();
+  });
+  $("prevMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, -1); render(); });
+  $("nextMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, 1); render(); });
+
+  /* ---------- theme ---------- */
+  var THEME_KEY = "agentHub.theme.v1";
+  function effectiveTheme() { return document.documentElement.getAttribute("data-theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
+  function updateThemeBtn() { var d = effectiveTheme() === "dark"; $("themeBtn").classList.toggle("dark", d); $("themeBtn").setAttribute("aria-checked", d ? "true" : "false"); }
+  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+
+  /* ---------- owner tab (only for agency owners) ---------- */
+  function revealOwnerTab() {
+    if (!sb || !user) return;
+    sb.from("agencies").select("id").eq("owner_id", user.id).maybeSingle().then(function (res) {
+      if (!res.error && res.data) { var t = $("ownerTab"); if (t) t.style.display = ""; }
+    }, function () {});
+  }
+
+  /* ---------- auth ---------- */
+  function setAuthMode(mode) {
+    authMode = mode; var signin = mode === "signin";
+    $("authTitle").textContent = signin ? "Log in" : "Create account";
+    $("authSubmit").textContent = signin ? "Log in" : "Create account";
+    $("authPass").setAttribute("autocomplete", signin ? "current-password" : "new-password");
+    $("authErr").textContent = "";
+    $("authSwitch").innerHTML = signin ? 'New here? <a id="toSignup">Create an account</a>' : 'Already have an account? <a id="toSignin">Log in</a>';
+    var a = document.getElementById(signin ? "toSignup" : "toSignin");
+    if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+  }
+  function onAuthed(u) {
+    user = u;
+    $("authGate").classList.remove("show");
+    $("acctBox").classList.add("show");
+    $("acctEmail").textContent = u.email || "";
+    updateThemeBtn();
+    revealOwnerTab();
+    loadBoard();
+  }
+  function onSignedOut() {
+    user = null; board = null;
+    $("acctBox").classList.remove("show");
+    $("boardView").style.display = "none";
+    $("noAgencyCard").style.display = "none";
+    $("monthNav").style.display = "none";
+    $("authGate").classList.add("show");
+    setAuthMode("signin");
+  }
+  function initCloud() {
+    setAuthMode("signin");
+    $("authForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var email = $("authEmail").value.trim(), pass = $("authPass").value;
+      $("authErr").textContent = ""; $("authSubmit").disabled = true;
+      var op = authMode === "signin" ? sb.auth.signInWithPassword({ email: email, password: pass }) : sb.auth.signUp({ email: email, password: pass });
+      op.then(function (res) {
+        $("authSubmit").disabled = false;
+        if (res.error) { $("authErr").textContent = res.error.message; return; }
+        if (authMode === "signup" && res.data && !res.data.session) { $("authErr").textContent = "Account created — check your email to confirm, then log in."; setAuthMode("signin"); }
+      });
+    });
+    $("logoutBtn").addEventListener("click", function () { sb.auth.signOut(); });
+    sb.auth.onAuthStateChange(function (_e, s) { if (s && s.user) { if (!user) onAuthed(s.user); } else if (user !== null) onSignedOut(); });
+    sb.auth.getSession().then(function (res) {
+      var s = res.data && res.data.session;
+      if (s && s.user) onAuthed(s.user); else { $("authGate").classList.add("show"); updateThemeBtn(); }
+    });
+  }
+  var el = document.createElement("script");
+  el.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+  el.onload = function () { sb = window.supabase.createClient(window.HUB_CLOUD.url, window.HUB_CLOUD.anonKey); initCloud(); };
+  document.head.appendChild(el);
+  updateThemeBtn();
+})();
+</script>
+</body>
+</html>

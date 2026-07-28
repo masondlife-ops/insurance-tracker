@@ -112,3 +112,56 @@ $$;
 
 revoke all on function public.join_agency(text, text) from public;
 grant execute on function public.join_agency(text, text) to authenticated;
+
+-- ============================================================
+-- Leaderboard + agency goal (added later — safe to re-run)
+-- ============================================================
+
+-- Monthly agency goals for ISSUED AP, set by the owner: { "2026-07": 50000 }
+alter table public.agencies add column if not exists goals jsonb not null default '{}'::jsonb;
+
+-- Agents need to see each other's PRODUCTION for the leaderboard, but they must not
+-- be able to browse the tables directly. This function runs with elevated rights and
+-- returns only: the caller's own agency name, its goals, and each member's production
+-- summary (which never contains client names or phone numbers).
+create or replace function public.agency_board()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_agency  uuid;
+  v_name    text;
+  v_goals   jsonb;
+  v_members jsonb;
+begin
+  select m.agency_id into v_agency
+  from public.agency_members m
+  where m.agent_id = auth.uid();
+
+  if v_agency is null then
+    return null;                      -- caller isn't in an agency
+  end if;
+
+  select a.name, coalesce(a.goals, '{}'::jsonb)
+    into v_name, v_goals
+  from public.agencies a
+  where a.id = v_agency;
+
+  select coalesce(jsonb_agg(jsonb_build_object(
+           'agent_id',   m.agent_id,
+           'agent_name', m.agent_name,
+           'data',       coalesce(s.data, '{}'::jsonb)
+         )), '[]'::jsonb)
+    into v_members
+  from public.agency_members m
+  left join public.team_summary s on s.user_id = m.agent_id
+  where m.agency_id = v_agency;
+
+  return jsonb_build_object('agency_name', v_name, 'goals', v_goals, 'members', v_members);
+end;
+$$;
+
+revoke all on function public.agency_board() from public;
+grant execute on function public.agency_board() to authenticated;

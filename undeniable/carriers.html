@@ -174,7 +174,8 @@
     <a href="index.html" class="hub-tab">Activity</a>
     <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
     <a href="carriers.html" class="hub-tab is-active">Carrier links</a>
-      <a href="../owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
+    <a href="leaderboard.html" class="hub-tab" id="boardTab" style="display:none">Leaderboard</a>
+        <a href="../owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
   </nav>
   <header>
     <div>
@@ -422,6 +423,16 @@
   }
   // The Agency tab only exists for people who actually own an agency.
   // Nothing is hardcoded — it's driven by the same permissions as the data.
+  // Leaderboard tab: only for people who belong to an agency
+  function revealBoardTab() {
+    var c = (typeof sb !== "undefined") ? sb : null;
+    var uid = (typeof cloudUser !== "undefined" && cloudUser) ? cloudUser.id : ((typeof user !== "undefined" && user) ? user.id : null);
+    if (!c || !uid) return;
+    c.from("agency_members").select("agency_id").eq("agent_id", uid).maybeSingle().then(function (res) {
+      if (!res.error && res.data) { var t = document.getElementById("boardTab"); if (t) t.style.display = ""; }
+    }, function () {});
+  }
+
   function revealOwnerTab() {
     if (!cloudOn || !cloudUser || !sb) return;
     sb.from("agencies").select("id").eq("owner_id", cloudUser.id).maybeSingle().then(function (res) {
@@ -435,6 +446,7 @@
   function onAuthed(user) {
     cloudUser = user; $("authGate").classList.remove("show"); $("acctBox").classList.add("show"); $("acctEmail").textContent = user.email || "";
     revealOwnerTab();
+    revealBoardTab();
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { updateThemeBtn(); render(); });
   }
