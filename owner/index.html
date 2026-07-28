@@ -181,6 +181,16 @@
   <!-- main view -->
   <div id="teamView" style="display:none">
     <div class="card" style="margin-bottom:16px">
+      <h2>Your production <span class="hint" id="personalHint"></span></h2>
+      <div class="tiles" id="personalTiles"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <h2>Agency total <span class="hint" id="agencyHint"></span></h2>
+      <div class="tiles" id="agencyTiles"></div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
       <div class="card-head">
         <h2>Your agency <span class="hint" id="agencyName"></span></h2>
         <div class="code-row">
@@ -194,8 +204,6 @@
       </div>
       <div class="note">Agents enter that code once in their tracker (Deals &amp; PNL tab) to join. You'll see their production numbers here — never their client names or phone numbers.</div>
     </div>
-
-    <div class="tiles" id="tiles" style="margin-bottom:16px"></div>
 
     <div class="card" style="margin-bottom:16px">
       <h2>Production by agent <span class="hint" id="prodHint"></span></h2>
@@ -290,6 +298,24 @@
 
   /* ---------- state ---------- */
   var sb = null, user = null, agency = null, members = [], summaries = {}, authMode = "signin";
+  var personalState = null;   // the owner's OWN tracker (his deals + expenses)
+
+  // The owner's own book, for the month in view. Chargebacks earn nothing,
+  // same rule the Deals & PNL page uses.
+  function personalMonth(ym) {
+    var st = personalState || {};
+    var deals = (st.deals || []).filter(function (d) { return (d.date || "").slice(0, 7) === ym; });
+    var exps  = (st.expenses || []).filter(function (e) { return (e.date || "").slice(0, 7) === ym; });
+    var submitted = 0, issued = 0, comm = 0;
+    deals.forEach(function (d) {
+      var ap = num(d.ap) || 0;
+      submitted += ap;
+      if (d.status === "Issued") issued += ap;
+      if (d.status !== "Chargeback") comm += (num(d.com) || 0);
+    });
+    var expenses = exps.reduce(function (t, e) { return t + (num(e.price) || 0); }, 0);
+    return { n: deals.length, submitted: submitted, issued: issued, commission: comm, expenses: expenses, profit: comm - expenses };
+  }
 
   function tile(label, value, sub, cls) {
     return '<div class="tile ' + (cls||"") + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
@@ -333,12 +359,28 @@
     rows.forEach(function (r) { t.n += r.n; t.submitted += r.submitted; t.issued += r.issued; t.theirComm += r.theirComm; t.ovr += r.ovr; t.unknown += r.unknown; });
     var producing = rows.filter(function (r) { return r.n > 0; }).length;
 
-    $("tiles").innerHTML =
-      tile("Agents", String(members.length), producing + " producing this month", "") +
-      tile("Deals", String(t.n), "", "") +
-      tile("Submitted AP", money(t.submitted), "", "") +
-      tile("Issued AP", money(t.issued), "", "") +
-      tile("Team commission", money(t.theirComm), "what your agents earned", "") +
+    // ---- your own production ----
+    var p = personalMonth(currentMonth);
+    var profitCls = p.profit > 0 ? "hero" : "";
+    $("personalHint").textContent = monthLabel(currentMonth) + (p.n ? " · " + p.n + (p.n === 1 ? " deal" : " deals") : "");
+    $("personalTiles").innerHTML =
+      tile("Submitted AP", money(p.submitted), "", "") +
+      tile("Issued AP", money(p.issued), "", "") +
+      tile("Commission", money(p.commission), "", "") +
+      tile("Profit", (p.profit < 0 ? "−" : "") + money(Math.abs(p.profit)), "commission − expenses", p.profit < 0 ? "" : profitCls);
+
+    // ---- agency totals (everyone, without double-counting the owner) ----
+    var ownerIsMember = members.some(function (m) { return m.agent_id === user.id; });
+    var aSubmitted = t.submitted + (ownerIsMember ? 0 : p.submitted);
+    var aIssued    = t.issued    + (ownerIsMember ? 0 : p.issued);
+    var aComm      = t.theirComm + (ownerIsMember ? 0 : p.commission);
+    var aDeals     = t.n         + (ownerIsMember ? 0 : p.n);
+    var headcount  = members.length + (ownerIsMember ? 0 : 1);
+    $("agencyHint").textContent = headcount + (headcount === 1 ? " person" : " people") + " · " + monthLabel(currentMonth);
+    $("agencyTiles").innerHTML =
+      tile("Submitted AP", money(aSubmitted), aDeals + (aDeals === 1 ? " deal" : " deals"), "") +
+      tile("Issued AP", money(aIssued), "", "") +
+      tile("Commission", money(aComm), "everyone combined", "") +
       tile("Your override", ownerLevel ? money(t.ovr) : "—", ownerLevel ? "contract level spread" : "set your contract level", ownerLevel ? "hero" : "");
 
     $("prodBody").innerHTML = rows.map(function (r) {
@@ -389,6 +431,12 @@
       return agency;
     });
   }
+  // the owner's own tracker row (his own book — he always has access to this)
+  function loadPersonal() {
+    return sb.from("pnl_state").select("data").eq("user_id", user.id).maybeSingle()
+      .then(function (res) { personalState = (!res.error && res.data) ? res.data.data : null; },
+            function () { personalState = null; });
+  }
   function loadTeam() {
     if (!agency) return Promise.resolve();
     return sb.from("agency_members").select("agent_id,agent_name").eq("agency_id", agency.id).then(function (res) {
@@ -433,7 +481,7 @@
     $("errCard").style.display = "none";
     return loadAgency().then(function () {
       if (!agency) { $("setupCard").style.display = ""; $("teamView").style.display = "none"; $("monthNav").style.display = "none"; return; }
-      return loadTeam().then(showTeam);
+      return Promise.all([loadTeam(), loadPersonal()]).then(showTeam);
     }).catch(showError);
   }
 
