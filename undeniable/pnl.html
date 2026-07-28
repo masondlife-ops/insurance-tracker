@@ -394,7 +394,6 @@
   </div>
 
   <div class="card" id="funnelCard"></div>
-  <div class="card" id="trendCard"></div>
 
   <div class="card">
     <h2 id="dealFormTitle">Add a deal</h2>
@@ -464,7 +463,10 @@
   </div>
 
   <div class="card">
-    <h2>Expenses <span class="hint" id="expCount"></span></h2>
+    <div class="card-head">
+      <h2>Expenses <span class="hint" id="expCount"></span></h2>
+      <button type="button" class="btn secondary small" id="expToggle">Hide list</button>
+    </div>
     <form id="expForm" class="quick-add">
       <div class="field"><label for="e-date">Date</label><input type="date" id="e-date" required></div>
       <div class="field"><label for="e-item">Item</label><input type="text" id="e-item" class="wide" list="itemList" required placeholder="Goat leads"></div>
@@ -480,6 +482,7 @@
       <button type="button" class="btn secondary" id="expCancel" style="display:none">Cancel</button>
     </form>
     <datalist id="itemList"></datalist>
+    <div id="expListWrap">
     <div class="table-scroll">
       <table id="expTable">
         <thead><tr><th>Date</th><th>Item</th><th>Type</th><th class="num">Price</th><th></th></tr></thead>
@@ -488,6 +491,7 @@
       </table>
     </div>
     <div class="empty" id="expEmpty" style="display:none">No expenses this month yet.</div>
+    </div>
   </div>
 
   <div class="card">
@@ -717,7 +721,7 @@
       ? '<tr><td colspan="3">Total</td><td class="num">' + money(sum(exps, function (e) { return e.price; })) + "</td><td></td></tr>"
       : "";
     $("expEmpty").style.display = exps.length ? "none" : "";
-    $("expCount").textContent = exps.length ? "(" + exps.length + ")" : "";
+    $("expCount").textContent = exps.length ? "(" + exps.length + " · " + money(sum(exps, function (e) { return e.price; })) + ")" : "";
   }
 
   var roiScope = "month";
@@ -810,7 +814,6 @@
     refreshContractLevel();
     renderGoal();
     renderFunnel();
-    renderTrend();
   }
 
   /* ---------- month analytics: goal, funnel, trend ---------- */
@@ -912,25 +915,6 @@
     $("funnelCard").innerHTML = html;
   }
 
-  /* monthly profit trend (last 6 months, zero-baseline) */
-  function renderTrend() {
-    var months = [];
-    for (var i = 5; i >= 0; i--) months.push(shiftMonth(currentMonth, -i));
-    var profits = months.map(monthProfit);
-    var maxMag = Math.max.apply(null, profits.map(function (p) { return Math.abs(p); }));
-    if (!(maxMag > 0)) maxMag = 1;
-    var html = '<div class="card-head"><h2>Monthly profit trend <span class="hint">last 6 months</span></h2></div><div class="trend">';
-    months.forEach(function (ym, idx) {
-      var p = profits[idx], cur = ym === currentMonth;
-      var upH = p > 0 ? (p / maxMag * 100) : 0, dnH = p < 0 ? (Math.abs(p) / maxMag * 100) : 0;
-      html += '<div class="tc' + (cur ? " tc-cur" : "") + '"><div class="tc-val">' + moneyK(p) + "</div>"
-        + '<div class="tc-plot"><div class="tc-up"><div class="tc-bar pos" style="height:' + upH.toFixed(1) + '%"></div></div>'
-        + '<div class="tc-down"><div class="tc-bar neg" style="height:' + dnH.toFixed(1) + '%"></div></div></div>'
-        + '<div class="tc-mo">' + shortMonth(ym) + "</div></div>";
-    });
-    html += "</div>";
-    $("trendCard").innerHTML = html;
-  }
 
   /* Comp guide data lives in comp-guide.js (shared with the agency owner hub). */
 
@@ -1438,6 +1422,22 @@
     this.value = "";
   });
 
+
+  /* ---------- collapsible expense list ---------- */
+  var EXP_KEY = "agentHub.expensesCollapsed.v1";
+  function expCollapsed() { try { return localStorage.getItem(EXP_KEY) === "1"; } catch (e) { return false; } }
+  function applyExpCollapse() {
+    var c = expCollapsed();
+    var w = $("expListWrap");
+    if (w) w.style.display = c ? "none" : "";
+    var b = $("expToggle");
+    if (b) b.textContent = c ? "Show list" : "Hide list";
+  }
+  $("expToggle").addEventListener("click", function () {
+    try { localStorage.setItem(EXP_KEY, expCollapsed() ? "0" : "1"); } catch (e) {}
+    applyExpCollapse();
+  });
+
   /* ---------- theme toggle ---------- */
 
   var THEME_KEY = "agentHub.theme.v1";
@@ -1735,6 +1735,7 @@
     $("d-date").value = defaultDateForMonth();
     $("e-date").value = defaultDateForMonth();
     syncLeadField();
+    applyExpCollapse();
     render();
   }
 
