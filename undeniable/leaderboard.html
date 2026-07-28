@@ -345,7 +345,10 @@
   function revealOwnerTab() {
     if (!sb || !user) return;
     sb.from("agencies").select("id").eq("owner_id", user.id).maybeSingle().then(function (res) {
-      if (!res.error && res.data) { var t = $("ownerTab"); if (t) t.style.display = ""; }
+      if (!res.error && res.data) {
+        var t = $("ownerTab"); if (t) t.style.display = "";
+        var b = $("boardTab"); if (b) b.style.display = "";
+      }
     }, function () {});
   }
 

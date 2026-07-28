@@ -216,6 +216,8 @@
       <div class="card-head">
         <h2>Your agency <span class="hint" id="agencyName"></span></h2>
         <div class="code-row">
+          <span class="note">Your name on the leaderboard:</span>
+          <input type="text" id="ownerBoardName" placeholder="Your name" style="width:140px">
           <span class="note">Your contract level:</span>
           <select id="ownerLevel" style="width:auto"><option value="">Set level…</option></select>
           <span class="note">Join code:</span>
@@ -556,6 +558,48 @@
       return agency;
     });
   }
+  // Publish the owner's own production so he shows on the agency leaderboard,
+  // exactly like agents do. Production only — no client names, notes or phones.
+  var ownerBoardName = "";
+  var ownerPubTimer = null;
+  function buildOwnerSummary() {
+    var st = personalState || {};
+    var months = {}, keep = {};
+    for (var i = 0; i < 13; i++) keep[shiftMonth(currentMonth, -i)] = 1;
+    keep[todayMonth()] = 1;
+    (st.deals || []).forEach(function (d) {
+      var ym = (d.date || "").slice(0, 7);
+      if (!ym || !keep[ym]) return;
+      months[ym] = months[ym] || { deals: [], activity: {} };
+      months[ym].deals.push({
+        date: d.date, carrier: d.carrier || "", product: d.policy || "",
+        ap: num(d.ap), com: num(d.com), status: d.status || ""
+      });
+    });
+    return {
+      agentName: ownerBoardName || "Owner",
+      contractLevel: (st.settings && st.settings.contractLevel) || (agency ? agency.owner_level : null),
+      updatedAt: new Date().toISOString(),
+      months: months
+    };
+  }
+  function publishOwnerSummary() {
+    if (!sb || !user || !agency) return;
+    sb.from("team_summary").upsert(
+      { user_id: user.id, data: buildOwnerSummary(), updated_at: new Date().toISOString() },
+      { onConflict: "user_id" }
+    ).then(function () {});
+  }
+  function loadOwnerBoardName() {
+    return sb.from("team_summary").select("data").eq("user_id", user.id).maybeSingle()
+      .then(function (res) {
+        var d = (!res.error && res.data) ? res.data.data : null;
+        ownerBoardName = (d && d.agentName) || "";
+        var el = $("ownerBoardName");
+        if (el) el.value = ownerBoardName;
+      }, function () {});
+  }
+
   // the owner's own tracker row (his own book — he always has access to this)
   function loadPersonal() {
     return sb.from("pnl_state").select("data").eq("user_id", user.id).maybeSingle()
@@ -606,7 +650,8 @@
     $("errCard").style.display = "none";
     return loadAgency().then(function () {
       if (!agency) { $("setupCard").style.display = ""; $("teamView").style.display = "none"; $("monthNav").style.display = "none"; return; }
-      return Promise.all([loadTeam(), loadPersonal()]).then(showTeam);
+      return Promise.all([loadTeam(), loadPersonal(), loadOwnerBoardName()])
+        .then(function () { publishOwnerSummary(); }).then(showTeam);
     }).catch(showError);
   }
 
@@ -653,6 +698,12 @@
     });
   });
 
+  $("ownerBoardName").addEventListener("input", function () {
+    ownerBoardName = this.value.trim();
+    clearTimeout(ownerPubTimer);
+    ownerPubTimer = setTimeout(publishOwnerSummary, 700);
+  });
+
   (function initLevels() {
     var sel = $("ownerLevel");
     (window.COMP_LEVELS || []).forEach(function (l) {
@@ -688,10 +739,8 @@
     if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
   }
   function revealBoardTab() {
-    if (!sb || !user) return;
-    sb.from("agency_members").select("agency_id").eq("agent_id", user.id).maybeSingle().then(function (res) {
-      if (!res.error && res.data) { var t = $("boardTab"); if (t) t.style.display = ""; }
-    }, function () {});
+    var t = $("boardTab");
+    if (t) t.style.display = "";   // on this page you already own an agency
   }
 
   function onAuthed(u) {

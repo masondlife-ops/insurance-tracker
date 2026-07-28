@@ -134,30 +134,47 @@ declare
   v_agency  uuid;
   v_name    text;
   v_goals   jsonb;
+  v_owner   uuid;
   v_members jsonb;
 begin
-  select m.agency_id into v_agency
-  from public.agency_members m
-  where m.agent_id = auth.uid();
+  -- the caller's agency: either they belong to one, or they own one
+  select coalesce(
+           (select m.agency_id from public.agency_members m where m.agent_id = auth.uid()),
+           (select a.id        from public.agencies a       where a.owner_id = auth.uid())
+         ) into v_agency;
 
   if v_agency is null then
-    return null;                      -- caller isn't in an agency
+    return null;
   end if;
 
-  select a.name, coalesce(a.goals, '{}'::jsonb)
-    into v_name, v_goals
+  select a.name, coalesce(a.goals, '{}'::jsonb), a.owner_id
+    into v_name, v_goals, v_owner
   from public.agencies a
   where a.id = v_agency;
 
-  select coalesce(jsonb_agg(jsonb_build_object(
-           'agent_id',   m.agent_id,
-           'agent_name', m.agent_name,
-           'data',       coalesce(s.data, '{}'::jsonb)
-         )), '[]'::jsonb)
-    into v_members
-  from public.agency_members m
-  left join public.team_summary s on s.user_id = m.agent_id
-  where m.agency_id = v_agency;
+  -- everyone in the agency: the members, plus the owner himself (once)
+  select coalesce(jsonb_agg(to_jsonb(x)), '[]'::jsonb) into v_members
+  from (
+    select m.agent_id,
+           coalesce(m.agent_name, s.data->>'agentName', 'Agent') as agent_name,
+           coalesce(s.data, '{}'::jsonb) as data
+    from public.agency_members m
+    left join public.team_summary s on s.user_id = m.agent_id
+    where m.agency_id = v_agency
+
+    union all
+
+    select v_owner,
+           coalesce(os.data->>'agentName', 'Owner') as agent_name,
+           coalesce(os.data, '{}'::jsonb) as data
+    from public.agencies a
+    left join public.team_summary os on os.user_id = v_owner
+    where a.id = v_agency
+      and not exists (
+        select 1 from public.agency_members m2
+        where m2.agency_id = v_agency and m2.agent_id = v_owner
+      )
+  ) x;
 
   return jsonb_build_object('agency_name', v_name, 'goals', v_goals, 'members', v_members);
 end;

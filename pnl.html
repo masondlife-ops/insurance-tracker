@@ -1646,6 +1646,9 @@
       if (!res.error && res.data) {
         var t = document.getElementById("ownerTab");
         if (t) t.style.display = "";
+        // owners belong to their own agency, so show the leaderboard too
+        var b = document.getElementById("boardTab");
+        if (b) b.style.display = "";
       }
     }, function () {});
   }
