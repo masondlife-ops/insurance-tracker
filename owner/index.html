@@ -332,7 +332,7 @@
     var ownerLevel = agency && agency.owner_level != null ? String(agency.owner_level) : "";
     $("ownerLevel").value = ownerLevel;
 
-    var rows = members.map(function (m) {
+    var rows = members.filter(function (m) { return m.agent_id !== user.id; }).map(function (m) {
       var sum = summaries[m.agent_id];
       var mo = monthOf(sum, currentMonth);
       var deals = mo.deals || [];
@@ -370,17 +370,18 @@
       tile("Profit", (p.profit < 0 ? "−" : "") + money(Math.abs(p.profit)), "commission − expenses", p.profit < 0 ? "" : profitCls);
 
     // ---- agency totals (everyone, without double-counting the owner) ----
-    var ownerIsMember = members.some(function (m) { return m.agent_id === user.id; });
-    var aSubmitted = t.submitted + (ownerIsMember ? 0 : p.submitted);
-    var aIssued    = t.issued    + (ownerIsMember ? 0 : p.issued);
-    var aComm      = t.theirComm + (ownerIsMember ? 0 : p.commission);
-    var aDeals     = t.n         + (ownerIsMember ? 0 : p.n);
-    var headcount  = members.length + (ownerIsMember ? 0 : 1);
+    // agents (rows already exclude the owner) + the owner's own production,
+    // taken from his own tracker so it's always complete and never double-counted
+    var aSubmitted = t.submitted + p.submitted;
+    var aIssued    = t.issued    + p.issued;
+    var aComm      = t.theirComm + p.commission;
+    var aDeals     = t.n         + p.n;
+    var headcount  = rows.length + 1;
     $("agencyHint").textContent = headcount + (headcount === 1 ? " person" : " people") + " · " + monthLabel(currentMonth);
     $("agencyTiles").innerHTML =
       tile("Submitted AP", money(aSubmitted), aDeals + (aDeals === 1 ? " deal" : " deals"), "") +
       tile("Issued AP", money(aIssued), "", "") +
-      tile("Commission", money(aComm), "everyone combined", "") +
+      tile("Commission", money(aComm), "your agents + you", "") +
       tile("Your override", ownerLevel ? money(t.ovr) : "—", ownerLevel ? "contract level spread" : "set your contract level", ownerLevel ? "hero" : "");
 
     $("prodBody").innerHTML = rows.map(function (r) {
