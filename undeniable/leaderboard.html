@@ -10,7 +10,10 @@
 <script>
   window.HUB_CLOUD = {
     url: "https://bdydjbfuocxoaodeesgw.supabase.co",
-    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT",
+    // Invite only: accounts are created by the agency owner in Supabase.
+    // Set to false to let people sign themselves up again.
+    inviteOnly: true
   };
   try {
     var savedTheme = localStorage.getItem("agentHub.theme.v1");
@@ -362,6 +365,11 @@
     $("authSwitch").innerHTML = signin ? 'New here? <a id="toSignup">Create an account</a>' : 'Already have an account? <a id="toSignin">Log in</a>';
     var a = document.getElementById(signin ? "toSignup" : "toSignin");
     if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+    if (window.HUB_CLOUD && window.HUB_CLOUD.inviteOnly) {
+      // no self-signup — the owner creates accounts
+      document.getElementById("authSwitch").innerHTML =
+        '<span style="color:var(--text-muted)">Accounts are set up by your agency owner.</span>';
+    }
   }
   function onAuthed(u) {
     user = u;

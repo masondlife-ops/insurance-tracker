@@ -17,7 +17,10 @@
   // Leave blank to run in local-only mode (data stays in this browser).
   window.HUB_CLOUD = {
     url: "https://bdydjbfuocxoaodeesgw.supabase.co",
-    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT"
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT",
+    // Invite only: accounts are created by the agency owner in Supabase.
+    // Set to false to let people sign themselves up again.
+    inviteOnly: true
   };
 
   // Apply a saved theme choice before first paint to avoid a flash
@@ -1647,6 +1650,11 @@
       : 'Already have an account? <a id="authToSignin">Log in</a>';
     var a = document.getElementById(signin ? "authToSignup" : "authToSignin");
     if (a) a.onclick = function () { setAuthMode(signin ? "signup" : "signin"); };
+    if (window.HUB_CLOUD && window.HUB_CLOUD.inviteOnly) {
+      // no self-signup — the owner creates accounts
+      document.getElementById("authSwitch").innerHTML =
+        '<span style="color:var(--text-muted)">Accounts are set up by your agency owner.</span>';
+    }
   }
 
   // The Agency tab only exists for people who actually own an agency.
