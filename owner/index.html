@@ -232,53 +232,66 @@
     </div>
 
     <div class="card" style="margin-bottom:16px">
-      <h2>Production by agent <span class="hint" id="prodHint"></span></h2>
-      <div class="table-scroll">
-        <table>
-          <thead><tr>
-            <th>Agent</th><th class="num">Level</th><th class="num">Deals</th>
-            <th class="num">Submitted AP</th><th class="num">Issued AP</th>
-            <th class="num">Their comm.</th><th class="num">Your override</th>
-          </tr></thead>
-          <tbody id="prodBody"></tbody>
-          <tfoot id="prodFoot"></tfoot>
-        </table>
+      <div class="card-head">
+        <h2>Production by agent <span class="hint" id="prodHint"></span></h2>
+        <button class="btn secondary small" id="prodToggle" type="button">Hide</button>
       </div>
-      <div class="empty" id="prodEmpty" style="display:none">No agents have joined yet — share your join code above.</div>
-      <div class="warn" id="prodWarn" style="display:none"></div>
+      <div id="prodWrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Agent</th><th class="num">Level</th><th class="num">Deals</th>
+              <th class="num">Submitted AP</th><th class="num">Issued AP</th>
+              <th class="num">Their comm.</th><th class="num">Your override</th>
+            </tr></thead>
+            <tbody id="prodBody"></tbody>
+            <tfoot id="prodFoot"></tfoot>
+          </table>
+        </div>
+        <div class="empty" id="prodEmpty" style="display:none">No agents have joined yet — share your join code above.</div>
+        <div class="warn" id="prodWarn" style="display:none"></div>
+      </div>
     </div>
 
     <div class="card">
-      <h2>Activity by agent <span class="hint">this month</span></h2>
-      <div class="table-scroll">
-        <table>
-          <thead><tr>
-            <th>Agent</th><th class="num">Dials</th><th class="num">Pickups</th>
-            <th class="num">Convos</th><th class="num">Appts</th><th class="num">Presentations</th><th class="num">Sold</th>
-          </tr></thead>
-          <tbody id="actBody"></tbody>
-          <tfoot id="actFoot"></tfoot>
-        </table>
+      <div class="card-head">
+        <h2>Activity by agent <span class="hint">this month</span></h2>
+        <button class="btn secondary small" id="actToggle" type="button">Hide</button>
       </div>
-      <div class="empty" id="actEmpty" style="display:none">No call activity logged by your team this month.</div>
+      <div id="actWrap">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Agent</th><th class="num">Dials</th><th class="num">Pickups</th>
+              <th class="num">Convos</th><th class="num">Appts</th><th class="num">Presentations</th><th class="num">Sold</th>
+            </tr></thead>
+            <tbody id="actBody"></tbody>
+            <tfoot id="actFoot"></tfoot>
+          </table>
+        </div>
+        <div class="empty" id="actEmpty" style="display:none">No call activity logged by your team this month.</div>
+      </div>
     </div>
 
     <div class="card" style="margin-top:16px">
       <div class="card-head">
         <h2>All agency deals <span class="hint" id="allDealsHint"></span></h2>
+        <button class="btn secondary small" id="allDealsToggle" type="button">Show list</button>
       </div>
-      <div class="table-scroll">
-        <table>
-          <thead><tr>
-            <th>Date</th><th>Agent</th><th>Carrier</th><th>Product</th>
-            <th class="num">AP</th><th class="num">Commission</th><th>Status</th>
-          </tr></thead>
-          <tbody id="allDealsBody"></tbody>
-          <tfoot id="allDealsFoot"></tfoot>
-        </table>
+      <div id="allDealsWrap" style="display:none">
+        <div class="table-scroll">
+          <table>
+            <thead><tr>
+              <th>Date</th><th>Agent</th><th>Carrier</th><th>Product</th>
+              <th class="num">AP</th><th class="num">Commission</th><th>Status</th>
+            </tr></thead>
+            <tbody id="allDealsBody"></tbody>
+            <tfoot id="allDealsFoot"></tfoot>
+          </table>
+        </div>
+        <div class="empty" id="allDealsEmpty" style="display:none">No deals logged in your agency this month.</div>
+        <div class="note" style="margin-top:10px">Client names and phone numbers are never shared with the agency — only production.</div>
       </div>
-      <div class="empty" id="allDealsEmpty" style="display:none">No deals logged in your agency this month.</div>
-      <div class="note" style="margin-top:10px">Client names and phone numbers are never shared with the agency — only production.</div>
     </div>
   </div>
 </div>
@@ -722,6 +735,36 @@
 
   $("prevMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, -1); render(); });
   $("nextMonth").addEventListener("click", function () { currentMonth = shiftMonth(currentMonth, 1); render(); });
+
+  /* ---------- collapsible sections (remembered per browser) ---------- */
+  function makeCollapse(key, wrapId, btnId, opts) {
+    opts = opts || {};
+    var defaultOpen = !!opts.defaultOpen;
+    var openLabel = opts.openLabel || "Hide";
+    var closedLabel = opts.closedLabel || "Show";
+    function isOpen() {
+      try {
+        var v = localStorage.getItem(key);
+        if (v === null) return defaultOpen;
+        return v === "1";
+      } catch (e) { return defaultOpen; }
+    }
+    function apply() {
+      var open = isOpen();
+      var w = $(wrapId), b = $(btnId);
+      if (w) w.style.display = open ? "" : "none";
+      if (b) b.textContent = open ? openLabel : closedLabel;
+    }
+    var btn = $(btnId);
+    if (btn) btn.addEventListener("click", function () {
+      try { localStorage.setItem(key, isOpen() ? "0" : "1"); } catch (e) {}
+      apply();
+    });
+    apply();
+  }
+  makeCollapse("agentHub.owner.prodCollapsed.v1", "prodWrap", "prodToggle", { defaultOpen: true, openLabel: "Hide", closedLabel: "Show list" });
+  makeCollapse("agentHub.owner.actCollapsed.v1", "actWrap", "actToggle", { defaultOpen: true, openLabel: "Hide", closedLabel: "Show list" });
+  makeCollapse("agentHub.owner.allDealsCollapsed.v1", "allDealsWrap", "allDealsToggle", { defaultOpen: false, openLabel: "Hide list", closedLabel: "Show list" });
 
   /* ---------- theme ---------- */
   var THEME_KEY = "agentHub.theme.v1";
