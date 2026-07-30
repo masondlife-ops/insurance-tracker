@@ -206,6 +206,8 @@
   .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
   .settings-row input { width: 80px; }
   .agency-link { font-size: 13px; color: var(--text-muted); text-decoration: underline; cursor: pointer; }
+  .agency-chip { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; background: var(--page); border: 1px solid var(--baseline); border-radius: 999px; padding: 3px 6px 3px 12px; margin-right: 6px; }
+  .agency-chip .mini { padding: 2px 8px; }
   .agency-link:hover { color: var(--text-secondary); }
   .com-row { display: flex; align-items: center; gap: 8px; }
   .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
@@ -447,7 +449,7 @@
       <span>&mdash; auto-calculates the upfront commission (first 9 months) from the carrier's comp guide. You can always type over it.</span>
     </div>
     <div class="settings-row" id="agencyRow">
-      <span id="agencyStatus" style="display:none"></span>
+      <span id="agencyList"></span>
       <a id="agencyToggle" class="agency-link">Join an agency</a>
       <span id="agencyJoin" style="display:none">
         <input type="text" id="agencyCode" placeholder="Agency code" style="width:130px">
@@ -455,7 +457,6 @@
         <button type="button" class="btn secondary small" id="agencyJoinBtn">Join</button>
         <button type="button" class="btn secondary small" id="agencyCancelBtn">Cancel</button>
       </span>
-      <button type="button" class="btn secondary small" id="agencyLeaveBtn" style="display:none">Leave</button>
       <span id="agencyNote" style="display:none"></span>
     </div>
   </div>
@@ -1533,7 +1534,7 @@
 
   /* ---------- agency roll-up (production numbers only — no client PII) ---------- */
   var TEAM_TABLE = "team_summary";
-  var membership = null, teamTimer = null;
+  var memberships = [], ownedAgency = null, lastKnownAgentName = null, teamTimer = null;
 
   // Build the summary the owner sees. Deliberately excludes client, notes, and phone.
   function buildTeamSummary() {
@@ -1574,73 +1575,87 @@
     });
 
     return {
-      agentName: (membership && membership.agent_name) || undefined,
+      agentName: lastKnownAgentName || undefined,
       contractLevel: getSetting("contractLevel") || null,
       updatedAt: new Date().toISOString(),
       months: months
     };
   }
 
+  function inAnyAgency() { return memberships.length > 0 || !!ownedAgency; }
   function teamPublish() {
-    if (!cloudOn || !cloudUser || !membership) return;
+    if (!cloudOn || !cloudUser || !inAnyAgency()) return;
     sb.from(TEAM_TABLE).upsert(
       { user_id: cloudUser.id, data: buildTeamSummary(), updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     ).then(function () {});
   }
   function teamSchedulePublish() {
-    if (!cloudOn || !cloudUser || !membership) return;
+    if (!cloudOn || !cloudUser || !inAnyAgency()) return;
     clearTimeout(teamTimer);
     teamTimer = setTimeout(teamPublish, 1200);
   }
 
   var agencyExpanded = false;
   function renderAgencyRow() {
-    var joined = !!membership;
-    $("agencyStatus").style.display = joined ? "" : "none";
-    $("agencyToggle").style.display = (!joined && !agencyExpanded) ? "" : "none";
-    $("agencyJoin").style.display = (!joined && agencyExpanded) ? "" : "none";
-    $("agencyLeaveBtn").style.display = (joined && !membership.isOwner) ? "" : "none";
-    $("agencyNote").style.display = (joined || agencyExpanded) ? "" : "none";
-    if (joined) {
-      $("agencyStatus").textContent = "Agency: " + (membership.agency_name || "joined") +
-        (membership.isOwner ? " · owner" : (membership.agent_name ? " · " + membership.agent_name : ""));
-      $("agencyNote").innerHTML = membership.isOwner
-        ? "&mdash; your production appears on your agency leaderboard. Client names and phone numbers are never shared."
-        : "&mdash; your production numbers are shared with your agency owner. Client names and phone numbers are never shared.";
+    var any = inAnyAgency();
+    var chips = [];
+    if (ownedAgency) {
+      chips.push('<span class="agency-chip">' + esc(ownedAgency.agency_name) + ' · owner</span>');
+    }
+    memberships.forEach(function (m) {
+      chips.push('<span class="agency-chip">' + esc(m.agency_name || "Agency") +
+        (m.agent_name ? " · " + esc(m.agent_name) : "") +
+        ' <button type="button" class="mini leave-one" data-id="' + esc(m.agency_id) +
+        '" data-name="' + esc(m.agency_name || "this agency") + '">Leave</button></span>');
+    });
+    $("agencyList").innerHTML = chips.join(" ");
+    $("agencyToggle").textContent = any ? "Join another agency" : "Join an agency";
+    $("agencyToggle").style.display = agencyExpanded ? "none" : "";
+    $("agencyJoin").style.display = agencyExpanded ? "" : "none";
+    $("agencyNote").style.display = (any || agencyExpanded) ? "" : "none";
+    if (any) {
+      $("agencyNote").innerHTML = "&mdash; your production numbers are shared with every agency you belong to. Client names and phone numbers are never shared.";
     } else if (agencyExpanded) {
       $("agencyNote").innerHTML = "&mdash; joining shares your production numbers (deals, AP, commission, activity) with your agency owner. Never client names or phone numbers.";
     }
   }
   $("agencyToggle").addEventListener("click", function () { agencyExpanded = true; renderAgencyRow(); $("agencyCode").focus(); });
   $("agencyCancelBtn").addEventListener("click", function () { agencyExpanded = false; renderAgencyRow(); });
+  $("agencyList").addEventListener("click", function (ev) {
+    var btn = ev.target.closest && ev.target.closest(".leave-one");
+    if (!btn) return;
+    var id = btn.getAttribute("data-id"), name = btn.getAttribute("data-name");
+    if (!confirm("Leave " + name + "? Their owner will stop seeing your numbers. Any other agencies you're in are unaffected.")) return;
+    btn.disabled = true;
+    sb.rpc("leave_agency", { p_agency_id: id }).then(function (res) {
+      if (res.error) { btn.disabled = false; alert(res.error.message); return; }
+      memberships = memberships.filter(function (m) { return m.agency_id !== id; });
+      renderAgencyRow();
+      if (!inAnyAgency()) sb.from(TEAM_TABLE).delete().eq("user_id", cloudUser.id).then(function () {});
+    });
+  });
 
   function loadMembership() {
     if (!cloudOn || !cloudUser) return Promise.resolve();
-    return sb.from("agency_members").select("agency_id,agent_name,agency_name").eq("agent_id", cloudUser.id).maybeSingle()
+    return sb.from("agency_members").select("agency_id,agent_name,agency_name").eq("agent_id", cloudUser.id)
       .then(function (res) {
-        membership = (res && !res.error && res.data) ? res.data : null;
-        if (membership) { renderAgencyRow(); teamPublish(); return; }
-        // Not a member — but if you OWN an agency, your production still belongs on
-        // its leaderboard, so publish from here too (this is where deals get entered).
-        return sb.from("agencies").select("name").eq("owner_id", cloudUser.id).maybeSingle()
-          .then(function (r2) {
-            if (r2.error || !r2.data) { renderAgencyRow(); return; }
-            var agencyName = r2.data.name;
-            // keep the display name he already chose on the Agency tab
-            return sb.from("team_summary").select("data").eq("user_id", cloudUser.id).maybeSingle()
-              .then(function (r3) {
-                var existing = (!r3.error && r3.data && r3.data.data) ? r3.data.data.agentName : null;
-                membership = { agency_name: agencyName, agent_name: existing || null, isOwner: true };
-                renderAgencyRow();
-                teamPublish();
-              }, function () {
-                membership = { agency_name: agencyName, agent_name: null, isOwner: true };
-                renderAgencyRow();
-                teamPublish();
-              });
-          }, function () { renderAgencyRow(); });
-      }, function () {});
+        memberships = (res && !res.error && res.data) ? res.data : [];
+        return sb.from("agencies").select("name").eq("owner_id", cloudUser.id).maybeSingle();
+      })
+      .then(function (r2) {
+        ownedAgency = (r2 && !r2.error && r2.data) ? { agency_name: r2.data.name } : null;
+        if (!inAnyAgency()) { renderAgencyRow(); return; }
+        // keep whatever display name was already published, so republishing
+        // (which happens on every deal/call) never silently erases it
+        return sb.from(TEAM_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle().then(function (r3) {
+          var existing = (!r3.error && r3.data && r3.data.data) ? r3.data.data.agentName : null;
+          var fromMembership = memberships.length ? memberships[0].agent_name : null;
+          lastKnownAgentName = fromMembership || existing || null;
+          renderAgencyRow();
+          teamPublish();
+        }, function () { renderAgencyRow(); teamPublish(); });
+      }, function () { renderAgencyRow(); });
   }
 
   $("agencyJoinBtn").addEventListener("click", function () {
@@ -1650,19 +1665,10 @@
     sb.rpc("join_agency", { p_code: code, p_name: nm }).then(function (res) {
       btn.disabled = false;
       if (res.error) { alert(res.error.message || "Could not join that agency."); return; }
-      membership = { agency_name: res.data, agent_name: nm };
-      agencyExpanded = false;
+      if (nm) lastKnownAgentName = nm;
       $("agencyCode").value = ""; $("agencyMyName").value = "";
-      renderAgencyRow();
-      teamPublish();
-    });
-  });
-
-  $("agencyLeaveBtn").addEventListener("click", function () {
-    if (!confirm("Leave this agency? Your owner will stop seeing your numbers.")) return;
-    sb.from("agency_members").delete().eq("agent_id", cloudUser.id).then(function () {
-      sb.from(TEAM_TABLE).delete().eq("user_id", cloudUser.id).then(function () {});
-      membership = null; renderAgencyRow();
+      agencyExpanded = false;
+      loadMembership();
     });
   });
 
@@ -1756,8 +1762,8 @@
     var c = (typeof sb !== "undefined") ? sb : null;
     var uid = (typeof cloudUser !== "undefined" && cloudUser) ? cloudUser.id : ((typeof user !== "undefined" && user) ? user.id : null);
     if (!c || !uid) return;
-    c.from("agency_members").select("agency_id").eq("agent_id", uid).maybeSingle().then(function (res) {
-      if (!res.error && res.data) { var t = document.getElementById("boardTab"); if (t) t.style.display = ""; }
+    c.from("agency_members").select("agency_id").eq("agent_id", uid).limit(1).then(function (res) {
+      if (!res.error && res.data && res.data.length) { var t = document.getElementById("boardTab"); if (t) t.style.display = ""; }
     }, function () {});
   }
 

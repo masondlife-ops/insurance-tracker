@@ -1320,8 +1320,8 @@
     var c = (typeof sb !== "undefined") ? sb : null;
     var uid = (typeof cloudUser !== "undefined" && cloudUser) ? cloudUser.id : ((typeof user !== "undefined" && user) ? user.id : null);
     if (!c || !uid) return;
-    c.from("agency_members").select("agency_id").eq("agent_id", uid).maybeSingle().then(function (res) {
-      if (!res.error && res.data) { var t = document.getElementById("boardTab"); if (t) t.style.display = ""; }
+    c.from("agency_members").select("agency_id").eq("agent_id", uid).limit(1).then(function (res) {
+      if (!res.error && res.data && res.data.length) { var t = document.getElementById("boardTab"); if (t) t.style.display = ""; }
     }, function () {});
   }
 

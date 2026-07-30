@@ -174,6 +174,7 @@
       <div class="sub" id="pageSub">Where you stand this month.</div>
     </div>
     <div class="toolbar">
+      <select id="agencyPicker" style="display:none"></select>
       <div class="month-nav" id="monthNav" style="display:none">
         <button class="btn icon" id="prevMonth" title="Previous month">&#9664;</button>
         <span class="label" id="monthLabel"></span>
@@ -312,8 +313,11 @@
       " · ranked by " + (sortBy === "issued" ? "issued AP" : "submitted AP");
   }
 
-  function loadBoard() {
-    return sb.rpc("agency_board").then(function (res) {
+  var myAgencies = [];
+  var PICKED_KEY = "agentHub.leaderboardAgency.v1";
+
+  function loadBoardFor(agencyId) {
+    return sb.rpc("agency_board", { p_agency_id: agencyId }).then(function (res) {
       board = (!res.error && res.data) ? res.data : null;
       if (!board) {
         $("noAgencyCard").style.display = "";
@@ -323,10 +327,39 @@
         $("noAgencyCard").style.display = "none";
         $("boardView").style.display = "";
         $("monthNav").style.display = "";
+        try { localStorage.setItem(PICKED_KEY, agencyId); } catch (e) {}
         render();
       }
     });
   }
+
+  function loadBoard() {
+    return sb.rpc("my_agencies").then(function (res) {
+      myAgencies = (!res.error && res.data) ? res.data : [];
+      var picker = $("agencyPicker");
+      if (myAgencies.length > 1) {
+        var remembered = null;
+        try { remembered = localStorage.getItem(PICKED_KEY); } catch (e) {}
+        picker.innerHTML = myAgencies.map(function (a) {
+          return '<option value="' + a.agency_id + '">' + esc(a.agency_name) +
+            (a.role === "owner" ? " (yours)" : "") + "</option>";
+        }).join("");
+        var pick = myAgencies.some(function (a) { return a.agency_id === remembered; }) ? remembered : myAgencies[0].agency_id;
+        picker.value = pick;
+        picker.style.display = "";
+        return loadBoardFor(pick);
+      }
+      picker.style.display = "none";
+      if (!myAgencies.length) {
+        $("noAgencyCard").style.display = "";
+        $("boardView").style.display = "none";
+        $("monthNav").style.display = "none";
+        return;
+      }
+      return loadBoardFor(myAgencies[0].agency_id);
+    });
+  }
+  $("agencyPicker").addEventListener("change", function () { loadBoardFor(this.value); });
 
   $("byIssued").addEventListener("click", function () {
     sortBy = "issued"; this.classList.add("on"); $("bySubmitted").classList.remove("on"); render();
