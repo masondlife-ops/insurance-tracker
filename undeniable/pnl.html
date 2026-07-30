@@ -119,6 +119,16 @@
   .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
 
   /* ---------- PNL tiles ---------- */
+  .tiles-head { display: flex; justify-content: flex-end; margin-bottom: -6px; }
+  #tilesPop { position: fixed; z-index: 200; min-width: 220px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 14px; display: none; }
+  #tilesPop.show { display: block; }
+  #tilesPop h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); margin: 0 0 8px; font-weight: 600; }
+  #tilesPop label { display: flex; align-items: center; gap: 9px; font-size: 14px; padding: 5px 0; cursor: pointer; }
+  #tilesPop label.locked { opacity: .55; cursor: default; }
+  #tilesPop input[type="checkbox"] { width: 16px; height: 16px; flex: none; cursor: pointer; }
+  #tilesPop .hint { font-size: 11.5px; color: var(--text-muted); margin-top: 9px; line-height: 1.4; }
+  #tilesBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
+  #tilesBackdrop.show { display: block; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   .tile {
     background: var(--surface-1);
@@ -385,6 +395,9 @@
     </div>
   </header>
 
+  <div class="tiles-head">
+    <button class="mini" id="tilesGear" type="button" title="Choose which stat tiles to show">&#9881; Customize tiles</button>
+  </div>
   <div class="tiles" id="tiles"></div>
 
   <div class="card" id="goalCard">
@@ -525,6 +538,8 @@
   </div>
 </div>
 
+<div id="tilesBackdrop"></div>
+<div id="tilesPop"></div>
 <script src="../comp-guide.js"></script>
 <script>
 (function () {
@@ -648,20 +663,73 @@
     var roi = leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null;
     var roiClass = roi === null ? "" : roi > 0 ? "profit-pos" : roi < 0 ? "profit-neg" : "";
 
-    $("tiles").innerHTML =
-      tile("Total sales", String(deals.length), issued.length + " issued", "") +
-      tile("Submitted AP", money(submittedAP), "", "") +
-      tile("Avg AP / sale", avgAP === null ? "—" : money(avgAP), "", "") +
-      tile("Issued AP", money(issuedAP), "", "") +
-      tile("Commission", money(commission), "", "") +
-      tile("Expenses", money(expenses), expSub, "") +
-      tile("Profit", profitSign + money(Math.abs(profit)), "commission − expenses", profitClass) +
-      tile("ROI", pct(roi), roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", roiClass);
+    var allTiles = [
+      { key: "sales",   label: "Total sales",   value: String(deals.length), sub: issued.length + " issued", cls: "" },
+      { key: "sub",     label: "Submitted AP",   value: money(submittedAP), sub: "", cls: "" },
+      { key: "avg",     label: "Avg AP / sale",  value: avgAP === null ? "—" : money(avgAP), sub: "", cls: "" },
+      { key: "issued",  label: "Issued AP",      value: money(issuedAP), sub: "", cls: "" },
+      { key: "comm",    label: "Commission",     value: money(commission), sub: "", cls: "" },
+      { key: "exp",     label: "Expenses",       value: money(expenses), sub: expSub, cls: "" },
+      { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "commission − expenses", cls: profitClass },
+      { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass }
+    ];
+    window.__pnlAllTiles = allTiles;
+    var hidden = tileHiddenSet();
+    $("tiles").innerHTML = allTiles.filter(function (t) { return !hidden[t.key]; })
+      .map(function (t) { return tile(t.label, t.value, t.sub, t.cls); }).join("");
   }
   function tile(label, value, sub, cls) {
     return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
       (sub ? '<div class="t-sub">' + sub + "</div>" : "") + "</div>";
   }
+
+  /* ---------- which stat tiles this person wants to see ---------- */
+  var TILES_KEY = "agentHub.pnlTilesHidden.v1";
+  function tileHiddenSet() {
+    try {
+      var arr = JSON.parse(localStorage.getItem(TILES_KEY)) || [];
+      var o = {}; arr.forEach(function (k) { o[k] = true; }); return o;
+    } catch (e) { return {}; }
+  }
+  function saveTileHidden(o) {
+    try { localStorage.setItem(TILES_KEY, JSON.stringify(Object.keys(o).filter(function (k) { return o[k]; }))); } catch (e) {}
+  }
+  function buildTilesPop() {
+    var hidden = tileHiddenSet();
+    var defs = window.__pnlAllTiles || [];
+    var visibleCount = defs.filter(function (t) { return !hidden[t.key]; }).length;
+    var html = "<h3>Show these tiles</h3>";
+    defs.forEach(function (t) {
+      var isHidden = !!hidden[t.key];
+      var lastOne = !isHidden && visibleCount <= 1;
+      html += '<label class="' + (lastOne ? "locked" : "") + '">' +
+        '<input type="checkbox" data-k="' + t.key + '"' + (isHidden ? "" : " checked") + (lastOne ? " disabled" : "") + ">" +
+        "<span>" + t.label + "</span></label>";
+    });
+    html += '<div class="hint">Just changes what you see on this device.</div>';
+    $("tilesPop").innerHTML = html;
+  }
+  function openTilesPop() {
+    buildTilesPop();
+    var r = $("tilesGear").getBoundingClientRect();
+    var pop = $("tilesPop");
+    pop.style.top = (r.bottom + 6) + "px";
+    pop.style.right = (window.innerWidth - r.right) + "px";
+    pop.style.left = "auto";
+    pop.classList.add("show"); $("tilesBackdrop").classList.add("show");
+  }
+  function closeTilesPop() { $("tilesPop").classList.remove("show"); $("tilesBackdrop").classList.remove("show"); }
+  $("tilesGear").addEventListener("click", function () { $("tilesPop").classList.contains("show") ? closeTilesPop() : openTilesPop(); });
+  $("tilesBackdrop").addEventListener("click", closeTilesPop);
+  $("tilesPop").addEventListener("change", function (ev) {
+    var el = ev.target;
+    if (!el.matches || !el.matches('input[type="checkbox"]')) return;
+    var hidden = tileHiddenSet();
+    hidden[el.getAttribute("data-k")] = !el.checked;
+    saveTileHidden(hidden);
+    renderTiles();
+    buildTilesPop();
+  });
 
   function fmtDay(dateStr) {
     var p = dateStr.split("-");
