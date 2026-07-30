@@ -303,32 +303,40 @@ begin
     join descendants d on a.parent_agency_id = d.id
     where d.depth < 10
   )
+  -- one row per unique person: if someone is a direct member of more than one
+  -- agency in this tree (e.g. joined both me and a sub-agency beneath me), don't
+  -- double-count their production -- show them once, preferring the shallowest
+  -- (most direct) relationship to the agency being viewed.
   select coalesce(jsonb_agg(x), '[]'::jsonb) into v_members
   from (
-    -- every agent who directly joined me OR any sub-agency beneath me
-    select m.agent_id,
-           coalesce(m.agent_name, s.data->>'agentName', 'Agent') as agent_name,
-           coalesce(s.data, '{}'::jsonb) as data,
-           d.name as agency_name, d.depth
-    from descendants d
-    join public.agency_members m on m.agency_id = d.id
-    left join public.team_summary s on s.user_id = m.agent_id
+    select distinct on (agent_id) agent_id, agent_name, data, agency_name, depth
+    from (
+      -- every agent who directly joined me OR any sub-agency beneath me
+      select m.agent_id,
+             coalesce(m.agent_name, s.data->>'agentName', 'Agent') as agent_name,
+             coalesce(s.data, '{}'::jsonb) as data,
+             d.name as agency_name, d.depth
+      from descendants d
+      join public.agency_members m on m.agency_id = d.id
+      left join public.team_summary s on s.user_id = m.agent_id
 
-    union all
+      union all
 
-    -- each sub-agency owner's OWN production (not me — my own book is handled
-    -- separately client-side, same as the single-agency view already does)
-    select d.owner_id as agent_id,
-           coalesce(os.data->>'agentName', 'Owner') as agent_name,
-           coalesce(os.data, '{}'::jsonb) as data,
-           d.name as agency_name, d.depth
-    from descendants d
-    left join public.team_summary os on os.user_id = d.owner_id
-    where d.depth > 0
-      and not exists (
-        select 1 from public.agency_members m2
-        where m2.agency_id = d.id and m2.agent_id = d.owner_id
-      )
+      -- each sub-agency owner's OWN production (not me -- my own book is handled
+      -- separately client-side, same as the single-agency view already does)
+      select d.owner_id as agent_id,
+             coalesce(os.data->>'agentName', 'Owner') as agent_name,
+             coalesce(os.data, '{}'::jsonb) as data,
+             d.name as agency_name, d.depth
+      from descendants d
+      left join public.team_summary os on os.user_id = d.owner_id
+      where d.depth > 0
+        and not exists (
+          select 1 from public.agency_members m2
+          where m2.agency_id = d.id and m2.agent_id = d.owner_id
+        )
+    ) raw
+    order by agent_id, depth asc
   ) x;
 
   select coalesce(jsonb_agg(jsonb_build_object('name', c.name)), '[]'::jsonb) into v_children
