@@ -115,7 +115,8 @@
   .cred { display: flex; align-items: center; gap: 8px; padding: 4px 0; border-top: 1px solid var(--grid); }
   .cred:first-of-type { border-top: none; }
   .cred-label { width: 76px; flex: none; color: var(--text-muted); font-size: 12px; }
-  .cred-val { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+  .cred-val { flex: 1; min-width: 0; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; color: var(--text-primary); text-decoration: none; }
+  a.cred-val:hover { text-decoration: underline; color: var(--series-1); }
   .cred-val.mask { letter-spacing: 2px; }
   .cred-val.empty { color: var(--text-muted); font-style: italic; letter-spacing: 0; }
   .cred-btns { display: flex; gap: 4px; flex: none; }
@@ -180,6 +181,7 @@
     <form id="carrierForm" class="form-grid">
       <div class="field"><label for="c-name">Carrier</label><input type="text" id="c-name" required placeholder="Foresters"></div>
       <div class="field"><label for="c-url">Portal link</label><input type="text" id="c-url" class="wide" placeholder="https://…"></div>
+      <div class="field"><label for="c-phone">Phone</label><input type="tel" id="c-phone" placeholder="(555) 555-5555"></div>
       <div class="field"><label for="c-producer">Producer #</label><input type="text" id="c-producer" placeholder=""></div>
       <div class="field"><label for="c-username">Username</label><input type="text" id="c-username" autocomplete="off" placeholder=""></div>
       <div class="field"><label for="c-password">Password <span style="color:var(--text-muted)">(optional)</span></label>
@@ -244,6 +246,7 @@
     grid.innerHTML = state.carriers.map(function (c) {
       var rows = "";
       rows += credRow("Portal", c.url, c.id, "url");
+      rows += credRow("Phone", c.phone, c.id, "tel");
       rows += credRow("Producer #", c.producer, c.id, "text");
       rows += credRow("Username", c.username, c.id, "text");
       rows += credRow("Password", c.password, c.id, "password");
@@ -287,7 +290,8 @@
     else if (type === "password") {
       var shown = revealed[cid];
       display = '<span class="cred-val' + (shown ? "" : " mask") + '"' + (shown ? ' title="' + esc(value) + '"' : "") + ">" + (shown ? esc(value) : "••••••••") + "</span>";
-    } else display = '<span class="cred-val" title="' + esc(value) + '">' + esc(value) + "</span>";
+    } else if (type === "tel") display = '<a class="cred-val" href="tel:' + esc(value.replace(/[^\d+]/g, "")) + '" title="Call ' + esc(value) + '">' + esc(value) + "</a>";
+    else display = '<span class="cred-val" title="' + esc(value) + '">' + esc(value) + "</span>";
 
     var btns = "";
     if (type === "password" && has) btns += '<button class="mini" data-reveal="' + cid + '">' + (revealed[cid] ? "Hide" : "Show") + "</button>";
@@ -316,7 +320,7 @@
     var c = state.carriers.find(function (x) { return x.id === id; });
     if (!c) return;
     editingId = id;
-    $("c-name").value = c.name || ""; $("c-url").value = c.url || ""; $("c-producer").value = c.producer || "";
+    $("c-name").value = c.name || ""; $("c-url").value = c.url || ""; $("c-phone").value = c.phone || ""; $("c-producer").value = c.producer || "";
     $("c-username").value = c.username || ""; $("c-password").value = c.password || "";
     $("carrierFormTitle").textContent = "Edit — " + (c.name || "");
     $("carrierSubmit").textContent = "Save changes";
@@ -331,7 +335,8 @@
     ev.preventDefault();
     var rec = {
       id: editingId || uid(),
-      name: $("c-name").value.trim(), url: $("c-url").value.trim(), producer: $("c-producer").value.trim(),
+      name: $("c-name").value.trim(), url: $("c-url").value.trim(), phone: $("c-phone").value.trim(),
+      producer: $("c-producer").value.trim(),
       username: $("c-username").value.trim(),
       password: $("c-password").value
     };
