@@ -430,6 +430,14 @@
       var mo = monthOf(sum, currentMonth);
       var deals = mo.deals || [];
       var lvl = sum && sum.contractLevel != null ? String(sum.contractLevel) : "";
+      // Overrides cascade one hop at a time: if this production came through a
+      // sub-agency (depth > 0), my override stops at THAT sub-agency owner's
+      // contract level, not the actual agent's -- they already take their own
+      // slice of the spread below that. Only direct members (depth 0) use their
+      // own level directly, same as before.
+      var depth = m.depth || 0;
+      var capLevel = m.cap_level != null ? String(m.cap_level) : null;
+      var overrideAgainstLevel = depth > 0 ? capLevel : lvl;
       var submitted = 0, issued = 0, theirComm = 0, ovr = 0, unknown = 0;
       deals.forEach(function (d) {
         var ap = num(d.ap) || 0;
@@ -437,12 +445,13 @@
         if (d.status === "Issued") issued += ap;
         if (d.status === "Issued") theirComm += (num(d.com) || 0);
         if (d.status !== "Issued") return;                  // not issued yet: no commission or override
-        var o = ownerLevel ? overrideFor(d, lvl, ownerLevel) : null;
+        var o = (ownerLevel && overrideAgainstLevel) ? overrideFor(d, overrideAgainstLevel, ownerLevel) : null;
         if (o == null) unknown++; else ovr += o;
       });
       return { m: m, sum: sum, name: (m.agent_name || "Agent"), level: lvl, n: deals.length,
                submitted: submitted, issued: issued, theirComm: theirComm, ovr: ovr, unknown: unknown,
-               activity: mo.activity || {}, deals: deals, agencyName: m.agency_name || null };
+               activity: mo.activity || {}, deals: deals, agencyName: m.agency_name || null,
+               cappedAt: depth > 0 ? capLevel : null };
     });
 
     // sort by override desc, then issued AP
@@ -485,7 +494,8 @@
         '<td class="num">' + money(r.submitted) + "</td>" +
         '<td class="num">' + money(r.issued) + "</td>" +
         '<td class="num">' + money(r.theirComm) + "</td>" +
-        '<td class="num ovr">' + (ownerLevel ? money(r.ovr) : "—") + "</td></tr>";
+        '<td class="num ovr"' + (r.cappedAt ? ' title="Capped at ' + esc(r.agencyName || "their sub-agency") + '\'s contract level (' + esc(r.cappedAt) + ')"' : '') +
+          '>' + (ownerLevel ? money(r.ovr) : "—") + "</td></tr>";
     }).join("");
     $("prodFoot").innerHTML = rows.length
       ? '<tr><td>Total</td><td></td><td class="num"></td><td class="num">' + t.n + '</td><td class="num">' + money(t.submitted) +
@@ -497,7 +507,7 @@
     if (t.unknown > 0 && ownerLevel) {
       $("prodWarn").style.display = "";
       $("prodWarn").textContent = "⚠ " + t.unknown + " deal" + (t.unknown === 1 ? "" : "s") +
-        " couldn't be scored for override — the carrier/product isn't in the comp guide, or the agent hasn't set their contract level.";
+        " couldn't be scored for override — the carrier/product isn't in the comp guide, the agent hasn't set their contract level, or (for deals from a sub-agency) that sub-agency's owner hasn't set theirs.";
     } else $("prodWarn").style.display = "none";
 
     var actRows = rows.filter(function (r) {
@@ -666,7 +676,7 @@
       var rolled = data.members || [];
       subAgencies = (data.children || []).map(function (c) { return c.name; });
       parentName = data.parent_name || null;
-      members = rolled.map(function (r) { return { agent_id: r.agent_id, agent_name: r.agent_name, agency_name: r.agency_name }; });
+      members = rolled.map(function (r) { return { agent_id: r.agent_id, agent_name: r.agent_name, agency_name: r.agency_name, depth: r.depth || 0, cap_level: r.cap_level }; });
       summaries = {};
       rolled.forEach(function (r) { summaries[r.agent_id] = r.data || {}; });
     });

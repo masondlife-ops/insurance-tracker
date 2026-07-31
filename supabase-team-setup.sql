@@ -497,3 +497,102 @@ $$;
 
 revoke all on function public.agency_board(uuid) from public;
 grant execute on function public.agency_board(uuid) to authenticated;
+
+-- ============================================================
+-- Correct multi-level override cascade (added later — safe to re-run)
+-- The rollup used to compute a top owner's override as the FULL spread
+-- from their level down to the actual agent's level, even across sub-
+-- agencies. That overstates it: real overrides cascade one hop at a time
+-- — each level only earns the spread between itself and whoever is
+-- DIRECTLY beneath it, not the whole way down. This adds a "cap_level"
+-- to each row: the contract level of the direct sub-agency (if any) the
+-- production flows through, so the caller's override stops there instead
+-- of reaching all the way to the bottom.
+-- ============================================================
+
+create or replace function public.agency_rollup()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_my_agency   uuid;
+  v_name        text;
+  v_goals       jsonb;
+  v_members     jsonb;
+  v_children    jsonb;
+  v_parent_id   uuid;
+  v_parent_name text;
+begin
+  select id, name, coalesce(goals, '{}'::jsonb), parent_agency_id
+    into v_my_agency, v_name, v_goals, v_parent_id
+  from public.agencies where owner_id = auth.uid();
+
+  if v_my_agency is null then
+    return null;
+  end if;
+
+  if v_parent_id is not null then
+    select name into v_parent_name from public.agencies where id = v_parent_id;
+  end if;
+
+  with recursive descendants as (
+    select id, name, owner_id, parent_agency_id, 0 as depth,
+           null::uuid as branch_child_id      -- depth 0 = my own agency; no cap, use the agent's own level
+    from public.agencies where id = v_my_agency
+    union all
+    select a.id, a.name, a.owner_id, a.parent_agency_id, d.depth + 1,
+           -- the direct child of MINE that this branch descends from: itself at
+           -- depth 1, or inherited unchanged for every level deeper than that
+           case when d.depth = 0 then a.id else d.branch_child_id end
+    from public.agencies a
+    join descendants d on a.parent_agency_id = d.id
+    where d.depth < 10
+  ),
+  branch_levels as (
+    select d.id as agency_id, b.owner_level as cap_level
+    from descendants d
+    left join public.agencies b on b.id = d.branch_child_id
+  )
+  select coalesce(jsonb_agg(x), '[]'::jsonb) into v_members
+  from (
+    select distinct on (agent_id) agent_id, agent_name, data, agency_name, depth, cap_level
+    from (
+      select m.agent_id,
+             coalesce(m.agent_name, s.data->>'agentName', 'Agent') as agent_name,
+             coalesce(s.data, '{}'::jsonb) as data,
+             d.name as agency_name, d.depth, bl.cap_level
+      from descendants d
+      join public.agency_members m on m.agency_id = d.id
+      left join public.team_summary s on s.user_id = m.agent_id
+      left join branch_levels bl on bl.agency_id = d.id
+
+      union all
+
+      select d.owner_id as agent_id,
+             coalesce(os.data->>'agentName', 'Owner') as agent_name,
+             coalesce(os.data, '{}'::jsonb) as data,
+             d.name as agency_name, d.depth, bl.cap_level
+      from descendants d
+      left join public.team_summary os on os.user_id = d.owner_id
+      left join branch_levels bl on bl.agency_id = d.id
+      where d.depth > 0
+        and not exists (
+          select 1 from public.agency_members m2
+          where m2.agency_id = d.id and m2.agent_id = d.owner_id
+        )
+    ) raw
+    order by agent_id, depth asc
+  ) x;
+
+  select coalesce(jsonb_agg(jsonb_build_object('name', c.name)), '[]'::jsonb) into v_children
+  from public.agencies c
+  where c.parent_agency_id = v_my_agency;
+
+  return jsonb_build_object('agency_name', v_name, 'goals', v_goals, 'members', v_members, 'children', v_children, 'parent_name', v_parent_name);
+end;
+$$;
+
+revoke all on function public.agency_rollup() from public;
+grant execute on function public.agency_rollup() to authenticated;
