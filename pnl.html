@@ -622,7 +622,7 @@
   function sum(arr, f) { return arr.reduce(function (t, r) { return t + (num(f(r)) || 0); }, 0); }
   // commission that actually counts as income — a charged-back deal earns $0
   // (it still stays in the list and in Submitted AP, just not in commission/profit/ROI)
-  function earnedCom(d) { return d.status === "Chargeback" ? 0 : (num(d.com) || 0); }
+  function earnedCom(d) { return d.status === "Issued" ? (num(d.com) || 0) : 0; }
 
   function renderTiles() {
     var deals = monthDeals(), exps = monthExpenses();
