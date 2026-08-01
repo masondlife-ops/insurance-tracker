@@ -107,6 +107,7 @@
   .acct-box.show { display: flex; }
 
   .agency-name { color: var(--text-muted); font-size: 12.5px; }
+  .issued-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .table-scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
   th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
@@ -395,17 +396,18 @@
 
   // The owner's own book, for the month in view. Chargebacks earn nothing,
   // same rule the Deals & PNL page uses.
+  // Commission and Issued AP belong to whichever month a deal actually converts in,
+  // not the month it was submitted (matches Deals & PNL's own logic).
+  function effectiveIssuedYm(d) { return d.status === "Issued" ? (d.issuedDate || d.date || "").slice(0, 7) : null; }
   function personalMonth(ym) {
     var st = personalState || {};
-    var deals = (st.deals || []).filter(function (d) { return (d.date || "").slice(0, 7) === ym; });
+    var allDeals = st.deals || [];
+    var deals = allDeals.filter(function (d) { return (d.date || "").slice(0, 7) === ym; });
+    var issuedDeals = allDeals.filter(function (d) { return effectiveIssuedYm(d) === ym; });
     var exps  = (st.expenses || []).filter(function (e) { return (e.date || "").slice(0, 7) === ym; });
     var submitted = 0, issued = 0, comm = 0;
-    deals.forEach(function (d) {
-      var ap = num(d.ap) || 0;
-      submitted += ap;
-      if (d.status === "Issued") issued += ap;
-      if (d.status === "Issued") comm += (num(d.com) || 0);
-    });
+    deals.forEach(function (d) { submitted += num(d.ap) || 0; });
+    issuedDeals.forEach(function (d) { issued += num(d.ap) || 0; comm += (num(d.com) || 0); });
     var expenses = exps.reduce(function (t, e) { return t + (num(e.price) || 0); }, 0);
     return { n: deals.length, submitted: submitted, issued: issued, commission: comm, expenses: expenses, profit: comm - expenses };
   }
@@ -441,10 +443,10 @@
       var submitted = 0, issued = 0, theirComm = 0, ovr = 0, unknown = 0;
       deals.forEach(function (d) {
         var ap = num(d.ap) || 0;
-        submitted += ap;
-        if (d.status === "Issued") issued += ap;
-        if (d.status === "Issued") theirComm += (num(d.com) || 0);
-        if (d.status !== "Issued") return;                  // not issued yet: no commission or override
+        if (!d.skipSubmitted) submitted += ap;
+        if (d.status !== "Issued" || d.skipIssued) return;   // not issued yet, or issued in a different month: no commission or override here
+        issued += ap;
+        theirComm += (num(d.com) || 0);
         var o = (ownerLevel && overrideAgainstLevel) ? overrideFor(d, overrideAgainstLevel, ownerLevel) : null;
         if (o == null) unknown++; else ovr += o;
       });
@@ -573,30 +575,41 @@
     rows.forEach(function (r) {
       (r.deals || []).forEach(function (d) { all.push({ who: r.name, d: d }); });
     });
-    // the owner's own deals count as agency production too
+    // the owner's own deals count as agency production too -- same submitted/issued
+    // month split as everyone else: shown once in the month submitted, and again
+    // (issued side only) in the month it actually converted, if that's different.
     var st = personalState || {};
     (st.deals || []).forEach(function (d) {
-      if ((d.date || "").slice(0, 7) !== currentMonth) return;
-      all.push({ who: "You", d: { date: d.date, carrier: d.carrier, product: d.policy, ap: d.ap, com: d.com, status: d.status } });
+      var ymSubmit = (d.date || "").slice(0, 7);
+      var ymIssued = effectiveIssuedYm(d);
+      var crossMonth = ymIssued && ymIssued !== ymSubmit;
+      if (ymSubmit === currentMonth) {
+        all.push({ who: "You", d: { date: d.date, carrier: d.carrier, product: d.policy, ap: d.ap, com: d.com, status: d.status, skipIssued: crossMonth } });
+      }
+      if (crossMonth && ymIssued === currentMonth) {
+        all.push({ who: "You", d: { date: d.issuedDate, carrier: d.carrier, product: d.policy, ap: d.ap, com: d.com, status: d.status, skipSubmitted: true } });
+      }
     });
     all.sort(function (a, b) { return (b.d.date || "").localeCompare(a.d.date || ""); });
 
     $("allDealsBody").innerHTML = all.map(function (x) {
       var d = x.d, cls = String(d.status || "").toLowerCase();
       var struck = d.status === "Chargeback" ? " struck" : "";
+      var note = d.skipIssued ? '<div class="issued-sub">issued elsewhere</div>' :
+                 d.skipSubmitted ? '<div class="issued-sub">submitted elsewhere</div>' : "";
       return "<tr><td>" + esc(fmtDay(d.date)) + "</td>" +
         '<td class="agent-name">' + esc(x.who) + "</td>" +
         "<td>" + esc(d.carrier || "—") + "</td>" +
         "<td>" + esc(d.product || "—") + "</td>" +
-        '<td class="num">' + money(num(d.ap)) + "</td>" +
-        '<td class="num' + struck + '">' + money(num(d.com)) + "</td>" +
-        '<td><span class="status-chip ' + cls + '">' + esc(d.status || "—") + "</span></td></tr>";
+        '<td class="num">' + (d.skipSubmitted ? "—" : money(num(d.ap))) + "</td>" +
+        '<td class="num' + struck + '">' + (d.skipIssued ? "—" : money(num(d.com))) + "</td>" +
+        '<td><span class="status-chip ' + cls + '">' + esc(d.status || "—") + "</span>" + note + "</td></tr>";
     }).join("");
 
     var tAp = 0, tCom = 0;
     all.forEach(function (x) {
-      tAp += (num(x.d.ap) || 0);
-      if (x.d.status === "Issued") tCom += (num(x.d.com) || 0);
+      if (!x.d.skipSubmitted) tAp += (num(x.d.ap) || 0);
+      if (x.d.status === "Issued" && !x.d.skipIssued) tCom += (num(x.d.com) || 0);
     });
     $("allDealsFoot").innerHTML = all.length
       ? '<tr><td colspan="4">Total</td><td class="num">' + money(tAp) + '</td><td class="num">' + money(tCom) + "</td><td></td></tr>"
@@ -629,13 +642,26 @@
     for (var i = 0; i < 13; i++) keep[shiftMonth(currentMonth, -i)] = 1;
     keep[todayMonth()] = 1;
     (st.deals || []).forEach(function (d) {
-      var ym = (d.date || "").slice(0, 7);
-      if (!ym || !keep[ym]) return;
-      months[ym] = months[ym] || { deals: [], activity: {} };
-      months[ym].deals.push({
-        date: d.date, carrier: d.carrier || "", product: d.policy || "",
-        ap: num(d.ap), com: num(d.com), status: d.status || ""
-      });
+      var ymSubmit = (d.date || "").slice(0, 7);
+      if (!ymSubmit) return;
+      var ymIssued = effectiveIssuedYm(d);
+      var crossMonth = ymIssued && ymIssued !== ymSubmit;
+      if (keep[ymSubmit]) {
+        months[ymSubmit] = months[ymSubmit] || { deals: [], activity: {} };
+        months[ymSubmit].deals.push({
+          date: d.date, carrier: d.carrier || "", product: d.policy || "",
+          ap: num(d.ap), com: num(d.com), status: d.status || "",
+          skipIssued: crossMonth
+        });
+      }
+      if (crossMonth && keep[ymIssued]) {
+        months[ymIssued] = months[ymIssued] || { deals: [], activity: {} };
+        months[ymIssued].deals.push({
+          date: d.issuedDate, carrier: d.carrier || "", product: d.policy || "",
+          ap: num(d.ap), com: num(d.com), status: d.status || "",
+          skipSubmitted: true
+        });
+      }
     });
     return {
       agentName: ownerBoardName || "Owner",

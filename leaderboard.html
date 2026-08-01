@@ -223,8 +223,10 @@
     var submitted = 0, issued = 0, n = 0;
     (mo.deals || []).forEach(function (d) {
       var ap = num(d.ap) || 0;
-      submitted += ap; n++;
-      if (d.status === "Issued") issued += ap;
+      // a deal that converted in a different month than it was submitted publishes
+      // two entries -- one per month -- flagged so each side only counts once
+      if (!d.skipSubmitted) { submitted += ap; n++; }
+      if (d.status === "Issued" && !d.skipIssued) issued += ap;
     });
     return { submitted: submitted, issued: issued, n: n };
   }
