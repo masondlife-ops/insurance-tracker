@@ -563,6 +563,11 @@
   // expenses saved before the lead/other split get a best-guess kind,
   // and known lead buys get tied to a matching lead type from existing deals
   function migrate(s) {
+    // Guard against any null/malformed entries ever making it into these arrays --
+    // a single bad row here used to be able to throw mid-render and blank out
+    // both the deals AND expenses tables (whichever hadn't rendered yet).
+    s.deals = (s.deals || []).filter(function (d) { return d && typeof d === "object"; });
+    s.expenses = (s.expenses || []).filter(function (e) { return e && typeof e === "object"; });
     (s.expenses || []).forEach(function (e) {
       if (!e.kind) {
         e.kind = /lead/i.test(e.item || "") ? "lead" : "other";
@@ -656,7 +661,7 @@
   // not the month it was submitted. Uses the Issued date if set, falling back to the
   // deal's own date (covers same-month issues, and old deals with no Issued date).
   function effectiveIssuedYm(d) {
-    return d.status === "Issued" ? (d.issuedDate || d.date || "").slice(0, 7) : null;
+    return d && d.status === "Issued" ? (d.issuedDate || d.date || "").slice(0, 7) : null;
   }
   function issuedInMonth(ym) { return state.deals.filter(function (d) { return effectiveIssuedYm(d) === ym; }); }
 
@@ -913,17 +918,22 @@
     $(id).innerHTML = all.map(function (v) { return '<option value="' + esc(v) + '">'; }).join("");
   }
 
+  function safeRender(name, fn) {
+    try { fn(); } catch (e) {
+      console.error("render failed: " + name, e);
+    }
+  }
   function render() {
     $("monthLabel").textContent = monthLabel(currentMonth);
-    renderTiles();
-    renderDeals();
-    renderExpenses();
-    renderROI();
-    renderSpend();
-    renderDatalists();
-    refreshContractLevel();
-    renderGoal();
-    renderFunnel();
+    safeRender("tiles", renderTiles);
+    safeRender("deals", renderDeals);
+    safeRender("expenses", renderExpenses);
+    safeRender("roi", renderROI);
+    safeRender("spend", renderSpend);
+    safeRender("datalists", renderDatalists);
+    safeRender("contractLevel", refreshContractLevel);
+    safeRender("goal", renderGoal);
+    safeRender("funnel", renderFunnel);
   }
 
   /* ---------- month analytics: goal, funnel, trend ---------- */
