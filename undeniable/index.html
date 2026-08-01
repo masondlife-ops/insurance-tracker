@@ -1236,6 +1236,8 @@
 
   /* ---------------- Cloud sync (optional) ---------------- */
   var CLOUD_TABLE = "activity_state";
+  var PENDING_KEY = "agentHub.activityPendingSync.v1";
+  var cloudRetryTimer = null;
   var cloudCfg = window.HUB_CLOUD || {};
   var cloudOn = !!(cloudCfg.url && cloudCfg.anonKey);
   var sb = null, cloudUser = null, cloudSaveTimer = null, authMode = "signin";
@@ -1260,6 +1262,7 @@
   }
 
   function cloudScheduleSave() {
+    try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
     if (!cloudOn || !cloudUser) return;
     setSyncPill("Saving…", "saving");
     clearTimeout(cloudSaveTimer);
@@ -1268,15 +1271,26 @@
 
   function cloudPush() {
     if (!cloudOn || !cloudUser) return;
+    clearTimeout(cloudRetryTimer);
     sb.from(CLOUD_TABLE).upsert(
       { user_id: cloudUser.id, data: activityBlob(), updated_at: new Date().toISOString() },
       { onConflict: "user_id" }
     ).then(function (res) {
-      setSyncPill(res.error ? "Sync error" : "Saved", res.error ? "err" : "saved");
+      if (res.error) {
+        setSyncPill("Sync error", "err");
+        cloudRetryTimer = setTimeout(cloudPush, 8000);
+        return;
+      }
+      try { localStorage.setItem(PENDING_KEY, "0"); } catch (e) {}
+      setSyncPill("Saved", "saved");
     });
   }
 
   function cloudPull() {
+    var hasPending = false;
+    try { hasPending = localStorage.getItem(PENDING_KEY) === "1"; } catch (e) {}
+    if (hasPending) { cloudPush(); return Promise.resolve(); }
+
     return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
         if (res.error) throw res.error;
