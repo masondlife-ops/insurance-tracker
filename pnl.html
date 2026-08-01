@@ -255,6 +255,8 @@
 
   /* ---------- Tables ---------- */
   .issued-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  tr.cross-in { background: var(--page); }
+  tr.cross-in td { color: var(--text-secondary); }
   .table-scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
   th, td { padding: 7px 10px; text-align: left; white-space: nowrap; }
@@ -729,41 +731,58 @@
 
   function renderDeals() {
     var deals = monthDeals();
+    // Deals submitted in an earlier month that converted THIS month don't live
+    // here (they stay listed under the month they were submitted) -- but their
+    // commission/issued AP DOES count in this month's tiles above. Show them as
+    // a clearly-marked extra row so that money is never invisible in the table.
+    var crossIn = state.deals.filter(function (d) {
+      return effectiveIssuedYm(d) === currentMonth && (d.date || "").slice(0, 7) !== currentMonth;
+    });
     var body = $("dealsBody");
-    body.innerHTML = deals.map(function (d) {
+
+    function row(d, isCrossIn) {
       var chipCls = (d.status || "").toLowerCase();
-      return "<tr>" +
-        "<td>" + fmtDay(d.date) + "</td>" +
+      var actions = isCrossIn
+        ? '<button class="btn secondary small" data-goto-month="' + (d.date || "").slice(0, 7) + '">View in ' + shortMonth((d.date || "").slice(0, 7)) + "</button>"
+        : '<div class="row-actions">' +
+            '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
+            '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
+          "</div>";
+      return "<tr" + (isCrossIn ? ' class="cross-in"' : "") + ">" +
+        "<td>" + fmtDay(isCrossIn ? d.issuedDate : d.date) + "</td>" +
         "<td>" + esc(d.client) + "</td>" +
         "<td>" + esc(d.policy) + "</td>" +
         "<td>" + esc(d.carrier) + "</td>" +
-        '<td class="num">' + money(d.face) + "</td>" +
-        '<td class="num">' + money(d.monthly) + "</td>" +
-        '<td class="num">' + money(d.ap) + "</td>" +
+        '<td class="num">' + (isCrossIn ? "—" : money(d.face)) + "</td>" +
+        '<td class="num">' + (isCrossIn ? "—" : money(d.monthly)) + "</td>" +
+        '<td class="num">' + (isCrossIn ? "—" : money(d.ap)) + "</td>" +
         '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
         "<td>" + esc(d.lead) + "</td>" +
         '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
-          (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
-            (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(effectiveIssuedYm(d)) : "") + "</div>" : "") + "</td>" +
-        "<td>" + (d.inforce ? "Y" : "—") + "</td>" +
-        '<td class="notes">' + esc(d.notes) + "</td>" +
-        '<td><div class="row-actions">' +
-          '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
-          '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
-        "</div></td></tr>";
-    }).join("");
+          (isCrossIn
+            ? '<div class="issued-sub">Submitted ' + shortMonth((d.date || "").slice(0, 7)) + "</div>"
+            : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
+                (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(effectiveIssuedYm(d)) : "") + "</div>" : "")) + "</td>" +
+        "<td>" + (isCrossIn ? "—" : (d.inforce ? "Y" : "—")) + "</td>" +
+        '<td class="notes">' + (isCrossIn ? "" : esc(d.notes)) + "</td>" +
+        "<td>" + actions + "</td></tr>";
+    }
+
+    body.innerHTML = deals.map(function (d) { return row(d, false); }).join("") +
+      crossIn.map(function (d) { return row(d, true); }).join("");
 
     var foot = $("dealsFoot");
-    if (deals.length) {
+    var totalRows = deals.length + crossIn.length;
+    if (totalRows) {
       foot.innerHTML = "<tr><td colspan=\"4\">Total</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.face; })) + "</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.monthly; })) + "</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.ap; })) + "</td>" +
-        '<td class="num">' + money(sum(deals.filter(function (d) { return effectiveIssuedYm(d) === currentMonth; }), earnedCom)) + "</td>" +
+        '<td class="num">' + money(sum(deals.concat(crossIn).filter(function (d) { return effectiveIssuedYm(d) === currentMonth; }), earnedCom)) + "</td>" +
         '<td colspan="5"></td></tr>';
     } else foot.innerHTML = "";
 
-    $("dealsEmpty").style.display = deals.length ? "none" : "";
+    $("dealsEmpty").style.display = totalRows ? "none" : "";
     $("dealCount").textContent = deals.length ? "(" + deals.length + ")" : "";
   }
 
@@ -1232,6 +1251,7 @@
   document.addEventListener("click", function (ev) {
     var btn = ev.target.closest("button");
     if (!btn) return;
+    if (btn.dataset.gotoMonth) { currentMonth = btn.dataset.gotoMonth; render(); return; }
     if (btn.dataset.edit) startEdit(btn.dataset.edit);
     if (btn.dataset.delDeal) {
       var d = state.deals.find(function (x) { return x.id === btn.dataset.delDeal; });
