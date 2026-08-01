@@ -357,7 +357,7 @@
   <header>
     <div>
       <h1>Deals &amp; PNL</h1>
-    <div class="sub">Deals, expenses, and profit roll up automatically by month</div>
+    <div class="sub"></div>
     </div>
     <div class="toolbar">
       <div class="month-nav">
@@ -427,7 +427,6 @@
     <div class="settings-row">
       <span>Your contract level:</span>
       <select id="contractLevel" style="width:auto"><option value="">Set level…</option></select>
-      <span>&mdash; auto-calculates the upfront commission (first 9 months) from the carrier's comp guide. You can always type over it.</span>
     </div>
     <div class="settings-row" id="agencyRow">
       <span id="agencyList"></span>
@@ -1677,9 +1676,9 @@
     $("agencyJoin").style.display = agencyExpanded ? "" : "none";
     $("agencyNote").style.display = (any || agencyExpanded) ? "" : "none";
     if (any) {
-      $("agencyNote").innerHTML = "&mdash; your production numbers are shared with every agency you belong to. Client names and phone numbers are never shared.";
+      $("agencyNote").innerHTML = "";
     } else if (agencyExpanded) {
-      $("agencyNote").innerHTML = "&mdash; joining shares your production numbers (deals, AP, commission, activity) with your agency owner. Never client names or phone numbers.";
+      $("agencyNote").innerHTML = "";
     }
   }
   $("agencyToggle").addEventListener("click", function () { agencyExpanded = true; renderAgencyRow(); $("agencyCode").focus(); });

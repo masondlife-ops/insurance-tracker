@@ -166,7 +166,7 @@
   <header>
     <div>
       <h1 id="agencyTitle">Agency Owner Hub</h1>
-      <div class="sub" id="agencySub">Your team's production, rolled up by month.</div>
+      <div class="sub" id="agencySub"></div>
     </div>
     <div class="toolbar">
       <div class="month-nav" id="monthNav" style="display:none">
@@ -230,7 +230,7 @@
           <button class="mini" id="deleteAgency" title="Remove this agency">Delete agency</button>
         </div>
       </div>
-      <div class="note">Agents enter that code once in their tracker (Deals &amp; PNL tab) to join. You'll see their production numbers here — never their client names or phone numbers.</div>
+      
     </div>
 
     <div class="card" style="margin-bottom:16px" id="structureCard">
@@ -300,7 +300,7 @@
           </table>
         </div>
         <div class="empty" id="allDealsEmpty" style="display:none">No deals logged in your agency this month.</div>
-        <div class="note" style="margin-top:10px">Client names and phone numbers are never shared with the agency — only production.</div>
+        
       </div>
     </div>
   </div>
@@ -686,7 +686,6 @@
     $("teamView").style.display = "";
     $("monthNav").style.display = "";
     $("agencyTitle").textContent = agency.name;
-    $("agencySub").textContent = "Team production, rolled up by month.";
     $("agencyName").textContent = "";
     $("joinCode").textContent = agency.join_code;
     renderStructure();
@@ -791,7 +790,6 @@
       $("monthNav").style.display = "none";
       $("setupCard").style.display = "";
       $("agencyTitle").textContent = "Agency Owner Hub";
-      $("agencySub").textContent = "Your team's production, rolled up by month.";
     });
   });
 
