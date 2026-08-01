@@ -313,6 +313,15 @@
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
+  .toolbar { justify-content: space-between; }
+  .side-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  #morePop { position: fixed; z-index: 200; min-width: 170px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 8px; display: none; }
+  #morePop.show { display: block; }
+  #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
+  #morePop button:hover { background: var(--page); }
+  #moreBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
+  #moreBackdrop.show { display: block; }
   .sync-pill {
     font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
     border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap;
@@ -365,15 +374,14 @@
         <span class="label" id="monthLabel"></span>
         <button class="btn icon" id="nextMonth" title="Next month">&#9654;</button>
       </div>
-      <button class="btn secondary small" id="exportCsv">Export CSV</button>
-      <button class="btn secondary small" id="importBtn">Import CSV</button>
       <input type="file" id="importFile" accept=".csv,text/csv" style="display:none">
-      <button class="btn secondary small" id="backupBtn">Backup</button>
-      <button class="btn secondary small" id="restoreBtn">Restore</button>
       <input type="file" id="restoreFile" accept=".json" style="display:none">
-      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
-      <span class="sync-pill" id="syncPill" style="display:none"></span>
-      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+      <div class="side-controls">
+        <button class="mini" id="moreGear" type="button" title="Export, import, backup, restore">&#8942;</button>
+        <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+        <span class="sync-pill" id="syncPill" style="display:none"></span>
+        <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="mini" id="logoutBtn">Log out</button></div>
+      </div>
     </div>
   </header>
 
@@ -521,6 +529,13 @@
 
 <div id="tilesBackdrop"></div>
 <div id="tilesPop"></div>
+<div id="moreBackdrop"></div>
+<div id="morePop">
+  <button type="button" id="exportCsv">Export CSV</button>
+  <button type="button" id="importBtn">Import CSV</button>
+  <button type="button" id="backupBtn">Backup</button>
+  <button type="button" id="restoreBtn">Restore</button>
+</div>
 <script src="comp-guide.js"></script>
 <script>
 (function () {
@@ -717,6 +732,19 @@
   }
   function closeTilesPop() { $("tilesPop").classList.remove("show"); $("tilesBackdrop").classList.remove("show"); }
   $("tilesGear").addEventListener("click", function () { $("tilesPop").classList.contains("show") ? closeTilesPop() : openTilesPop(); });
+
+  function openMorePop() {
+    var r = $("moreGear").getBoundingClientRect();
+    var pop = $("morePop");
+    pop.style.top = (r.bottom + 6) + "px";
+    pop.style.right = (window.innerWidth - r.right) + "px";
+    pop.style.left = "auto";
+    pop.classList.add("show"); $("moreBackdrop").classList.add("show");
+  }
+  function closeMorePop() { $("morePop").classList.remove("show"); $("moreBackdrop").classList.remove("show"); }
+  $("moreGear").addEventListener("click", function () { $("morePop").classList.contains("show") ? closeMorePop() : openMorePop(); });
+  $("moreBackdrop").addEventListener("click", closeMorePop);
+  $("morePop").addEventListener("click", function (ev) { if (ev.target.tagName === "BUTTON") closeMorePop(); });
   $("tilesBackdrop").addEventListener("click", closeTilesPop);
   $("tilesPop").addEventListener("change", function (ev) {
     var el = ev.target;
