@@ -254,6 +254,7 @@
   :root[data-theme="light"] .com-note.warn { color: #c2790a; }
 
   /* ---------- Tables ---------- */
+  .issued-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
   .table-scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
   th, td { padding: 7px 10px; text-align: left; white-space: nowrap; }
@@ -412,6 +413,7 @@
           <option>Chargeback</option>
         </select>
       </div>
+      <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
       <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
       <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
       <button type="submit" class="btn" id="dealSubmit">Add deal</button>
@@ -729,7 +731,8 @@
         '<td class="num">' + money(d.ap) + "</td>" +
         '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
         "<td>" + esc(d.lead) + "</td>" +
-        '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span></td>" +
+        '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
+          (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) + "</div>" : "") + "</td>" +
         "<td>" + (d.inforce ? "Y" : "—") + "</td>" +
         '<td class="notes">' + esc(d.notes) + "</td>" +
         '<td><div class="row-actions">' +
@@ -1088,6 +1091,7 @@
     $("d-com").value = d.com != null ? d.com : "";
     $("d-lead").value = d.lead || "";
     $("d-status").value = d.status || "Submitted";
+    $("d-issued-date").value = d.issuedDate || "";
     $("d-inforce").checked = !!d.inforce;
     $("d-notes").value = d.notes || "";
     $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
@@ -1112,6 +1116,7 @@
       com: num($("d-com").value),
       lead: $("d-lead").value.trim(),
       status: $("d-status").value,
+      issuedDate: $("d-issued-date").value,
       inforce: $("d-inforce").checked,
       notes: $("d-notes").value.trim()
     };
@@ -1127,7 +1132,11 @@
     render();
   });
 
-  $("dealCancel").addEventListener("click", function () { resetDealForm(); });
+  $("d-status").addEventListener("change", function () {
+    if (this.value === "Issued" && !$("d-issued-date").value) $("d-issued-date").value = todayStr();
+  });
+
+    $("dealCancel").addEventListener("click", function () { resetDealForm(); });
 
   // auto-fill AP from monthly premium (AP = monthly × 12), then auto-calc commission
   // from the comp guide; neither ever overwrites a value the user typed themselves
@@ -1267,9 +1276,9 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","In force","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","In force","Notes"]);
     deals.forEach(function (d) {
-      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.inforce ? "Y" : "N", d.notes]);
+      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.inforce ? "Y" : "N", d.notes]);
     });
     rows.push([]);
     rows.push(["EXPENSES"]);
@@ -1371,6 +1380,7 @@
             com: headerIndex(lower, ["commission", "com", "com ($)", "commission ($)"]),
             lead: headerIndex(lower, ["lead type", "lead"]),
             status: headerIndex(lower, ["status", "app status"]),
+            issuedDate: headerIndex(lower, ["issued date", "issued", "date issued"]),
             inforce: headerIndex(lower, ["in force", "in force (y/n)", "inforce"]),
             notes: headerIndex(lower, ["notes", "note"])
           };
@@ -1408,6 +1418,7 @@
             ap: ap, com: moneyNum(get("com")),
             lead: get("lead"),
             status: get("status") || "Submitted",
+            issuedDate: normDate(get("issuedDate")) || "",
             inforce: /^(y|yes|true|1)/i.test(get("inforce")),
             notes: get("notes")
           });
