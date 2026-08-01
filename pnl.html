@@ -596,7 +596,7 @@
     y += Math.floor(m / 12); m = ((m % 12) + 12) % 12;
     return y + "-" + String(m + 1).padStart(2, "0");
   }
-  function inMonth(rec) { return (rec.date || "").slice(0, 7) === currentMonth; }
+  function inMonth(rec) { return String(rec.date || "").slice(0, 7) === currentMonth; }
 
   /* ---------- helpers ---------- */
 
@@ -636,7 +636,7 @@
   // not the month it was submitted. Uses the Issued date if set, falling back to the
   // deal's own date (covers same-month issues, and old deals with no Issued date).
   function effectiveIssuedYm(d) {
-    return d && d.status === "Issued" ? (d.issuedDate || d.date || "").slice(0, 7) : null;
+    return d && d.status === "Issued" ? String(d.issuedDate || d.date || "").slice(0, 7) : null;
   }
   function issuedInMonth(ym) { return state.deals.filter(function (d) { return effectiveIssuedYm(d) === ym; }); }
 
@@ -730,8 +730,11 @@
   });
 
   function fmtDay(dateStr) {
-    var p = dateStr.split("-");
-    return parseInt(p[1], 10) + "/" + parseInt(p[2], 10);
+    var p = String(dateStr == null ? "" : dateStr).split("-");
+    if (p.length < 3) return "—";
+    var mo = parseInt(p[1], 10), da = parseInt(p[2], 10);
+    if (isNaN(mo) || isNaN(da)) return "—";
+    return mo + "/" + da;
   }
 
   function renderDeals() {
@@ -741,14 +744,14 @@
     // commission/issued AP DOES count in this month's tiles above. Show them as
     // a clearly-marked extra row so that money is never invisible in the table.
     var crossIn = state.deals.filter(function (d) {
-      return effectiveIssuedYm(d) === currentMonth && (d.date || "").slice(0, 7) !== currentMonth;
+      return effectiveIssuedYm(d) === currentMonth && String(d.date || "").slice(0, 7) !== currentMonth;
     });
     var body = $("dealsBody");
 
     function row(d, isCrossIn) {
       var chipCls = (d.status || "").toLowerCase();
       var actions = isCrossIn
-        ? '<button class="btn secondary small" data-goto-month="' + (d.date || "").slice(0, 7) + '">View in ' + shortMonth((d.date || "").slice(0, 7)) + "</button>"
+        ? '<button class="btn secondary small" data-goto-month="' + String(d.date || "").slice(0, 7) + '">View in ' + shortMonth(String(d.date || "").slice(0, 7)) + "</button>"
         : '<div class="row-actions">' +
             '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
             '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
@@ -765,9 +768,9 @@
         "<td>" + esc(d.lead) + "</td>" +
         '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
           (isCrossIn
-            ? '<div class="issued-sub">Submitted ' + shortMonth((d.date || "").slice(0, 7)) + "</div>"
+            ? '<div class="issued-sub">Submitted ' + shortMonth(String(d.date || "").slice(0, 7)) + "</div>"
             : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
-                (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(effectiveIssuedYm(d)) : "") + "</div>" : "")) + "</td>" +
+                (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(String(effectiveIssuedYm(d) || "")) : "") + "</div>" : "")) + "</td>" +
         "<td>" + (isCrossIn ? "—" : (d.inforce ? "Y" : "—")) + "</td>" +
         '<td class="notes">' + (isCrossIn ? "" : esc(d.notes)) + "</td>" +
         "<td>" + actions + "</td></tr>";
@@ -915,8 +918,8 @@
 
   var activityBlob = null; // {entries, dials} pulled from the Activity tracker's cloud row
 
-  function dealsInMonth(ym) { return state.deals.filter(function (d) { return (d.date || "").slice(0, 7) === ym; }); }
-  function expensesInMonth(ym) { return state.expenses.filter(function (e) { return (e.date || "").slice(0, 7) === ym; }); }
+  function dealsInMonth(ym) { return state.deals.filter(function (d) { return String(d.date || "").slice(0, 7) === ym; }); }
+  function expensesInMonth(ym) { return state.expenses.filter(function (e) { return String(e.date || "").slice(0, 7) === ym; }); }
   function monthIssuedAP(ym) { return sum(issuedInMonth(ym), function (d) { return d.ap; }); }
   function monthProfit(ym) {
     return sum(issuedInMonth(ym), earnedCom) - sum(expensesInMonth(ym), function (e) { return e.price; });
@@ -928,7 +931,14 @@
     return (n < 0 ? "−" : "") + s;
   }
   var SHORT_MO = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-  function shortMonth(ym) { var p = ym.split("-"); return SHORT_MO[parseInt(p[1], 10) - 1] + " " + p[0].slice(2); }
+  function shortMonth(ym) {
+    var s = String(ym == null ? "" : ym);
+    var p = s.split("-");
+    if (p.length < 2) return "—";
+    var idx = parseInt(p[1], 10) - 1;
+    var name = SHORT_MO[idx];
+    return name ? (name + " " + p[0].slice(2)) : "—";
+  }
 
   /* goal (issued AP, per-month target) */
   function updateGoalBar() {
