@@ -94,6 +94,9 @@
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
+  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .mini:hover { color: var(--text-primary); }
 
   .goal-track { height: 16px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
   .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
@@ -156,7 +159,7 @@
         <button class="btn icon" id="nextMonth" title="Next month">&#9654;</button>
       </div>
       <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
-      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary small" id="logoutBtn">Log out</button></div>
+      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="mini" id="logoutBtn">Log out</button></div>
     </div>
   </header>
 

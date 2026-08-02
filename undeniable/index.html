@@ -261,6 +261,16 @@
   .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
   .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
+  .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .mini:hover { color: var(--text-primary); }
+  .side-controls { display: flex; align-items: center; gap: 8px; }
+  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  #morePop { position: fixed; z-index: 200; min-width: 170px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 8px; display: none; }
+  #morePop.show { display: block; }
+  #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
+  #morePop button:hover { background: var(--page); }
+  #moreBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
+  #moreBackdrop.show { display: block; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
   .sync-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap; }
@@ -345,14 +355,21 @@
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="saved-note" id="importNote"></span>
       <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
-      <button class="btn secondary" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
-      <button class="btn secondary" id="exportBtn">Export CSV</button>
       <input type="file" id="importFile" accept=".csv,text/csv" hidden>
-      <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
-      <span class="sync-pill" id="syncPill" style="display:none"></span>
-      <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="btn secondary" id="logoutBtn">Log out</button></div>
+      <div class="side-controls">
+        <button class="mini" id="moreGear" type="button" title="Import, export">&#8942;</button>
+        <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
+        <span class="sync-pill" id="syncPill" style="display:none"></span>
+        <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="mini" id="logoutBtn">Log out</button></div>
+      </div>
     </div>
   </header>
+
+  <div id="moreBackdrop"></div>
+  <div id="morePop">
+    <button type="button" id="importBtn" title="Load calls from a CSV exported by this tracker">Import CSV</button>
+    <button type="button" id="exportBtn">Export CSV</button>
+  </div>
 
   <!-- ============ LOG A CALL ============ -->
   <section class="card">
@@ -1222,6 +1239,19 @@
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
     updateThemeBtn();
   };
+
+  function openMorePop() {
+    var r = $("moreGear").getBoundingClientRect();
+    var pop = $("morePop");
+    pop.style.top = (r.bottom + 6) + "px";
+    pop.style.right = (window.innerWidth - r.right) + "px";
+    pop.style.left = "auto";
+    pop.classList.add("show"); $("moreBackdrop").classList.add("show");
+  }
+  function closeMorePop() { $("morePop").classList.remove("show"); $("moreBackdrop").classList.remove("show"); }
+  $("moreGear").addEventListener("click", function () { $("morePop").classList.contains("show") ? closeMorePop() : openMorePop(); });
+  $("moreBackdrop").addEventListener("click", closeMorePop);
+  $("morePop").addEventListener("click", function (ev) { if (ev.target.tagName === "BUTTON") closeMorePop(); });
 
   /* ---------------- Boot ---------------- */
   function renderAll() {
