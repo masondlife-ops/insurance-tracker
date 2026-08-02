@@ -833,11 +833,11 @@
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
     var defs = [
-      { label: "Pickup rate",        val: pct(pickups, totalDials), sub: pickups + " of " + totalDials + " dials" },
-      { label: "Presentation rate",  val: pct(pres, pickups),  sub: pres + " of " + pickups + " pickups" },
-      { label: "Close rate",         val: pct(sold, pres),     sub: sold + " of " + pres + " presentations" },
-      { label: "Appointment rate",   val: pct(appts, pickups), sub: appts + " of " + pickups + " pickups" },
-      { label: "Sold per dial",      val: pct(sold, totalDials), sub: sold + " of " + totalDials + " dials" }
+      { label: "Pickup rate",        val: pct(pickups, totalDials) },
+      { label: "Presentation rate",  val: pct(pres, pickups) },
+      { label: "Close rate",         val: pct(sold, pres) },
+      { label: "Appointment rate",   val: pct(appts, pickups) },
+      { label: "Sold per dial",      val: pct(sold, totalDials) }
     ];
     var box = $("rates");
     box.innerHTML = "";
@@ -845,10 +845,9 @@
       var t = document.createElement("div");
       t.className = "tile rate";
       t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
-      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div><div class="t-sub"></div>';
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
       t.querySelector(".t-label").textContent = d.label;
       t.querySelector(".t-value").textContent = d.val;
-      t.querySelector(".t-sub").textContent = d.sub;
       box.appendChild(t);
     });
   }
