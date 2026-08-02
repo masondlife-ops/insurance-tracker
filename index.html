@@ -183,14 +183,6 @@
   .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
   .rate .t-value { font-size: 22px; }
   .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .funnel { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; }
-  .f-stage { flex: 1; min-width: 58px; text-align: center; padding: 4px 2px; }
-  .f-count { font-size: 22px; font-weight: 650; color: var(--series-1); font-variant-numeric: tabular-nums; }
-  .f-name { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
-  .f-conv { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 11px; white-space: nowrap; padding: 0 3px; }
-  .funnel-tiles { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
-  .funnel-tiles .tile { flex: 1; min-width: 130px; }
-  .funnel-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
 
   /* ---------- Breakdown charts ---------- */
   .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
@@ -386,8 +378,6 @@
     <h2>Conversion rates</h2>
     <div class="rates" id="rates"></div>
   </section>
-
-  <div class="card" id="dealsFunnelCard"></div>
 
   <section class="card">
     <div class="chart-controls">
@@ -772,9 +762,13 @@
     var pres = count(rows, "presentation");
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
+    var monthActv = activityThisMonth();
+    var monthDeals = pnlDealCountThisMonth();
     var defs = [
       { label: "Pickup rate",        val: pct(pickups, totalDials) },
+      { label: "Convo rate",         val: pct(monthActv.convos, monthActv.pickups) },
       { label: "Presentation rate",  val: pct(pres, pickups) },
+      { label: "Deals rate",         val: pct(monthDeals, monthActv.presentations) },
       { label: "Close rate",         val: pct(sold, pres) },
       { label: "Appointment rate",   val: pct(appts, pickups) },
       { label: "Sold per dial",      val: pct(sold, totalDials) }
@@ -1199,7 +1193,7 @@
     sb.from("pnl_state").select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
         if (!res.error && res.data && res.data.data) pnlDealsBlob = res.data.data;
-        renderDealsFunnel();
+        renderRates(filtered());
       });
   }
   function activityThisMonth() {
@@ -1220,28 +1214,6 @@
     var dealsArr = (pnlDealsBlob && pnlDealsBlob.deals) || [];
     return dealsArr.filter(function (d) { return String(d.date || "").slice(0, 7) === ym; }).length;
   }
-  function renderDealsFunnel() {
-    var el = $("dealsFunnelCard");
-    if (!el) return;
-    var a = activityThisMonth();
-    var dealCount = pnlDealCountThisMonth();
-    var stages = [
-      { n: "Dials", v: a.dials }, { n: "Pickups", v: a.pickups }, { n: "Convos", v: a.convos },
-      { n: "Presentations", v: a.presentations }, { n: "Deals", v: dealCount }
-    ];
-    var html = '<div class="card-head"><h2>Activity → deals <span class="hint">this month</span></h2></div><div class="funnel">';
-    stages.forEach(function (s, i) {
-      html += '<div class="f-stage"><div class="f-count">' + s.v + '</div><div class="f-name">' + s.n + "</div></div>";
-      if (i < stages.length - 1) {
-        var prev = s.v, next = stages[i + 1].v;
-        html += '<div class="f-conv">→ ' + (prev > 0 ? Math.round(next / prev * 100) + "%" : "—") + "</div>";
-      }
-    });
-    html += "</div>";
-    if (!a.hasData) html += '<div class="funnel-note">No call activity logged this month yet.</div>';
-    el.innerHTML = html;
-  }
-
   /* ---------------- Boot ---------------- */
   function renderAll() {
     var rows = filtered();
@@ -1250,7 +1222,6 @@
     renderRates(rows);
     renderCharts();
     renderLog(rows);
-    renderDealsFunnel();
   }
 
   /* ---------------- Cloud sync (optional) ---------------- */
