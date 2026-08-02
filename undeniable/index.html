@@ -476,12 +476,12 @@
   var STATES = ["N/A","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
 
   var METRICS = [
-    { key: "pickup",       label: "Pickups" },
-    { key: "conv2",        label: "Convos 2+ min" },
-    { key: "conv5",        label: "Convos 5+ min" },
-    { key: "appointment",  label: "Appointments set" },
-    { key: "presentation", label: "Presentations" },
-    { key: "sold",         label: "Sold deals" }
+    { key: "pickup",       label: "Pickups",        chipLabel: "Pickup" },
+    { key: "conv2",        label: "Convos 2+ min",  chipLabel: "2+ min" },
+    { key: "conv5",        label: "Convos 5+ min",  chipLabel: "5+ min" },
+    { key: "appointment",  label: "Appointments set", chipLabel: "Appointment set" },
+    { key: "presentation", label: "Presentations",  chipLabel: "Presentation" },
+    { key: "sold",         label: "Sold deals",     chipLabel: "Sold" }
   ];
 
   function load(key, fallback) {
@@ -618,7 +618,7 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "chip" + (chipState[m.key] ? " on" : "");
-      b.textContent = (chipState[m.key] ? "✓ " : "") + m.label;
+      b.textContent = (chipState[m.key] ? "✓ " : "") + (m.chipLabel || m.label);
       b.onclick = function () { toggleChip(m.key); };
       box.appendChild(b);
     });
