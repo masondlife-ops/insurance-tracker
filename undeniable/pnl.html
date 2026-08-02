@@ -411,8 +411,6 @@
     <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
   </div>
 
-  <div class="card" id="funnelCard"></div>
-
   <div class="card">
     <h2 id="dealFormTitle">Add a deal</h2>
     <form id="dealForm" class="form-grid">
@@ -687,6 +685,10 @@
     var roi = leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null;
     var roiClass = roi === null ? "" : roi > 0 ? "profit-pos" : roi < 0 ? "profit-neg" : "";
 
+    var actv = activityMonth(currentMonth);
+    var costPerSale = deals.length > 0 ? leadSpend / deals.length : null;
+    var revPerDial = actv.dials > 0 ? commission / actv.dials : null;
+
     var allTiles = [
       { key: "sales",   label: "Total sales",   value: String(deals.length), sub: issued.length + " issued", cls: "" },
       { key: "sub",     label: "Submitted AP",   value: money(submittedAP), sub: "", cls: "" },
@@ -695,7 +697,9 @@
       { key: "comm",    label: "Commission",     value: money(commission), sub: "", cls: "" },
       { key: "exp",     label: "Expenses",       value: money(expenses), sub: expSub, cls: "" },
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "commission − expenses", cls: profitClass },
-      { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass }
+      { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
+      { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" },
+      { key: "revPerDial",  label: "Revenue per dial", value: revPerDial == null ? "—" : money(revPerDial), sub: commission > 0 ? money(commission) + " commission" : "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
     var hidden = tileHiddenSet();
@@ -950,7 +954,6 @@
     safeRender("datalists", renderDatalists);
     safeRender("contractLevel", refreshContractLevel);
     safeRender("goal", renderGoal);
-    safeRender("funnel", renderFunnel);
   }
 
   /* ---------- month analytics: goal, funnel, trend ---------- */
@@ -1028,37 +1031,6 @@
     return { dials: dials, pickups: c("pickup"), convos: c("conv2"), presentations: c("presentation"),
              hasData: (dials > 0 || ents.length > 0) };
   }
-  function renderFunnel() {
-    var a = activityMonth(currentMonth);
-    var deals = monthDeals();
-    var dealCount = deals.length;
-    var commission = sum(issuedInMonth(currentMonth), earnedCom);
-    var leadSpend = sum(expensesInMonth(currentMonth).filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
-    var stages = [
-      { n: "Dials", v: a.dials }, { n: "Pickups", v: a.pickups }, { n: "Convos", v: a.convos },
-      { n: "Presentations", v: a.presentations }, { n: "Deals", v: dealCount }
-    ];
-    var html = '<div class="card-head"><h2>Activity → deals → dollars <span class="hint">this month</span></h2></div><div class="funnel">';
-    stages.forEach(function (s, i) {
-      html += '<div class="f-stage"><div class="f-count">' + s.v + '</div><div class="f-name">' + s.n + "</div></div>";
-      if (i < stages.length - 1) {
-        var prev = s.v, next = stages[i + 1].v;
-        html += '<div class="f-conv">→ ' + (prev > 0 ? Math.round(next / prev * 100) + "%" : "—") + "</div>";
-      }
-    });
-    html += "</div>";
-    var costPerSale = dealCount > 0 ? leadSpend / dealCount : null;
-    var revPerDial = a.dials > 0 ? commission / a.dials : null;
-    var closeRate = a.presentations > 0 ? Math.round(dealCount / a.presentations * 100) + "%" : "—";
-    html += '<div class="funnel-tiles">'
-      + tile("Cost per sale", costPerSale == null ? "—" : money(costPerSale), leadSpend > 0 ? money(leadSpend) + " in leads" : "", "")
-      + tile("Revenue per dial", revPerDial == null ? "—" : money(revPerDial), commission > 0 ? money(commission) + " commission" : "", "")
-      + tile("Presentation → deal", closeRate, a.presentations > 0 ? dealCount + " of " + a.presentations : "", "")
-      + "</div>";
-    if (!a.hasData) html += '<div class="funnel-note">No call activity logged this month yet — log calls on the Activity tab and they\'ll flow in here.</div>';
-    $("funnelCard").innerHTML = html;
-  }
-
 
   /* Comp guide data lives in comp-guide.js (shared with the agency owner hub). */
 
@@ -1817,7 +1789,7 @@
     sb.from("activity_state").select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
         if (!res.error && res.data && res.data.data) activityBlob = res.data.data;
-        renderFunnel();
+        safeRender("tiles", renderTiles);
         teamSchedulePublish();
       });
   }
