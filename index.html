@@ -263,6 +263,9 @@
   .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
+  .dial-entry { display: flex; align-items: center; gap: 6px; }
+  .dial-entry input[type="date"] { width: 128px; }
+  .dial-entry input[type="number"] { width: 68px; }
   .mini:hover { color: var(--text-primary); }
   .side-controls { display: flex; align-items: center; gap: 8px; }
   #acctEmail { font-size: 12px; color: var(--text-muted); }
@@ -329,7 +332,12 @@
     </div>
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="saved-note" id="importNote"></span>
-      <button class="btn" id="dialBtn" title="Click every time you dial — adds 1 to today's total">＋ Dial</button>
+      <div class="dial-entry">
+        <input type="date" id="dDate" title="Day">
+        <input type="number" id="dCount" min="0" step="1" placeholder="Dials">
+        <button class="mini" id="dialsSaveBtn">Save</button>
+        <span class="saved-note" id="dialsSavedNote">Saved &#10003;</span>
+      </div>
       <input type="file" id="importFile" accept=".csv,text/csv" hidden>
       <div class="side-controls">
         <button class="mini" id="moreGear" type="button" title="Import, export">&#8942;</button>
@@ -374,31 +382,7 @@
     </div>
   </section>
 
-  <!-- ============ DAILY DIALS ============ -->
-  <section class="card">
-    <h2>End of day — total dials</h2>
-    <div class="form-grid">
-      <div class="field">
-        <label for="dDate">Day</label>
-        <input type="date" id="dDate">
-      </div>
-      <div class="field">
-        <label for="dCount">Total calls made</label>
-        <input type="number" id="dCount" min="0" step="1" placeholder="e.g. 120">
-      </div>
-      <div class="field">
-        <label>&nbsp;</label>
-        <button class="btn" id="dialsSaveBtn">Save dials</button>
-      </div>
-      <div class="field">
-        <label>&nbsp;</label>
-        <span class="saved-note" id="dialsSavedNote">Saved ✓</span>
-      </div>
-    </div>
-    <div class="empty" id="dialsHint" style="padding:8px 0 0;"></div>
-  </section>
-
-  <!-- ============ DASHBOARD ============ -->
+<!-- ============ DASHBOARD ============ -->
   <div class="tabs" id="tabs"></div>
 
   <div class="tiles" id="tiles"></div>
@@ -640,26 +624,10 @@
   };
 
   /* ---------------- Daily dials ---------------- */
-  function updateDialBtn() {
-    var n = dials[dateKey(new Date())] || 0;
-    $("dialBtn").textContent = "＋ Dial · " + n + " today";
-  }
-
-  $("dialBtn").onclick = function () {
-    var k = dateKey(new Date());
-    dials[k] = (dials[k] || 0) + 1;
-    save(DIALS_KEY, dials);
-    refreshDialsForm();
-    renderAll();
-  };
-
   function refreshDialsForm() {
     var k = $("dDate").value;
     var existing = dials[k];
     $("dCount").value = existing != null ? existing : "";
-    $("dialsHint").textContent = existing != null
-      ? "Saved for this day: " + existing + " dials. Enter a new number to overwrite."
-      : "Nothing saved for this day yet.";
   }
 
   $("dialsSaveBtn").onclick = function () {
@@ -1235,7 +1203,6 @@
     renderRates(rows);
     renderCharts();
     renderLog(rows);
-    updateDialBtn();
   }
 
   /* ---------------- Cloud sync (optional) ---------------- */
