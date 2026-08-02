@@ -1263,8 +1263,6 @@
       }
     });
     html += "</div>";
-    var closeRate = a.presentations > 0 ? Math.round(dealCount / a.presentations * 100) + "%" : "—";
-    html += '<div class="funnel-tiles"><div class="tile"><div class="t-label">Presentation → deal</div><div class="t-value">' + closeRate + "</div></div></div>";
     if (!a.hasData) html += '<div class="funnel-note">No call activity logged this month yet.</div>';
     el.innerHTML = html;
   }
