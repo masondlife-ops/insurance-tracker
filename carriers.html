@@ -23,8 +23,7 @@
 </script>
 <style>
   :root {
-    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
-    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --surface-1: #ffffff; --page: #eceef1; --text-primary: #10131a; --text-secondary: #52565f; --text-muted: #888d97; --grid: #dfe2e7; --baseline: #c2c6cd; --border: rgba(16,19,26,0.08); --card-shadow: 0 1px 3px rgba(16,19,26,0.06), 0 1px 2px rgba(16,19,26,0.08);
     --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
     --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
   }
@@ -43,8 +42,7 @@
     --danger: #e66767; --danger-soft: rgba(230,103,103,0.16);
   }
   :root[data-theme="light"] {
-    --surface-1: #fcfcfb; --page: #f9f9f7; --text-primary: #0b0b0b; --text-secondary: #52514e;
-    --text-muted: #898781; --grid: #e1e0d9; --baseline: #c3c2b7; --border: rgba(11,11,11,0.10);
+    --surface-1: #ffffff; --page: #eceef1; --text-primary: #10131a; --text-secondary: #52565f; --text-muted: #888d97; --grid: #dfe2e7; --baseline: #c2c6cd; --border: rgba(16,19,26,0.08); --card-shadow: 0 1px 3px rgba(16,19,26,0.06), 0 1px 2px rgba(16,19,26,0.08);
     --series-1: #2a78d6; --series-1-soft: rgba(42,120,214,0.12); --good: #006300; --good-soft: rgba(0,99,0,0.10);
     --danger: #d03b3b; --danger-soft: rgba(208,59,59,0.10);
   }
@@ -55,7 +53,7 @@
   header h1 { font-size: 20px; font-weight: 650; }
   header .sub { color: var(--text-muted); font-size: 13px; }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+  .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--card-shadow, none); }
   .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
   .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
 
