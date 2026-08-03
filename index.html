@@ -759,6 +759,8 @@
   function renderRates(rows) {
     var totalDials = dialsInPeriod();
     var pickups = count(rows, "pickup");
+    var conv2 = count(rows, "conv2");
+    var conv5 = count(rows, "conv5");
     var pres = count(rows, "presentation");
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
@@ -766,7 +768,9 @@
     var monthDeals = pnlDealCountThisMonth();
     var defs = [
       { label: "Pickup rate",        val: pct(pickups, totalDials) },
-      { label: "Convo rate",         val: pct(monthActv.convos, monthActv.pickups) },
+      { label: "Pickup to 2+ min",   val: pct(conv2, pickups) },
+      { label: "2+ min to 5+ min",   val: pct(conv5, conv2) },
+      { label: "5+ min to presentation", val: pct(pres, conv5) },
       { label: "Presentation rate",  val: pct(pres, pickups) },
       { label: "Deals rate",         val: pct(monthDeals, monthActv.presentations) },
       { label: "Close rate",         val: pct(sold, pres) },
