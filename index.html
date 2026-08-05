@@ -15,7 +15,9 @@
     --series-1: #2a78d6;
     --series-1-soft: rgba(42,120,214,0.12);
     --good: #0e9e46;
+    --good-soft: rgba(14,158,70,0.14);
     --danger: #e0231e;
+    --danger-soft: rgba(224,35,30,0.12);
   }
   @media (prefers-color-scheme: dark) {
     :root {
@@ -31,7 +33,9 @@
       --series-1: #3987e5;
       --series-1-soft: rgba(57,135,229,0.20);
       --good: #0ca30c;
+      --good-soft: rgba(12,163,12,0.16);
       --danger: #e66767;
+      --danger-soft: rgba(230,103,103,0.16);
     }
   }
   /* Manual override picked with the 🌙/☀️ button — beats the system setting */
@@ -48,7 +52,9 @@
     --series-1: #3987e5;
     --series-1-soft: rgba(57,135,229,0.20);
     --good: #0ca30c;
+    --good-soft: rgba(12,163,12,0.16);
     --danger: #e66767;
+    --danger-soft: rgba(230,103,103,0.16);
   }
   :root[data-theme="light"] {
     color-scheme: light;
@@ -56,7 +62,9 @@
     --series-1: #2a78d6;
     --series-1-soft: rgba(42,120,214,0.12);
     --good: #0e9e46;
+    --good-soft: rgba(14,158,70,0.14);
     --danger: #e0231e;
+    --danger-soft: rgba(224,35,30,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -183,9 +191,17 @@
   .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
   .rate .t-value { font-size: 22px; }
   .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-  .trend { font-size: 14px; margin-left: 6px; vertical-align: middle; cursor: default; }
-  .trend.up { color: var(--good); }
-  .trend.down { color: var(--danger); }
+  /* Pill sits on its own row under the number: these tiles are narrow, so placing
+     it beside the value left the row ragged once the percentages got long. */
+  .trend-row { margin-top: 5px; }
+  .trend {
+    font-size: 11px; font-weight: 650; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 999px; line-height: 1.5;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-variant-numeric: tabular-nums; cursor: default; white-space: nowrap;
+  }
+  .trend.up { color: var(--good); background: var(--good-soft); }
+  .trend.down { color: var(--danger); background: var(--danger-soft); }
 
   /* ---------- Breakdown charts ---------- */
   .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
@@ -917,15 +933,18 @@
 
   // Arrow shows only when there's a real previous-period value to compare against,
   // and the rounded percentage actually moved (no arrow on a tie or missing data).
-  function trendArrow(n, d, pn, pd, showDelta) {
+  // Every rate here is itself a percentage, so the gap is in percentage POINTS --
+  // a close rate going 10% -> 30% is "+20 pts", not "+20%" (that would read as a
+  // 20% relative lift) and not "+200%".
+  function trendArrow(n, d, pn, pd) {
     if (!(d > 0) || !(pd > 0)) return "";
     var cur = Math.round((n / d) * 100);
     var prev = Math.round((pn / pd) * 100);
-    var delta = cur - prev;
-    var deltaText = showDelta ? " " + (delta > 0 ? "+" : "") + delta + "%" : "";
-    if (cur > prev) return '<span class="trend up" title="Up from ' + prev + '% last period">▲' + deltaText + '</span>';
-    if (cur < prev) return '<span class="trend down" title="Down from ' + prev + '% last period">▼' + deltaText + '</span>';
-    return "";
+    if (cur === prev) return "";
+    var up = cur > prev;
+    return '<span class="trend ' + (up ? "up" : "down") + '" title="' +
+      (up ? "Up from " : "Down from ") + prev + '% last period">' +
+      (up ? "↑" : "↓") + " " + Math.abs(cur - prev) + ' pts</span>';
   }
 
   function renderRates(rows) {
@@ -950,7 +969,7 @@
     function arrow(n, d, pn, pd) { return prevRows ? trendArrow(n, d, pn, pd) : ""; }
 
     var defs = [
-      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: prevRows ? trendArrow(pickups, totalDials, pPickups, prevDials, true) : "" },
+      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) },
       { label: "Pickup to 2+ min",   val: pct(conv2, pickups),      trend: arrow(conv2, pickups, pConv2, pPickups) },
       { label: "2+ min to 5+ min",   val: pct(conv5, conv2),        trend: arrow(conv5, conv2, pConv5, pConv2) },
       { label: "5+ min to presentation", val: pct(pres, conv5),     trend: arrow(pres, conv5, pPres, pConv5) },
@@ -965,9 +984,10 @@
       var t = document.createElement("div");
       t.className = "tile rate";
       t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
-      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
+      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>' +
+        (d.trend ? '<div class="trend-row">' + d.trend + "</div>" : "");
       t.querySelector(".t-label").textContent = d.label;
-      t.querySelector(".t-value").innerHTML = d.val + (d.trend || "");
+      t.querySelector(".t-value").textContent = d.val;
       box.appendChild(t);
     });
   }
