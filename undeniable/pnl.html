@@ -126,11 +126,6 @@
   .tile.profit-pos .t-value { color: var(--good); }
   .tile.profit-neg { border-color: var(--danger); background: var(--danger-soft); }
   .tile.profit-neg .t-value { color: var(--danger); }
-  /* Arrow shows which way the number moved; colour shows whether that's good or bad
-     (expenses and cost-per-sale going up is a ▲ in red, not green). */
-  .t-trend { font-size: 13px; margin-left: 6px; vertical-align: middle; cursor: default; }
-  .t-trend.good { color: var(--good); }
-  .t-trend.bad { color: var(--danger); }
 
   /* ---------- Forms ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -665,98 +660,50 @@
   }
   function issuedInMonth(ym) { return state.deals.filter(function (d) { return effectiveIssuedYm(d) === ym; }); }
 
-  function dealsForMonth(ym) { return state.deals.filter(function (d) { return String(d.date || "").slice(0, 7) === ym; }); }
-  function expensesForMonth(ym) { return state.expenses.filter(function (e) { return String(e.date || "").slice(0, 7) === ym; }); }
-
-  // Every headline number for one month, in one place, so the current month and the
-  // month we're trending against are computed by identical logic.
-  function monthMetrics(ym) {
-    var deals = dealsForMonth(ym), exps = expensesForMonth(ym);
+  function renderTiles() {
+    var deals = monthDeals(), exps = monthExpenses();
     var submittedAP = sum(deals, function (d) { return d.ap; });
     // Issued AP and commission count in whichever month the deal actually converted --
     // may include deals submitted in an earlier month, and excludes deals submitted
     // this month that converted later.
-    var issuedDeals = issuedInMonth(ym);
+    var issuedDeals = issuedInMonth(currentMonth);
+    var issued = deals.filter(function (d) { return d.status === "Issued"; });   // still used for the "N issued" sub-label below
     var issuedAP = sum(issuedDeals, function (d) { return d.ap; });
     var commission = sum(issuedDeals, earnedCom);
     var expenses = sum(exps, function (e) { return e.price; });
     var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
-    var actv = activityMonth(ym);
-    return {
-      deals: deals, exps: exps,
-      issued: deals.filter(function (d) { return d.status === "Issued"; }),
-      sales: deals.length,
-      submittedAP: submittedAP,
-      avgAP: deals.length ? submittedAP / deals.length : null,
-      issuedAP: issuedAP,
-      commission: commission,
-      expenses: expenses,
-      leadSpend: leadSpend,
-      profit: commission - expenses,
-      roi: leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null,
-      costPerSale: deals.length > 0 ? leadSpend / deals.length : null,
-      revPerDial: actv.dials > 0 ? commission / actv.dials : null,
-      hasData: deals.length > 0 || exps.length > 0
-    };
-  }
-
-  // Walk back month by month until one with actual deals/expenses turns up, so an
-  // empty prior month doesn't blank every arrow.
-  function prevMonthMetrics(ym) {
-    var m = ym;
-    for (var i = 0; i < 48; i++) {
-      m = shiftMonth(m, -1);
-      var mm = monthMetrics(m);
-      if (mm.hasData) { mm.ym = m; return mm; }
-    }
-    return null;
-  }
-
-  // Arrow = which way it moved. Colour = whether that move is good for you.
-  function tileTrend(cur, prev, higherIsBetter, fmt, prevYm) {
-    if (cur == null || prev == null || isNaN(cur) || isNaN(prev)) return "";
-    if (Math.round(cur * 100) === Math.round(prev * 100)) return "";
-    var up = cur > prev;
-    var good = higherIsBetter ? up : !up;
-    var was = fmt ? fmt(prev) : String(prev);
-    return '<span class="t-trend ' + (good ? "good" : "bad") + '" title="' +
-      (up ? "Up from " : "Down from ") + was + " in " + monthLabel(prevYm) + '">' + (up ? "▲" : "▼") + "</span>";
-  }
-
-  function renderTiles() {
-    var m = monthMetrics(currentMonth);
-    var p = prevMonthMetrics(currentMonth);
-    var deals = m.deals, exps = m.exps;
-    var profitClass = m.profit > 0 ? "profit-pos" : m.profit < 0 ? "profit-neg" : "";
-    var profitSign = m.profit > 0 ? "+" : m.profit < 0 ? "−" : "";
+    var profit = commission - expenses;
+    var profitClass = profit > 0 ? "profit-pos" : profit < 0 ? "profit-neg" : "";
+    var profitSign = profit > 0 ? "+" : profit < 0 ? "−" : "";
     var expSub = exps.length + (exps.length === 1 ? " item" : " items");
-    if (m.leadSpend > 0) expSub += " · " + money(m.leadSpend) + " on leads";
-    var roiClass = m.roi === null ? "" : m.roi > 0 ? "profit-pos" : m.roi < 0 ? "profit-neg" : "";
+    if (leadSpend > 0) expSub += " · " + money(leadSpend) + " on leads";
+    var avgAP = deals.length ? submittedAP / deals.length : null;
+    var roi = leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null;
+    var roiClass = roi === null ? "" : roi > 0 ? "profit-pos" : roi < 0 ? "profit-neg" : "";
 
-    // higherIsBetter is false for the two "spend" metrics -- a rising cost is a red ▲.
-    function tr(field, higherIsBetter, fmt) {
-      return p ? tileTrend(m[field], p[field], higherIsBetter, fmt, p.ym) : "";
-    }
+    var actv = activityMonth(currentMonth);
+    var costPerSale = deals.length > 0 ? leadSpend / deals.length : null;
+    var revPerDial = actv.dials > 0 ? commission / actv.dials : null;
 
     var allTiles = [
-      { key: "sales",   label: "Total sales",   value: String(m.sales), sub: m.issued.length + " issued", cls: "", trend: tr("sales", true, String) },
-      { key: "sub",     label: "Submitted AP",   value: money(m.submittedAP), sub: "", cls: "", trend: tr("submittedAP", true, money) },
-      { key: "avg",     label: "Avg AP / sale",  value: m.avgAP === null ? "—" : money(m.avgAP), sub: "", cls: "", trend: tr("avgAP", true, money) },
-      { key: "issued",  label: "Issued AP",      value: money(m.issuedAP), sub: "", cls: "", trend: tr("issuedAP", true, money) },
-      { key: "comm",    label: "Commission",     value: money(m.commission), sub: "", cls: "", trend: tr("commission", true, money) },
-      { key: "exp",     label: "Expenses",       value: money(m.expenses), sub: expSub, cls: "", trend: tr("expenses", false, money) },
-      { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(m.profit)), sub: "commission − expenses", cls: profitClass, trend: tr("profit", true, money) },
-      { key: "roi",     label: "ROI",            value: pct(m.roi), sub: m.roi === null ? "no lead spend yet" : "vs " + money(m.leadSpend) + " lead spend", cls: roiClass, trend: tr("roi", true, pct) },
-      { key: "costPerSale", label: "Cost per sale",    value: m.costPerSale == null ? "—" : money(m.costPerSale), sub: m.leadSpend > 0 ? money(m.leadSpend) + " in leads" : "", cls: "", trend: tr("costPerSale", false, money) },
-      { key: "revPerDial",  label: "Revenue per dial", value: m.revPerDial == null ? "—" : money(m.revPerDial), sub: m.commission > 0 ? money(m.commission) + " commission" : "", cls: "", trend: tr("revPerDial", true, money) }
+      { key: "sales",   label: "Total sales",   value: String(deals.length), sub: issued.length + " issued", cls: "" },
+      { key: "sub",     label: "Submitted AP",   value: money(submittedAP), sub: "", cls: "" },
+      { key: "avg",     label: "Avg AP / sale",  value: avgAP === null ? "—" : money(avgAP), sub: "", cls: "" },
+      { key: "issued",  label: "Issued AP",      value: money(issuedAP), sub: "", cls: "" },
+      { key: "comm",    label: "Commission",     value: money(commission), sub: "", cls: "" },
+      { key: "exp",     label: "Expenses",       value: money(expenses), sub: expSub, cls: "" },
+      { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "commission − expenses", cls: profitClass },
+      { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
+      { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" },
+      { key: "revPerDial",  label: "Revenue per dial", value: revPerDial == null ? "—" : money(revPerDial), sub: commission > 0 ? money(commission) + " commission" : "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
     var hidden = tileHiddenSet();
     $("tiles").innerHTML = allTiles.filter(function (t) { return !hidden[t.key]; })
-      .map(function (t) { return tile(t.label, t.value, t.sub, t.cls, t.trend); }).join("");
+      .map(function (t) { return tile(t.label, t.value, t.sub, t.cls); }).join("");
   }
-  function tile(label, value, sub, cls, trend) {
-    return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + (trend || "") + "</div>" +
+  function tile(label, value, sub, cls) {
+    return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
       (sub ? '<div class="t-sub">' + sub + "</div>" : "") + "</div>";
   }
 
