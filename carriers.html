@@ -196,6 +196,8 @@
   <div class="empty" id="carriersEmpty" style="display:none">No carriers yet — add your first one above.</div>
 </div>
 
+<script src="hub-prefs.js"></script>
+<script src="hub-settings.js"></script>
 <script>
 (function () {
   "use strict";
@@ -366,7 +368,10 @@
   var THEME_KEY = "agentHub.theme.v1";
   function effectiveTheme() { return document.documentElement.getAttribute("data-theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
   function updateThemeBtn() { var d = effectiveTheme() === "dark"; $("themeBtn").classList.toggle("dark", d); $("themeBtn").setAttribute("aria-checked", d ? "true" : "false"); }
-  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); if (window.HubPrefs) window.HubPrefs.set("theme", n); else try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+
+  if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
+
 
   /* ---------- cloud sync ---------- */
   var CLOUD_TABLE = "carrier_state";
@@ -446,6 +451,7 @@
     cloudUser = user; $("authGate").classList.remove("show"); $("acctBox").classList.add("show"); $("acctEmail").textContent = user.email || "";
     revealOwnerTab();
     revealBoardTab();
+    if (window.HubPrefs) HubPrefs.attachCloud(sb, user.id).then(function () { if (window.HubSettings) HubSettings.refresh(); });
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { updateThemeBtn(); render(); });
   }

@@ -518,6 +518,8 @@
   <button type="button" id="restoreBtn">Restore</button>
 </div>
 <script src="comp-guide.js"></script>
+<script src="hub-prefs.js"></script>
+<script src="hub-settings.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1551,9 +1553,13 @@
   $("themeBtn").addEventListener("click", function () {
     var next = effectiveTheme() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    if (window.HubPrefs) window.HubPrefs.set("theme", next);
+    else try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
     updateThemeBtn();
   });
+
+  if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
+
 
 
   /* ---------- agency roll-up (production numbers only — no client PII) ---------- */
@@ -1851,6 +1857,7 @@
     $("acctEmail").textContent = user.email || "";
     revealOwnerTab();
     revealBoardTab();
+    if (window.HubPrefs) HubPrefs.attachCloud(sb, user.id).then(function () { if (window.HubSettings) HubSettings.refresh(); });
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); loadMembership(); });
   }

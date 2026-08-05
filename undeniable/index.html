@@ -453,7 +453,7 @@
     </div>
     <div class="table-scroll">
       <table>
-        <thead>
+        <thead id="logHead">
           <tr>
             <th>When</th><th>Lead type</th><th>State</th>
             <th class="num">Pickup</th><th class="num">2+ min</th><th class="num">5+ min</th>
@@ -468,6 +468,9 @@
 </div>
 <div class="tooltip" id="tooltip"></div>
 
+<script src="../hub-prefs.js"></script>
+<script src="../hub-outcomes.js"></script>
+<script src="../hub-settings.js"></script>
 <script>
 (function () {
   "use strict";
@@ -481,14 +484,34 @@
 
   var STATES = ["N/A","AL","AK","AZ","AR","CA","CO","CT","DE","DC","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY"];
 
-  var METRICS = [
-    { key: "pickup",       label: "Pickups",        chipLabel: "Pickup" },
-    { key: "conv2",        label: "Convos 2+ min",  chipLabel: "2+ min" },
-    { key: "conv5",        label: "Convos 5+ min",  chipLabel: "5+ min" },
-    { key: "appointment",  label: "Appointments set", chipLabel: "Appointment set" },
-    { key: "presentation", label: "Presentations",  chipLabel: "Presentation" },
-    { key: "sold",         label: "Sold deals",     chipLabel: "Sold" }
-  ];
+  // METRICS/IMPLIES are normally derived from HubOutcomes (hub-outcomes.js), which
+  // is what lets a user insert a custom funnel step (e.g. "10+ min") between the
+  // built-in ones -- it shows up in the chips, tiles and conversion rates without
+  // any of that code needing to know it exists. The literal fallback below only
+  // fires if hub-outcomes.js failed to load, so the page still works.
+  var METRICS = [];
+  var IMPLIES = {};
+  function buildMetricDerivedState() {
+    if (window.HubOutcomes) {
+      METRICS = HubOutcomes.metrics();
+      IMPLIES = HubOutcomes.implies();
+    } else {
+      METRICS = [
+        { key: "pickup",       label: "Pickups",        chipLabel: "Pickup" },
+        { key: "conv2",        label: "Convos 2+ min",  chipLabel: "2+ min" },
+        { key: "conv5",        label: "Convos 5+ min",  chipLabel: "5+ min" },
+        { key: "appointment",  label: "Appointments set", chipLabel: "Appointment set" },
+        { key: "presentation", label: "Presentations",  chipLabel: "Presentation" },
+        { key: "sold",         label: "Sold deals",     chipLabel: "Sold" }
+      ];
+      IMPLIES = {
+        conv2: ["pickup"], conv5: ["conv2", "pickup"],
+        presentation: ["conv5", "conv2", "pickup"],
+        appointment: ["pickup"], sold: ["pickup"]
+      };
+    }
+  }
+  buildMetricDerivedState();
 
   function load(key, fallback) {
     try {
@@ -608,18 +631,8 @@
     });
   }
 
-  // Checking a deeper outcome implies the shallower ones (a 5-min convo was picked up, etc.)
-  // Each key lists every shallower outcome it necessarily included. A presentation
-  // can't happen on a call that didn't run past 5 minutes, so it implies conv5 (and
-  // therefore conv2 and pickup) -- without that, "5+ min to presentation" could read
-  // over 100%.
-  var IMPLIES = {
-    conv2: ["pickup"],
-    conv5: ["conv2", "pickup"],
-    presentation: ["conv5", "conv2", "pickup"],
-    appointment: ["pickup"],
-    sold: ["pickup"]
-  };
+  // Checking a deeper outcome implies the shallower ones (a 5-min convo was picked up,
+  // etc.) -- IMPLIES itself is built above, in buildMetricDerivedState().
 
   function toggleChip(key) {
     chipState[key] = !chipState[key];
@@ -1003,8 +1016,6 @@
   function renderRates(rows) {
     var totalDials = dialsInPeriod();
     var pickups = count(rows, "pickup");
-    var conv2 = count(rows, "conv2");
-    var conv5 = count(rows, "conv5");
     var pres = count(rows, "presentation");
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
@@ -1013,8 +1024,6 @@
     var bRows = base ? base.rows : null;
     var prevDials = base ? base.dials : 0;
     var pPickups = bRows ? count(bRows, "pickup") : 0;
-    var pConv2 = bRows ? count(bRows, "conv2") : 0;
-    var pConv5 = bRows ? count(bRows, "conv5") : 0;
     var pPres = bRows ? count(bRows, "presentation") : 0;
     var pSold = bRows ? count(bRows, "sold") : 0;
     var pAppts = bRows ? count(bRows, "appointment") : 0;
@@ -1022,15 +1031,28 @@
     function arrow(n, d, bn, bd) { return base ? trendArrow(n, d, bn, bd, base.label) : ""; }
 
     var defs = [
-      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) },
-      { label: "Pickup to 2+ min",   val: pct(conv2, pickups),      trend: arrow(conv2, pickups, pConv2, pPickups) },
-      { label: "2+ min to 5+ min",   val: pct(conv5, conv2),        trend: arrow(conv5, conv2, pConv5, pConv2) },
-      { label: "5+ min to presentation", val: pct(pres, conv5),     trend: arrow(pres, conv5, pPres, pConv5) },
-      { label: "Presentation rate",  val: pct(pres, pickups),       trend: arrow(pres, pickups, pPres, pPickups) },
-      { label: "Close rate",         val: pct(sold, pres),          trend: arrow(sold, pres, pSold, pPres) },
-      { label: "Appointment rate",   val: pct(appts, pickups),      trend: arrow(appts, pickups, pAppts, pPickups) },
-      { label: "Sold per dial",      val: pct(sold, totalDials),    trend: arrow(sold, totalDials, pSold, prevDials) }
+      { label: "Pickup rate", val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) }
     ];
+
+    // The funnel-step pairs (Pickup -> 2+ min -> 5+ min -> ... -> presentation) are
+    // derived from HubOutcomes so a custom step (e.g. "10+ min") shows up here without
+    // touching this function -- see hub-outcomes.js.
+    var pairs = window.HubOutcomes ? HubOutcomes.ratePairs() : [
+      { label: "Pickup to 2+ min", from: "pickup", to: "conv2" },
+      { label: "2+ min to 5+ min", from: "conv2", to: "conv5" },
+      { label: "5+ min to presentation", from: "conv5", to: "presentation" }
+    ];
+    pairs.forEach(function (p) {
+      var n = count(rows, p.to), d = count(rows, p.from);
+      var bn = bRows ? count(bRows, p.to) : 0, bd = bRows ? count(bRows, p.from) : 0;
+      defs.push({ label: p.label, val: pct(n, d), trend: arrow(n, d, bn, bd) });
+    });
+
+    defs.push({ label: "Presentation rate", val: pct(pres, pickups), trend: arrow(pres, pickups, pPres, pPickups) });
+    defs.push({ label: "Close rate",        val: pct(sold, pres),    trend: arrow(sold, pres, pSold, pPres) });
+    defs.push({ label: "Appointment rate",  val: pct(appts, pickups), trend: arrow(appts, pickups, pAppts, pPickups) });
+    defs.push({ label: "Sold per dial",     val: pct(sold, totalDials), trend: arrow(sold, totalDials, pSold, prevDials) });
+
     var box = $("rates");
     box.innerHTML = "";
     defs.forEach(function (d) {
@@ -1166,7 +1188,28 @@
   }
 
   /* ---------------- Log table ---------------- */
+  // Fixed-width abbreviations for the six core outcomes; a custom outcome just
+  // uses its own chip label, since there's no house style to abbreviate it to.
+  var LOG_HEAD_SHORT = { pickup: "Pickup", conv2: "2+ min", conv5: "5+ min", appointment: "Appt", presentation: "Present.", sold: "Sold" };
+
+  function renderLogHead() {
+    var tr = $("logHead").querySelector("tr");
+    tr.innerHTML = "";
+    ["When", "Lead type", "State"].forEach(function (t) {
+      var th = document.createElement("th"); th.textContent = t; tr.appendChild(th);
+    });
+    METRICS.forEach(function (m) {
+      var th = document.createElement("th");
+      th.className = "num"; th.textContent = LOG_HEAD_SHORT[m.key] || m.chipLabel;
+      tr.appendChild(th);
+    });
+    ["Notes", ""].forEach(function (t) {
+      var th = document.createElement("th"); th.textContent = t; tr.appendChild(th);
+    });
+  }
+
   function renderLog(rows) {
+    renderLogHead();
     var body = $("logBody");
     body.innerHTML = "";
     var shown = rows.slice().reverse();
@@ -1188,12 +1231,7 @@
       tr.appendChild(td(fmtWhen(e.ts)));
       tr.appendChild(td(e.leadType));
       tr.appendChild(td(e.state));
-      tr.appendChild(mark(e.pickup));
-      tr.appendChild(mark(e.conv2));
-      tr.appendChild(mark(e.conv5));
-      tr.appendChild(mark(e.appointment));
-      tr.appendChild(mark(e.presentation));
-      tr.appendChild(mark(e.sold));
+      METRICS.forEach(function (m) { tr.appendChild(mark(e[m.key])); });
       tr.appendChild(td(e.notes || ""));
       var delTd = document.createElement("td");
       var del = document.createElement("button");
@@ -1211,7 +1249,7 @@
     if (shown.length === 0) {
       var tr = document.createElement("tr");
       var c = document.createElement("td");
-      c.colSpan = 11; c.className = "empty"; c.textContent = "Nothing in this period yet — log your first call above.";
+      c.colSpan = 5 + METRICS.length; c.className = "empty"; c.textContent = "Nothing in this period yet — log your first call above.";
       tr.appendChild(c);
       body.appendChild(tr);
     }
@@ -1219,7 +1257,11 @@
 
   /* ---------------- CSV export ---------------- */
   $("exportBtn").onclick = function () {
-    var header = ["Date", "Time", "Lead Type", "State", "Pickup", "Conv 2+ min", "Conv 5+ min", "Appointment Set", "Presentation", "Sold", "Notes"];
+    // Columns follow METRICS, so a custom outcome (e.g. "10+ min") gets its own
+    // column automatically instead of being silently dropped from the export.
+    var header = ["Date", "Time", "Lead Type", "State"]
+      .concat(METRICS.map(function (m) { return m.label; }))
+      .concat(["Notes"]);
     function esc(v) {
       v = String(v == null ? "" : v);
       return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
@@ -1227,13 +1269,12 @@
     var lines = [header.join(",")];
     entries.forEach(function (e) {
       var d = new Date(e.ts);
-      lines.push([
-        d.toLocaleDateString(), d.toLocaleTimeString(),
-        e.leadType, e.state,
-        e.pickup ? 1 : 0, e.conv2 ? 1 : 0, e.conv5 ? 1 : 0,
-        e.appointment ? 1 : 0, e.presentation ? 1 : 0, e.sold ? 1 : 0,
-        e.notes || ""
-      ].map(esc).join(","));
+      lines.push(
+        [d.toLocaleDateString(), d.toLocaleTimeString(), e.leadType, e.state]
+        .concat(METRICS.map(function (m) { return e[m.key] ? 1 : 0; }))
+        .concat([e.notes || ""])
+        .map(esc).join(",")
+      );
     });
     var dialKeys = Object.keys(dials).sort();
     if (dialKeys.length > 0) {
@@ -1330,13 +1371,21 @@
       }
       var cDate = col(["date"]), cTime = col(["time"]);
       var cLead = col(["lead"]), cState = col(["state"]);
-      var cPickup = col(["pickup"]), c2 = col(["2"]), c5 = col(["5"]);
-      var cPres = col(["present"]), cAppt = col(["appointment", "appt"]);
-      var cSold = col(["sold"]), cNotes = col(["note"]);
+      var cNotes = col(["note"]);
       if (cDate === -1) {
         showImportNote("Couldn't find a Date column — is this a tracker export?", false);
         return;
       }
+      // Every outcome column, core or custom, resolved by header text so an export
+      // from before a custom step existed (or from another user's different set of
+      // custom steps) still matches whatever columns it actually has.
+      var CORE_COL_HINTS = {
+        pickup: ["pickup"], conv2: ["2"], conv5: ["5"],
+        presentation: ["present"], appointment: ["appointment", "appt"], sold: ["sold"]
+      };
+      var metricCols = METRICS.map(function (m) {
+        return { key: m.key, col: col(CORE_COL_HINTS[m.key] || [m.label.toLowerCase()]) };
+      });
       var seen = {};
       entries.forEach(function (e) { seen[entrySig(e)] = true; });
       function cell(r, c) { return c > -1 && r[c] != null ? String(r[c]).trim() : ""; }
@@ -1352,14 +1401,9 @@
           ts: d.toISOString(),
           leadType: cell(r, cLead) || "Unknown",
           state: cell(r, cState) || "N/A",
-          notes: cell(r, cNotes),
-          pickup: flagOn(cell(r, cPickup)),
-          conv2: flagOn(cell(r, c2)),
-          conv5: flagOn(cell(r, c5)),
-          presentation: flagOn(cell(r, cPres)),
-          appointment: flagOn(cell(r, cAppt)),
-          sold: flagOn(cell(r, cSold))
+          notes: cell(r, cNotes)
         };
+        metricCols.forEach(function (mc) { e[mc.key] = flagOn(cell(r, mc.col)); });
         // Same rule as the log form: a call with no outcome still counts as a pickup
         if (!METRICS.some(function (m) { return e[m.key]; })) e.pickup = true;
         var sig = entrySig(e);
@@ -1430,9 +1474,106 @@
   $("themeBtn").onclick = function () {
     var next = effectiveTheme() === "dark" ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
-    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+    if (window.HubPrefs) window.HubPrefs.set("theme", next);
+    else try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
     updateThemeBtn();
   };
+
+  if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
+
+  // Rebuild everything that's derived from the funnel (chips, tiles, conversion
+  // rates) after a custom outcome is added or removed.
+  function refreshOutcomeUI() {
+    buildMetricDerivedState();
+    resetForm();
+    renderAll();
+  }
+
+  if (window.HubSettings && window.HubOutcomes) {
+    HubSettings.register({
+      title: "Call outcomes",
+      render: function (wrap) {
+        var list = document.createElement("div");
+        list.className = "hs-list";
+        wrap.appendChild(list);
+
+        function paintList() {
+          list.innerHTML = "";
+          var custom = HubOutcomes.custom();
+          if (!custom.length) {
+            var empty = document.createElement("div");
+            empty.className = "hs-empty";
+            empty.textContent = "No custom outcomes yet.";
+            list.appendChild(empty);
+            return;
+          }
+          custom.forEach(function (c) {
+            var row = document.createElement("div");
+            row.className = "hs-item";
+            var nm = document.createElement("span");
+            nm.className = "nm"; nm.textContent = c.label;
+            var where = document.createElement("span");
+            where.className = "where"; where.textContent = "after " + HubOutcomes.anchorLabel(c.after);
+            var del = document.createElement("button");
+            del.className = "hs-btn danger"; del.type = "button"; del.textContent = "Remove";
+            del.onclick = function () {
+              HubOutcomes.save(HubOutcomes.custom().filter(function (x) { return x.key !== c.key; }));
+              paintList();
+              refreshOutcomeUI();
+            };
+            row.appendChild(nm); row.appendChild(where); row.appendChild(del);
+            list.appendChild(row);
+          });
+        }
+        paintList();
+
+        var arow = document.createElement("div");
+        arow.className = "hs-row";
+        var nameInput = document.createElement("input");
+        nameInput.className = "hs-input grow";
+        nameInput.type = "text";
+        nameInput.placeholder = "e.g. 10+ min";
+        arow.appendChild(nameInput);
+        var afterSel = document.createElement("select");
+        afterSel.className = "hs-input";
+        HubOutcomes.ANCHORS.forEach(function (k) {
+          var o = document.createElement("option");
+          o.value = k; o.textContent = "after " + HubOutcomes.anchorLabel(k);
+          afterSel.appendChild(o);
+        });
+        afterSel.value = "conv5";
+        arow.appendChild(afterSel);
+        var addBtn = document.createElement("button");
+        addBtn.className = "hs-btn primary"; addBtn.type = "button"; addBtn.textContent = "Add";
+        arow.appendChild(addBtn);
+        wrap.appendChild(arow);
+
+        var err = document.createElement("div");
+        err.className = "hs-err";
+        wrap.appendChild(err);
+
+        addBtn.onclick = function () {
+          var label = nameInput.value.trim();
+          var after = afterSel.value;
+          var problem = HubOutcomes.validate(label, after);
+          if (problem) { err.textContent = problem; return; }
+          err.textContent = "";
+          var key = HubOutcomes.slug(label);
+          HubOutcomes.save(HubOutcomes.custom().concat([{ key: key, label: label, chipLabel: label, short: label.toLowerCase(), after: after }]));
+          nameInput.value = "";
+          paintList();
+          refreshOutcomeUI();
+        };
+
+        wrap.appendChild(Object.assign(document.createElement("div"), {
+          className: "hs-note",
+          textContent: "Inserts a step into your funnel -- for example a \u201c10+ min\u201d step between " +
+            "5+ min and Presentation. It shows up in Log a call, the tiles, and Conversion Rates. " +
+            "Personal to you -- it isn't shared with your agency's roll-up, since your teammates won't have it."
+        }));
+      }
+    });
+  }
 
   function openMorePop() {
     var r = $("moreGear").getBoundingClientRect();
@@ -1582,6 +1723,10 @@
     $("acctEmail").textContent = user.email || "";
     revealOwnerTab();
     revealBoardTab();
+    if (window.HubPrefs) HubPrefs.attachCloud(sb, user.id).then(function () {
+      if (window.HubOutcomes) { buildMetricDerivedState(); renderAll(); }
+      if (window.HubSettings) HubSettings.refresh();
+    });
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot);
   }

@@ -332,6 +332,8 @@
 </div>
 
 <script src="../../comp-guide.js"></script>
+<script src="../../hub-prefs.js"></script>
+<script src="../../hub-settings.js"></script>
 <script>
 (function () {
   "use strict";
@@ -875,7 +877,10 @@
   var THEME_KEY = "agentHub.theme.v1";
   function effectiveTheme() { return document.documentElement.getAttribute("data-theme") || (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }
   function updateThemeBtn() { var d = effectiveTheme() === "dark"; $("themeBtn").classList.toggle("dark", d); $("themeBtn").setAttribute("aria-checked", d ? "true" : "false"); }
-  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+  $("themeBtn").addEventListener("click", function () { var n = effectiveTheme() === "dark" ? "light" : "dark"; document.documentElement.setAttribute("data-theme", n); if (window.HubPrefs) window.HubPrefs.set("theme", n); else try { localStorage.setItem(THEME_KEY, n); } catch (e) {} updateThemeBtn(); });
+
+  if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
+
 
   /* ---------- auth ---------- */
   function setAuthMode(mode) {
@@ -904,6 +909,7 @@
     $("acctBox").classList.add("show");
     $("acctEmail").textContent = u.email || "";
     updateThemeBtn();
+    if (window.HubPrefs) HubPrefs.attachCloud(sb, u.id).then(function () { if (window.HubSettings) HubSettings.refresh(); });
     revealBoardTab();
     refresh();
   }
