@@ -1489,6 +1489,20 @@
             nm.className = "nm"; nm.textContent = c.label;
             var where = document.createElement("span");
             where.className = "where"; where.textContent = "after " + HubOutcomes.anchorLabel(c.after);
+            var ratesLbl = document.createElement("label");
+            ratesLbl.className = "hs-inline-toggle";
+            var ratesCb = document.createElement("input");
+            ratesCb.type = "checkbox";
+            ratesCb.checked = c.inRates !== false;
+            ratesCb.onchange = function () {
+              var updated = HubOutcomes.custom().map(function (x) {
+                return x.key === c.key ? Object.assign({}, x, { inRates: ratesCb.checked }) : x;
+              });
+              HubOutcomes.save(updated);
+              refreshOutcomeUI();
+            };
+            ratesLbl.appendChild(ratesCb);
+            ratesLbl.appendChild(document.createTextNode("Rates"));
             var del = document.createElement("button");
             del.className = "hs-btn danger"; del.type = "button"; del.textContent = "Remove";
             del.onclick = function () {
@@ -1496,7 +1510,7 @@
               paintList();
               refreshOutcomeUI();
             };
-            row.appendChild(nm); row.appendChild(where); row.appendChild(del);
+            row.appendChild(nm); row.appendChild(where); row.appendChild(ratesLbl); row.appendChild(del);
             list.appendChild(row);
           });
         }
@@ -1523,6 +1537,15 @@
         arow.appendChild(addBtn);
         wrap.appendChild(arow);
 
+        var cbRow = document.createElement("label");
+        cbRow.className = "hs-checkrow";
+        var includeCb = document.createElement("input");
+        includeCb.type = "checkbox";
+        includeCb.checked = true;
+        cbRow.appendChild(includeCb);
+        cbRow.appendChild(document.createTextNode("Include in Conversion Rates"));
+        wrap.appendChild(cbRow);
+
         var err = document.createElement("div");
         err.className = "hs-err";
         wrap.appendChild(err);
@@ -1534,8 +1557,9 @@
           if (problem) { err.textContent = problem; return; }
           err.textContent = "";
           var key = HubOutcomes.slug(label);
-          HubOutcomes.save(HubOutcomes.custom().concat([{ key: key, label: label, chipLabel: label, short: label.toLowerCase(), after: after }]));
+          HubOutcomes.save(HubOutcomes.custom().concat([{ key: key, label: label, chipLabel: label, short: label.toLowerCase(), after: after, inRates: includeCb.checked }]));
           nameInput.value = "";
+          includeCb.checked = true;
           paintList();
           refreshOutcomeUI();
         };
@@ -1543,8 +1567,10 @@
         wrap.appendChild(Object.assign(document.createElement("div"), {
           className: "hs-note",
           textContent: "Inserts a step into your funnel -- for example a “10+ min” step between " +
-            "5+ min and Presentation. It shows up in Log a call, the tiles, and Conversion Rates. " +
-            "Personal to you -- it isn't shared with your agency's roll-up, since your teammates won't have it."
+            "5+ min and Presentation. It shows up in Log a call, the tiles, and Conversion Rates " +
+            "(uncheck “Include in Conversion Rates” to keep tracking it as a chip/tile without adding " +
+            "it to the rates section). Personal to you -- it isn't shared with your agency's roll-up, " +
+            "since your teammates won't have it."
         }));
       }
     });

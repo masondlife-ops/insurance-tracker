@@ -48,6 +48,8 @@
     "  border:1px solid var(--border);border-radius:8px;background:var(--page);}",
     ".hs-item .nm{flex:1;}",
     ".hs-item .where{font-size:11px;color:var(--text-muted);}",
+    ".hs-inline-toggle{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-muted);cursor:pointer;white-space:nowrap;}",
+    ".hs-checkrow{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary);margin:-2px 0 10px;cursor:pointer;}",
     ".hs-empty{font-size:12.5px;color:var(--text-muted);padding:2px 0 8px;}",
     ".hs-err{font-size:12px;color:var(--danger);margin-top:6px;min-height:15px;}",
     ".hs-sync{font-size:11.5px;color:var(--text-muted);padding:10px 16px;border-top:1px solid var(--border);}"

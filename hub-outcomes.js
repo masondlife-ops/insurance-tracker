@@ -67,7 +67,8 @@
       custom.forEach(function (c) {
         if (c.after === m.key) {
           out.push({ key: c.key, label: c.label, chipLabel: c.chipLabel || c.label,
-                     short: c.short || c.chipLabel || c.label, chain: true, custom: true });
+                     short: c.short || c.chipLabel || c.label, chain: true, custom: true,
+                     inRates: c.inRates !== false });
         }
       });
     });
@@ -102,9 +103,13 @@
 
   /* Every consecutive funnel-step pair, as {label, from, to}. The presentation->sold
      pair is skipped since that link is already shown as "Close rate" -- but a custom
-     step inserted between them, or after sold, still gets its own pair either side. */
+     step inserted between them, or after sold, still gets its own pair either side.
+     A custom step with inRates:false is still tracked (chip, tile, CSV) but dropped
+     from this list -- the pairing bridges straight over it, so excluding "10+ min"
+     from rates turns conv5->10min->presentation back into a plain conv5->presentation. */
   function ratePairs() {
-    var c = chain(), pairs = [];
+    var c = chain().filter(function (m) { return !m.custom || m.inRates; });
+    var pairs = [];
     for (var i = 0; i < c.length - 1; i++) {
       var a = c[i], b = c[i + 1];
       if (a.key === "presentation" && b.key === "sold") continue;
