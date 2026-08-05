@@ -183,6 +183,9 @@
   .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
   .rate .t-value { font-size: 22px; }
   .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .trend { font-size: 14px; margin-left: 6px; vertical-align: middle; cursor: default; }
+  .trend.up { color: var(--good); }
+  .trend.down { color: var(--danger); }
 
   /* ---------- Breakdown charts ---------- */
   .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
@@ -839,6 +842,63 @@
     });
   }
 
+  // Previous-period range, mirroring whatever's currently selected (custom day/month
+  // or a period tab), so rate trends compare like-for-like. Null for "All Time" —
+  // there's no meaningful "previous" for an unbounded range.
+  function prevRangeForCurrent() {
+    if (customDay) {
+      var d = new Date(customDay + "T00:00:00"); d.setDate(d.getDate() - 1);
+      var to = new Date(d); to.setDate(to.getDate() + 1);
+      return { from: d, to: to };
+    }
+    if (customMonth) {
+      var p = customMonth.split("-"), y = +p[0], m = +p[1] - 1;
+      return { from: new Date(y, m - 1, 1), to: new Date(y, m, 1) };
+    }
+    if (activePeriod === "day") {
+      var fd = startOfDay(new Date()); fd.setDate(fd.getDate() - 1);
+      var td = new Date(fd); td.setDate(td.getDate() + 1);
+      return { from: fd, to: td };
+    }
+    if (activePeriod === "week") {
+      var fw = startOfWeek(new Date()); fw.setDate(fw.getDate() - 7);
+      var tw = new Date(fw); tw.setDate(tw.getDate() + 7);
+      return { from: fw, to: tw };
+    }
+    if (activePeriod === "month") {
+      var now = new Date();
+      return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 1) };
+    }
+    return null;
+  }
+
+  function rowsInRange(range) {
+    return entries.filter(function (e) {
+      var t = new Date(e.ts).getTime();
+      return t >= range.from.getTime() && t < range.to.getTime();
+    });
+  }
+
+  function dialsInRange(range) {
+    var total = 0;
+    Object.keys(dials).forEach(function (k) {
+      var kd = new Date(k + "T12:00:00");
+      if (kd >= range.from && kd < range.to) total += dials[k];
+    });
+    return total;
+  }
+
+  // Arrow shows only when there's a real previous-period value to compare against,
+  // and the rounded percentage actually moved (no arrow on a tie or missing data).
+  function trendArrow(n, d, pn, pd) {
+    if (!(d > 0) || !(pd > 0)) return "";
+    var cur = Math.round((n / d) * 100);
+    var prev = Math.round((pn / pd) * 100);
+    if (cur > prev) return '<span class="trend up" title="Up from ' + prev + '% last period">▲</span>';
+    if (cur < prev) return '<span class="trend down" title="Down from ' + prev + '% last period">▼</span>';
+    return "";
+  }
+
   function renderRates(rows) {
     var totalDials = dialsInPeriod();
     var pickups = count(rows, "pickup");
@@ -847,18 +907,35 @@
     var pres = count(rows, "presentation");
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
-    var monthActv = activityThisMonth();
-    var monthDeals = pnlDealCountThisMonth();
+    var monthActv = activityForMonth(dateKey(new Date()).slice(0, 7));
+    var monthDeals = pnlDealCountForMonth(dateKey(new Date()).slice(0, 7));
+
+    var prevRange = prevRangeForCurrent();
+    var prevRows = prevRange ? rowsInRange(prevRange) : null;
+    var prevDials = prevRange ? dialsInRange(prevRange) : 0;
+    var pPickups = prevRows ? count(prevRows, "pickup") : 0;
+    var pConv2 = prevRows ? count(prevRows, "conv2") : 0;
+    var pConv5 = prevRows ? count(prevRows, "conv5") : 0;
+    var pPres = prevRows ? count(prevRows, "presentation") : 0;
+    var pSold = prevRows ? count(prevRows, "sold") : 0;
+    var pAppts = prevRows ? count(prevRows, "appointment") : 0;
+
+    var prevYm = shiftMonth(dateKey(new Date()).slice(0, 7), -1);
+    var prevMonthActv = activityForMonth(prevYm);
+    var prevMonthDeals = pnlDealCountForMonth(prevYm);
+
+    function arrow(n, d, pn, pd) { return prevRows ? trendArrow(n, d, pn, pd) : ""; }
+
     var defs = [
-      { label: "Pickup rate",        val: pct(pickups, totalDials) },
-      { label: "Pickup to 2+ min",   val: pct(conv2, pickups) },
-      { label: "2+ min to 5+ min",   val: pct(conv5, conv2) },
-      { label: "5+ min to presentation", val: pct(pres, conv5) },
-      { label: "Presentation rate",  val: pct(pres, pickups) },
-      { label: "Deals rate",         val: pct(monthDeals, monthActv.presentations) },
-      { label: "Close rate",         val: pct(sold, pres) },
-      { label: "Appointment rate",   val: pct(appts, pickups) },
-      { label: "Sold per dial",      val: pct(sold, totalDials) }
+      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) },
+      { label: "Pickup to 2+ min",   val: pct(conv2, pickups),      trend: arrow(conv2, pickups, pConv2, pPickups) },
+      { label: "2+ min to 5+ min",   val: pct(conv5, conv2),        trend: arrow(conv5, conv2, pConv5, pConv2) },
+      { label: "5+ min to presentation", val: pct(pres, conv5),     trend: arrow(pres, conv5, pPres, pConv5) },
+      { label: "Presentation rate",  val: pct(pres, pickups),       trend: arrow(pres, pickups, pPres, pPickups) },
+      { label: "Deals rate",         val: pct(monthDeals, monthActv.presentations), trend: trendArrow(monthDeals, monthActv.presentations, prevMonthDeals, prevMonthActv.presentations) },
+      { label: "Close rate",         val: pct(sold, pres),          trend: arrow(sold, pres, pSold, pPres) },
+      { label: "Appointment rate",   val: pct(appts, pickups),      trend: arrow(appts, pickups, pAppts, pPickups) },
+      { label: "Sold per dial",      val: pct(sold, totalDials),    trend: arrow(sold, totalDials, pSold, prevDials) }
     ];
     var box = $("rates");
     box.innerHTML = "";
@@ -868,7 +945,7 @@
       t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
       t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
       t.querySelector(".t-label").textContent = d.label;
-      t.querySelector(".t-value").textContent = d.val;
+      t.querySelector(".t-value").innerHTML = d.val + (d.trend || "");
       box.appendChild(t);
     });
   }
@@ -1285,8 +1362,7 @@
         renderRates(filtered());
       });
   }
-  function activityThisMonth() {
-    var ym = dateKey(new Date()).slice(0, 7);
+  function activityForMonth(ym) {
     var rows = entries.filter(function (e) { return dateKey(new Date(e.ts)).slice(0, 7) === ym; });
     var totalDials = 0;
     Object.keys(dials).forEach(function (k) { if (k.slice(0, 7) === ym) totalDials += dials[k]; });
@@ -1298,11 +1374,12 @@
       hasData: rows.length > 0 || totalDials > 0
     };
   }
-  function pnlDealCountThisMonth() {
-    var ym = dateKey(new Date()).slice(0, 7);
+  function activityThisMonth() { return activityForMonth(dateKey(new Date()).slice(0, 7)); }
+  function pnlDealCountForMonth(ym) {
     var dealsArr = (pnlDealsBlob && pnlDealsBlob.deals) || [];
     return dealsArr.filter(function (d) { return String(d.date || "").slice(0, 7) === ym; }).length;
   }
+  function pnlDealCountThisMonth() { return pnlDealCountForMonth(dateKey(new Date()).slice(0, 7)); }
   /* ---------------- Boot ---------------- */
   function renderAll() {
     var rows = filtered();
