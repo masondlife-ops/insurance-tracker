@@ -584,21 +584,28 @@
   }
 
   // Checking a deeper outcome implies the shallower ones (a 5-min convo was picked up, etc.)
+  // Each key lists every shallower outcome it necessarily included. A presentation
+  // can't happen on a call that didn't run past 5 minutes, so it implies conv5 (and
+  // therefore conv2 and pickup) -- without that, "5+ min to presentation" could read
+  // over 100%.
   var IMPLIES = {
     conv2: ["pickup"],
     conv5: ["conv2", "pickup"],
-    presentation: ["pickup"],
+    presentation: ["conv5", "conv2", "pickup"],
     appointment: ["pickup"],
     sold: ["pickup"]
   };
 
   function toggleChip(key) {
     chipState[key] = !chipState[key];
-    if (chipState[key] && IMPLIES[key]) {
-      IMPLIES[key].forEach(function (k) { chipState[k] = true; });
-    }
-    if (!chipState.pickup) {
-      METRICS.forEach(function (m) { chipState[m.key] = false; });
+    if (chipState[key]) {
+      (IMPLIES[key] || []).forEach(function (k) { chipState[k] = true; });
+    } else {
+      // Clearing a step also clears anything built on top of it, so you can't leave
+      // a presentation checked on a call that's no longer a 5+ min convo.
+      METRICS.forEach(function (m) {
+        if ((IMPLIES[m.key] || []).indexOf(key) > -1) chipState[m.key] = false;
+      });
     }
     renderChips();
   }
