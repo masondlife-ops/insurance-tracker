@@ -127,10 +127,19 @@
   .tile.profit-neg { border-color: var(--danger); background: var(--danger-soft); }
   .tile.profit-neg .t-value { color: var(--danger); }
   /* Arrow shows which way the number moved; colour shows whether that's good or bad
-     (expenses and cost-per-sale going up is a ▲ in red, not green). */
-  .t-trend { font-size: 13px; margin-left: 6px; vertical-align: middle; cursor: default; }
-  .t-trend.good { color: var(--good); }
-  .t-trend.bad { color: var(--danger); }
+     (expenses and cost-per-sale going up is a ↑ in red, not green). */
+  /* The pill sits on its own row rather than beside the number -- tiles are only
+     ~150px wide, so inline placement wrapped on the longer money values and left
+     the row ragged. */
+  .t-trendrow { margin-top: 6px; }
+  .t-trend {
+    font-size: 11.5px; font-weight: 650; letter-spacing: .01em;
+    padding: 2px 7px; border-radius: 999px; line-height: 1.5;
+    display: inline-flex; align-items: center; gap: 3px;
+    font-variant-numeric: tabular-nums; cursor: default; white-space: nowrap;
+  }
+  .t-trend.good { color: var(--good); background: var(--good-soft); }
+  .t-trend.bad { color: var(--danger); background: var(--danger-soft); }
 
   /* ---------- Forms ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -713,14 +722,29 @@
   }
 
   // Arrow = which way it moved. Colour = whether that move is good for you.
-  function tileTrend(cur, prev, higherIsBetter, fmt, prevYm) {
+  // The pill also carries the size of the change:
+  //   - normally a % change off last month's figure
+  //   - as points when the metric is itself a % (ROI 100% -> 150% is +50 pts, not +50%)
+  //   - as a raw amount when last month was zero or negative, where a % is meaningless
+  //     (profit -$500 -> +$900 is not "280% better")
+  function tileTrend(cur, prev, higherIsBetter, fmt, prevYm, isPercentMetric) {
     if (cur == null || prev == null || isNaN(cur) || isNaN(prev)) return "";
     if (Math.round(cur * 100) === Math.round(prev * 100)) return "";
     var up = cur > prev;
     var good = higherIsBetter ? up : !up;
+    var diff = Math.abs(cur - prev);
+    var change;
+    if (isPercentMetric) {
+      change = Math.round(diff * 10) / 10 + " pts";
+    } else if (prev > 0 && cur >= 0) {
+      change = Math.round(Math.abs(diff / prev) * 100) + "%";
+    } else {
+      change = fmt ? fmt(diff) : String(diff);
+    }
     var was = fmt ? fmt(prev) : String(prev);
     return '<span class="t-trend ' + (good ? "good" : "bad") + '" title="' +
-      (up ? "Up from " : "Down from ") + was + " in " + monthLabel(prevYm) + '">' + (up ? "▲" : "▼") + "</span>";
+      (up ? "Up from " : "Down from ") + was + " in " + monthLabel(prevYm) + '">' +
+      (up ? "↑" : "↓") + " " + change + "</span>";
   }
 
   function renderTiles() {
@@ -733,9 +757,9 @@
     if (m.leadSpend > 0) expSub += " · " + money(m.leadSpend) + " on leads";
     var roiClass = m.roi === null ? "" : m.roi > 0 ? "profit-pos" : m.roi < 0 ? "profit-neg" : "";
 
-    // higherIsBetter is false for the two "spend" metrics -- a rising cost is a red ▲.
-    function tr(field, higherIsBetter, fmt) {
-      return p ? tileTrend(m[field], p[field], higherIsBetter, fmt, p.ym) : "";
+    // higherIsBetter is false for the two "spend" metrics -- a rising cost is a red ↑.
+    function tr(field, higherIsBetter, fmt, isPercentMetric) {
+      return p ? tileTrend(m[field], p[field], higherIsBetter, fmt, p.ym, isPercentMetric) : "";
     }
 
     var allTiles = [
@@ -746,7 +770,7 @@
       { key: "comm",    label: "Commission",     value: money(m.commission), sub: "", cls: "", trend: tr("commission", true, money) },
       { key: "exp",     label: "Expenses",       value: money(m.expenses), sub: expSub, cls: "", trend: tr("expenses", false, money) },
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(m.profit)), sub: "commission − expenses", cls: profitClass, trend: tr("profit", true, money) },
-      { key: "roi",     label: "ROI",            value: pct(m.roi), sub: m.roi === null ? "no lead spend yet" : "vs " + money(m.leadSpend) + " lead spend", cls: roiClass, trend: tr("roi", true, pct) },
+      { key: "roi",     label: "ROI",            value: pct(m.roi), sub: m.roi === null ? "no lead spend yet" : "vs " + money(m.leadSpend) + " lead spend", cls: roiClass, trend: tr("roi", true, pct, true) },
       { key: "costPerSale", label: "Cost per sale",    value: m.costPerSale == null ? "—" : money(m.costPerSale), sub: m.leadSpend > 0 ? money(m.leadSpend) + " in leads" : "", cls: "", trend: tr("costPerSale", false, money) },
       { key: "revPerDial",  label: "Revenue per dial", value: m.revPerDial == null ? "—" : money(m.revPerDial), sub: m.commission > 0 ? money(m.commission) + " commission" : "", cls: "", trend: tr("revPerDial", true, money) }
     ];
@@ -756,7 +780,8 @@
       .map(function (t) { return tile(t.label, t.value, t.sub, t.cls, t.trend); }).join("");
   }
   function tile(label, value, sub, cls, trend) {
-    return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + (trend || "") + "</div>" +
+    return '<div class="tile ' + cls + '"><div class="t-label">' + label + '</div><div class="t-value">' + value + "</div>" +
+      (trend ? '<div class="t-trendrow">' + trend + "</div>" : "") +
       (sub ? '<div class="t-sub">' + sub + "</div>" : "") + "</div>";
   }
 
