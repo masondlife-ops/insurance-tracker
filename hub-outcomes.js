@@ -32,9 +32,10 @@
   ];
 
   var CORE_KEYS = CORE.map(function (m) { return m.key; });
-  // Where a custom step is allowed to sit. Nothing may be inserted after "sold"
-  // (the funnel ends there) and appointment isn't part of the chain.
-  var ANCHORS = ["pickup", "conv2", "conv5", "presentation"];
+  // Where a custom step is allowed to sit. "sold" is a valid anchor too -- a step
+  // after it (e.g. "Referral given") becomes the new end of the funnel. Appointment
+  // isn't part of the chain, so it's never a valid anchor.
+  var ANCHORS = ["pickup", "conv2", "conv5", "presentation", "sold"];
 
   function coreByKey(k) {
     for (var i = 0; i < CORE.length; i++) if (CORE[i].key === k) return CORE[i];
@@ -99,13 +100,15 @@
 
   function cap(s) { return String(s).charAt(0).toUpperCase() + String(s).slice(1); }
 
-  /* Consecutive funnel steps up to presentation, as {label, from, to} pairs.
-     Stops at presentation because presentation->sold is shown as "Close rate". */
+  /* Every consecutive funnel-step pair, as {label, from, to}. The presentation->sold
+     pair is skipped since that link is already shown as "Close rate" -- but a custom
+     step inserted between them, or after sold, still gets its own pair either side. */
   function ratePairs() {
     var c = chain(), pairs = [];
     for (var i = 0; i < c.length - 1; i++) {
-      pairs.push({ label: cap(c[i].short) + " to " + c[i + 1].short, from: c[i].key, to: c[i + 1].key });
-      if (c[i + 1].key === "presentation") break;
+      var a = c[i], b = c[i + 1];
+      if (a.key === "presentation" && b.key === "sold") continue;
+      pairs.push({ label: cap(a.short) + " to " + b.short, from: a.key, to: b.key });
     }
     return pairs;
   }
