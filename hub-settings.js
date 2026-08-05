@@ -137,8 +137,19 @@
 
   /* ---------------- branding ---------------- */
 
+  // Each page's own heading (e.g. "Deals & PNL") is captured once, the first time
+  // applyBranding runs, and used as the un-set default -- so a page with no custom
+  // name keeps its own distinct heading instead of being overwritten with something
+  // generic. Only once a name is actually saved does every tab switch to showing it.
+  var originalBrandText = null;
+  function captureOriginal() {
+    if (originalBrandText !== null) return;
+    var slot = document.querySelector("[data-brand-name]");
+    originalBrandText = slot ? slot.textContent : "Agent Hub";
+  }
   function defaultBrandName() {
-    return (global.HUB_BRAND && global.HUB_BRAND.name) || document.title || "Agent Hub";
+    captureOriginal();
+    return originalBrandText;
   }
   function defaultAccent() {
     return (global.HUB_BRAND && global.HUB_BRAND.accent) || "#2a78d6";
@@ -162,9 +173,10 @@
       document.documentElement.style.removeProperty("--series-1");
       document.documentElement.style.removeProperty("--series-1-soft");
     }
-    var name = global.HubPrefs.get("brandName", null) || defaultBrandName();
+    captureOriginal();
+    var name = global.HubPrefs.get("brandName", null);
     var slot = document.querySelector("[data-brand-name]");
-    if (slot) slot.textContent = name;
+    if (slot) slot.textContent = name || originalBrandText;
   }
 
   function hexToSoft(hex) {
