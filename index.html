@@ -917,12 +917,14 @@
 
   // Arrow shows only when there's a real previous-period value to compare against,
   // and the rounded percentage actually moved (no arrow on a tie or missing data).
-  function trendArrow(n, d, pn, pd) {
+  function trendArrow(n, d, pn, pd, showDelta) {
     if (!(d > 0) || !(pd > 0)) return "";
     var cur = Math.round((n / d) * 100);
     var prev = Math.round((pn / pd) * 100);
-    if (cur > prev) return '<span class="trend up" title="Up from ' + prev + '% last period">▲</span>';
-    if (cur < prev) return '<span class="trend down" title="Down from ' + prev + '% last period">▼</span>';
+    var delta = cur - prev;
+    var deltaText = showDelta ? " " + (delta > 0 ? "+" : "") + delta + "%" : "";
+    if (cur > prev) return '<span class="trend up" title="Up from ' + prev + '% last period">▲' + deltaText + '</span>';
+    if (cur < prev) return '<span class="trend down" title="Down from ' + prev + '% last period">▼' + deltaText + '</span>';
     return "";
   }
 
@@ -948,7 +950,7 @@
     function arrow(n, d, pn, pd) { return prevRows ? trendArrow(n, d, pn, pd) : ""; }
 
     var defs = [
-      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) },
+      { label: "Pickup rate",        val: pct(pickups, totalDials), trend: prevRows ? trendArrow(pickups, totalDials, pPickups, prevDials, true) : "" },
       { label: "Pickup to 2+ min",   val: pct(conv2, pickups),      trend: arrow(conv2, pickups, pConv2, pPickups) },
       { label: "2+ min to 5+ min",   val: pct(conv5, conv2),        trend: arrow(conv5, conv2, pConv5, pConv2) },
       { label: "5+ min to presentation", val: pct(pres, conv5),     trend: arrow(pres, conv5, pPres, pConv5) },
