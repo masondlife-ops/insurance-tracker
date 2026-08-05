@@ -932,8 +932,6 @@
     var pres = count(rows, "presentation");
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
-    var monthActv = activityForMonth(dateKey(new Date()).slice(0, 7));
-    var monthDeals = pnlDealCountForMonth(dateKey(new Date()).slice(0, 7));
 
     var prevRange = prevRangeForCurrent();
     var prevRows = prevRange ? rowsInRange(prevRange) : null;
@@ -945,10 +943,6 @@
     var pSold = prevRows ? count(prevRows, "sold") : 0;
     var pAppts = prevRows ? count(prevRows, "appointment") : 0;
 
-    var prevYm = shiftMonth(dateKey(new Date()).slice(0, 7), -1);
-    var prevMonthActv = activityForMonth(prevYm);
-    var prevMonthDeals = pnlDealCountForMonth(prevYm);
-
     function arrow(n, d, pn, pd) { return prevRows ? trendArrow(n, d, pn, pd) : ""; }
 
     var defs = [
@@ -957,7 +951,6 @@
       { label: "2+ min to 5+ min",   val: pct(conv5, conv2),        trend: arrow(conv5, conv2, pConv5, pConv2) },
       { label: "5+ min to presentation", val: pct(pres, conv5),     trend: arrow(pres, conv5, pPres, pConv5) },
       { label: "Presentation rate",  val: pct(pres, pickups),       trend: arrow(pres, pickups, pPres, pPickups) },
-      { label: "Deals rate",         val: pct(monthDeals, monthActv.presentations), trend: trendArrow(monthDeals, monthActv.presentations, prevMonthDeals, prevMonthActv.presentations) },
       { label: "Close rate",         val: pct(sold, pres),          trend: arrow(sold, pres, pSold, pPres) },
       { label: "Appointment rate",   val: pct(appts, pickups),      trend: arrow(appts, pickups, pAppts, pPickups) },
       { label: "Sold per dial",      val: pct(sold, totalDials),    trend: arrow(sold, totalDials, pSold, prevDials) }
@@ -1377,34 +1370,6 @@
   $("moreBackdrop").addEventListener("click", closeMorePop);
   $("morePop").addEventListener("click", function (ev) { if (ev.target.tagName === "BUTTON") closeMorePop(); });
 
-  /* ---------- Activity -> Deals (this month, independent of the period tabs) ---------- */
-  var pnlDealsBlob = null;   // {deals:[...]} pulled from the Deals & PNL tracker's cloud row (same account)
-  function fetchPnlDeals() {
-    if (!cloudOn || !cloudUser) return;
-    sb.from("pnl_state").select("data").eq("user_id", cloudUser.id).maybeSingle()
-      .then(function (res) {
-        if (!res.error && res.data && res.data.data) pnlDealsBlob = res.data.data;
-        renderRates(filtered());
-      });
-  }
-  function activityForMonth(ym) {
-    var rows = entries.filter(function (e) { return dateKey(new Date(e.ts)).slice(0, 7) === ym; });
-    var totalDials = 0;
-    Object.keys(dials).forEach(function (k) { if (k.slice(0, 7) === ym) totalDials += dials[k]; });
-    return {
-      dials: totalDials,
-      pickups: count(rows, "pickup"),
-      convos: count(rows, "conv2"),
-      presentations: count(rows, "presentation"),
-      hasData: rows.length > 0 || totalDials > 0
-    };
-  }
-  function activityThisMonth() { return activityForMonth(dateKey(new Date()).slice(0, 7)); }
-  function pnlDealCountForMonth(ym) {
-    var dealsArr = (pnlDealsBlob && pnlDealsBlob.deals) || [];
-    return dealsArr.filter(function (d) { return String(d.date || "").slice(0, 7) === ym; }).length;
-  }
-  function pnlDealCountThisMonth() { return pnlDealCountForMonth(dateKey(new Date()).slice(0, 7)); }
   /* ---------------- Boot ---------------- */
   function renderAll() {
     var rows = filtered();
@@ -1541,7 +1506,7 @@
     revealOwnerTab();
     revealBoardTab();
     setSyncPill("Loading…", "saving");
-    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot).then(fetchPnlDeals);
+    cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot);
   }
 
   function onSignedOut() {
