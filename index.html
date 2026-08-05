@@ -885,10 +885,6 @@
     return dialsInRange(range) > 0 || rowsInRange(range).length > 0;
   }
 
-  function shiftDayRange(r) {
-    var from = new Date(r.from); from.setDate(from.getDate() - 1);
-    return { from: from, to: new Date(r.from) };
-  }
   function shiftWeekRange(r) {
     var from = new Date(r.from); from.setDate(from.getDate() - 7);
     return { from: from, to: new Date(r.from) };
@@ -908,23 +904,13 @@
     return null;
   }
 
-  // Previous-period range, mirroring whatever's currently selected (custom day/month
-  // or a period tab), so rate trends compare like-for-like. Null for "All Time" —
-  // there's no meaningful "previous" for an unbounded range.
+  // Previous-period range for the week/month views, so those compare like-for-like.
+  // Null for "All Time" -- there's no meaningful "previous" for an unbounded range.
   function prevRangeForCurrent() {
-    if (customDay) {
-      var d = new Date(customDay + "T00:00:00");
-      var to = new Date(d); to.setDate(to.getDate() + 1);
-      return findPrevWithData({ from: d, to: to }, shiftDayRange, 730);
-    }
     if (customMonth) {
       var p = customMonth.split("-"), y = +p[0], m = +p[1] - 1;
       var from = new Date(y, m, 1), mto = new Date(y, m + 1, 1);
       return findPrevWithData({ from: from, to: mto }, shiftMonthRange, 48);
-    }
-    if (activePeriod === "day") {
-      var fd = startOfDay(new Date()); var td = new Date(fd); td.setDate(td.getDate() + 1);
-      return findPrevWithData({ from: fd, to: td }, shiftDayRange, 730);
     }
     if (activePeriod === "week") {
       var fw = startOfWeek(new Date()); var tw = new Date(fw); tw.setDate(tw.getDate() + 7);
@@ -938,20 +924,55 @@
     return null;
   }
 
-  // Arrow shows only when there's a real previous-period value to compare against,
-  // and the rounded percentage actually moved (no arrow on a tie or missing data).
+  function monthNameOf(ym) {
+    return new Date(ym + "-01T12:00:00").toLocaleDateString(undefined, { month: "long" });
+  }
+
+  // What the current view's rates get measured against.
+  //   - A single day is compared to the REST OF THAT DAY'S MONTH, so each day reads as
+  //     "am I running above or below my usual pace" rather than "how did I do against
+  //     one arbitrary previous day", which swings wildly on low call volume. The day
+  //     itself is left out of the baseline -- measuring it against an average it is
+  //     part of drags the comparison toward zero, and on the 1st there'd be nothing
+  //     to compare at all.
+  //   - Week and month views keep the previous-period comparison; a month measured
+  //     against its own average would say nothing.
+  //   - Rates are pooled (total conversions / total opportunities), not an average of
+  //     each day's percentage, so a 3-dial day can't swing the baseline like a 60-dial one.
+  function baselineForCurrent() {
+    var day = customDay || (!customMonth && activePeriod === "day" ? dateKey(new Date()) : null);
+    if (day) {
+      var ym = day.slice(0, 7);
+      var bRows = entries.filter(function (e) {
+        var k = dateKey(new Date(e.ts));
+        return k.slice(0, 7) === ym && k !== day;
+      });
+      var bDials = 0;
+      Object.keys(dials).forEach(function (k) {
+        if (k.slice(0, 7) === ym && k !== day) bDials += dials[k];
+      });
+      if (!bRows.length && !bDials) return null;
+      return { rows: bRows, dials: bDials, label: "your " + monthNameOf(ym) + " average" };
+    }
+    var r = prevRangeForCurrent();
+    if (!r) return null;
+    return { rows: rowsInRange(r), dials: dialsInRange(r), label: "last period" };
+  }
+
+  // Arrow shows only when there's a real baseline to compare against and the rounded
+  // percentage actually differs (no arrow on a tie or missing data).
   // Every rate here is itself a percentage, so the gap is in percentage POINTS --
-  // a close rate going 10% -> 30% is "+20 pts", not "+20%" (that would read as a
-  // 20% relative lift) and not "+200%".
-  function trendArrow(n, d, pn, pd) {
-    if (!(d > 0) || !(pd > 0)) return "";
+  // a close rate of 30% against a 10% baseline is "+20 pts", not "+20%" (that would
+  // read as a 20% relative lift) and not "+200%".
+  function trendArrow(n, d, bn, bd, label) {
+    if (!(d > 0) || !(bd > 0)) return "";
     var cur = Math.round((n / d) * 100);
-    var prev = Math.round((pn / pd) * 100);
-    if (cur === prev) return "";
-    var up = cur > prev;
+    var base = Math.round((bn / bd) * 100);
+    if (cur === base) return "";
+    var up = cur > base;
     return '<span class="trend ' + (up ? "up" : "down") + '" title="' +
-      (up ? "Up from " : "Down from ") + prev + '% last period">' +
-      (up ? "↑" : "↓") + " " + Math.abs(cur - prev) + ' pts</span>';
+      (up ? "Above " : "Below ") + label + ": " + base + '%">' +
+      (up ? "↑" : "↓") + " " + Math.abs(cur - base) + ' pts</span>';
   }
 
   function renderRates(rows) {
@@ -963,17 +984,17 @@
     var sold = count(rows, "sold");
     var appts = count(rows, "appointment");
 
-    var prevRange = prevRangeForCurrent();
-    var prevRows = prevRange ? rowsInRange(prevRange) : null;
-    var prevDials = prevRange ? dialsInRange(prevRange) : 0;
-    var pPickups = prevRows ? count(prevRows, "pickup") : 0;
-    var pConv2 = prevRows ? count(prevRows, "conv2") : 0;
-    var pConv5 = prevRows ? count(prevRows, "conv5") : 0;
-    var pPres = prevRows ? count(prevRows, "presentation") : 0;
-    var pSold = prevRows ? count(prevRows, "sold") : 0;
-    var pAppts = prevRows ? count(prevRows, "appointment") : 0;
+    var base = baselineForCurrent();
+    var bRows = base ? base.rows : null;
+    var prevDials = base ? base.dials : 0;
+    var pPickups = bRows ? count(bRows, "pickup") : 0;
+    var pConv2 = bRows ? count(bRows, "conv2") : 0;
+    var pConv5 = bRows ? count(bRows, "conv5") : 0;
+    var pPres = bRows ? count(bRows, "presentation") : 0;
+    var pSold = bRows ? count(bRows, "sold") : 0;
+    var pAppts = bRows ? count(bRows, "appointment") : 0;
 
-    function arrow(n, d, pn, pd) { return prevRows ? trendArrow(n, d, pn, pd) : ""; }
+    function arrow(n, d, bn, bd) { return base ? trendArrow(n, d, bn, bd, base.label) : ""; }
 
     var defs = [
       { label: "Pickup rate",        val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) },
