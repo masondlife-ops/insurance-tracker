@@ -867,36 +867,6 @@
     });
   }
 
-  // Previous-period range, mirroring whatever's currently selected (custom day/month
-  // or a period tab), so rate trends compare like-for-like. Null for "All Time" —
-  // there's no meaningful "previous" for an unbounded range.
-  function prevRangeForCurrent() {
-    if (customDay) {
-      var d = new Date(customDay + "T00:00:00"); d.setDate(d.getDate() - 1);
-      var to = new Date(d); to.setDate(to.getDate() + 1);
-      return { from: d, to: to };
-    }
-    if (customMonth) {
-      var p = customMonth.split("-"), y = +p[0], m = +p[1] - 1;
-      return { from: new Date(y, m - 1, 1), to: new Date(y, m, 1) };
-    }
-    if (activePeriod === "day") {
-      var fd = startOfDay(new Date()); fd.setDate(fd.getDate() - 1);
-      var td = new Date(fd); td.setDate(td.getDate() + 1);
-      return { from: fd, to: td };
-    }
-    if (activePeriod === "week") {
-      var fw = startOfWeek(new Date()); fw.setDate(fw.getDate() - 7);
-      var tw = new Date(fw); tw.setDate(tw.getDate() + 7);
-      return { from: fw, to: tw };
-    }
-    if (activePeriod === "month") {
-      var now = new Date();
-      return { from: new Date(now.getFullYear(), now.getMonth() - 1, 1), to: new Date(now.getFullYear(), now.getMonth(), 1) };
-    }
-    return null;
-  }
-
   function rowsInRange(range) {
     return entries.filter(function (e) {
       var t = new Date(e.ts).getTime();
@@ -911,6 +881,63 @@
       if (kd >= range.from && kd < range.to) total += dials[k];
     });
     return total;
+  }
+
+  function hasDataInRange(range) {
+    return dialsInRange(range) > 0 || rowsInRange(range).length > 0;
+  }
+
+  function shiftDayRange(r) {
+    var from = new Date(r.from); from.setDate(from.getDate() - 1);
+    return { from: from, to: new Date(r.from) };
+  }
+  function shiftWeekRange(r) {
+    var from = new Date(r.from); from.setDate(from.getDate() - 7);
+    return { from: from, to: new Date(r.from) };
+  }
+  function shiftMonthRange(r) {
+    return { from: new Date(r.from.getFullYear(), r.from.getMonth() - 1, 1), to: new Date(r.from.getFullYear(), r.from.getMonth(), 1) };
+  }
+
+  // Walk backward (day-by-day / week-by-week / month-by-month) until a range with
+  // actual logged activity turns up, so an empty prior day doesn't just blank the arrow.
+  function findPrevWithData(range, stepBack, maxSteps) {
+    var r = range;
+    for (var i = 0; i < maxSteps; i++) {
+      r = stepBack(r);
+      if (hasDataInRange(r)) return r;
+    }
+    return null;
+  }
+
+  // Previous-period range, mirroring whatever's currently selected (custom day/month
+  // or a period tab), so rate trends compare like-for-like. Null for "All Time" —
+  // there's no meaningful "previous" for an unbounded range.
+  function prevRangeForCurrent() {
+    if (customDay) {
+      var d = new Date(customDay + "T00:00:00");
+      var to = new Date(d); to.setDate(to.getDate() + 1);
+      return findPrevWithData({ from: d, to: to }, shiftDayRange, 730);
+    }
+    if (customMonth) {
+      var p = customMonth.split("-"), y = +p[0], m = +p[1] - 1;
+      var from = new Date(y, m, 1), mto = new Date(y, m + 1, 1);
+      return findPrevWithData({ from: from, to: mto }, shiftMonthRange, 48);
+    }
+    if (activePeriod === "day") {
+      var fd = startOfDay(new Date()); var td = new Date(fd); td.setDate(td.getDate() + 1);
+      return findPrevWithData({ from: fd, to: td }, shiftDayRange, 730);
+    }
+    if (activePeriod === "week") {
+      var fw = startOfWeek(new Date()); var tw = new Date(fw); tw.setDate(tw.getDate() + 7);
+      return findPrevWithData({ from: fw, to: tw }, shiftWeekRange, 208);
+    }
+    if (activePeriod === "month") {
+      var now = new Date();
+      var mfrom = new Date(now.getFullYear(), now.getMonth(), 1), mto2 = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      return findPrevWithData({ from: mfrom, to: mto2 }, shiftMonthRange, 48);
+    }
+    return null;
   }
 
   // Arrow shows only when there's a real previous-period value to compare against,
