@@ -513,10 +513,14 @@
   ];
   var activePeriod = "day";
   var customDay = null; // "YYYY-MM-DD" when viewing a specific past day
+  var customMonth = null; // "YYYY-MM" when viewing a specific past month
 
   function filtered() {
     if (customDay) {
       return entries.filter(function (e) { return dateKey(new Date(e.ts)) === customDay; });
+    }
+    if (customMonth) {
+      return entries.filter(function (e) { return dateKey(new Date(e.ts)).slice(0, 7) === customMonth; });
     }
     var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from().getTime();
     return entries.filter(function (e) { return new Date(e.ts).getTime() >= from; });
@@ -528,6 +532,13 @@
 
   function dialsInPeriod() {
     if (customDay) return dials[customDay] || 0;
+    if (customMonth) {
+      var mTotal = 0;
+      Object.keys(dials).forEach(function (k) {
+        if (k.slice(0, 7) === customMonth) mTotal += dials[k];
+      });
+      return mTotal;
+    }
     var from = PERIODS.filter(function (p) { return p.key === activePeriod; })[0].from();
     var total = 0;
     Object.keys(dials).forEach(function (k) {
@@ -671,12 +682,20 @@
   // The tab bar is built once and kept — rebuilding it on every render
   // destroyed the date input mid-typing (focus loss after each keystroke).
   var tabButtons = [], dayLabel = null, dayInput = null, dayBackBtn = null, dayFwdBtn = null;
+  var monthLabel = null, monthInput = null, monthBackBtn = null, monthFwdBtn = null;
 
   function shiftDay(key, delta) {
     var p = key.split("-");
     var d = new Date(+p[0], +p[1] - 1, +p[2]);
     d.setDate(d.getDate() + delta);
     return dateKey(d);
+  }
+
+  function shiftMonth(ym, delta) {
+    var p = ym.split("-");
+    var d = new Date(+p[0], +p[1] - 1, 1);
+    d.setMonth(d.getMonth() + delta);
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1);
   }
 
   function buildTabs() {
@@ -688,6 +707,8 @@
       b.onclick = function () {
         customDay = null;
         dayInput.value = "";
+        customMonth = null;
+        monthInput.value = "";
         activePeriod = p.key;
         renderAll();
       };
@@ -712,6 +733,7 @@
     dayBackBtn.title = "Previous day";
     dayBackBtn.style.cssText = stepBtnCss;
     dayBackBtn.onclick = function () {
+      customMonth = null; monthInput.value = "";
       customDay = shiftDay(customDay || dateKey(new Date()), -1);
       renderAll();
     };
@@ -728,6 +750,7 @@
       // A half-typed year reads as e.g. 0002 — wait until it looks real
       var year = parseInt(dayInput.value.slice(0, 4), 10);
       if (year < 2000) return;
+      customMonth = null; monthInput.value = "";
       customDay = dayInput.value;
       renderAll();
     };
@@ -744,12 +767,63 @@
     };
     dayLabel.appendChild(dayFwdBtn);
     box.appendChild(dayLabel);
+
+    monthLabel = document.createElement("span");
+    monthLabel.className = "tab";
+    monthLabel.style.display = "inline-flex";
+    monthLabel.style.alignItems = "center";
+    monthLabel.style.gap = "6px";
+    monthLabel.style.cursor = "default";
+    monthLabel.style.flexWrap = "wrap";
+    var monthText = document.createElement("span");
+    monthText.style.whiteSpace = "nowrap";
+    monthText.textContent = "Pick a month:";
+    monthLabel.appendChild(monthText);
+    monthBackBtn = document.createElement("button");
+    monthBackBtn.type = "button";
+    monthBackBtn.textContent = "◀";
+    monthBackBtn.title = "Previous month";
+    monthBackBtn.style.cssText = stepBtnCss;
+    monthBackBtn.onclick = function () {
+      customDay = null; dayInput.value = "";
+      customMonth = shiftMonth(customMonth || dateKey(new Date()).slice(0, 7), -1);
+      renderAll();
+    };
+    monthLabel.appendChild(monthBackBtn);
+    monthInput = document.createElement("input");
+    monthInput.type = "month";
+    monthInput.max = dateKey(new Date()).slice(0, 7);
+    monthInput.style.cssText = "font:inherit; font-size:13px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
+    monthInput.onchange = function () {
+      if (!monthInput.value) {
+        if (customMonth) { customMonth = null; renderAll(); }
+        return;
+      }
+      var myear = parseInt(monthInput.value.slice(0, 4), 10);
+      if (myear < 2000) return;
+      customDay = null; dayInput.value = "";
+      customMonth = monthInput.value;
+      renderAll();
+    };
+    monthLabel.appendChild(monthInput);
+    monthFwdBtn = document.createElement("button");
+    monthFwdBtn.type = "button";
+    monthFwdBtn.textContent = "▶";
+    monthFwdBtn.title = "Next month";
+    monthFwdBtn.style.cssText = stepBtnCss;
+    monthFwdBtn.onclick = function () {
+      if (!customMonth || customMonth >= dateKey(new Date()).slice(0, 7)) return;
+      customMonth = shiftMonth(customMonth, 1);
+      renderAll();
+    };
+    monthLabel.appendChild(monthFwdBtn);
+    box.appendChild(monthLabel);
   }
 
   function renderTabs() {
     if (!dayInput) buildTabs();
     tabButtons.forEach(function (t) {
-      t.el.className = "tab" + (!customDay && t.key === activePeriod ? " on" : "");
+      t.el.className = "tab" + (!customDay && !customMonth && t.key === activePeriod ? " on" : "");
     });
     dayLabel.className = "tab" + (customDay ? " on" : "");
     // Don't touch the field while the user is typing in it
@@ -760,6 +834,15 @@
     dayFwdBtn.disabled = atToday;
     dayFwdBtn.style.opacity = atToday ? "0.4" : "1";
     dayFwdBtn.style.cursor = atToday ? "default" : "pointer";
+
+    monthLabel.className = "tab" + (customMonth ? " on" : "");
+    if (document.activeElement !== monthInput && monthInput.value !== (customMonth || "")) {
+      monthInput.value = customMonth || "";
+    }
+    var atThisMonth = !customMonth || customMonth >= dateKey(new Date()).slice(0, 7);
+    monthFwdBtn.disabled = atThisMonth;
+    monthFwdBtn.style.opacity = atThisMonth ? "0.4" : "1";
+    monthFwdBtn.style.cursor = atThisMonth ? "default" : "pointer";
   }
 
   function count(rows, key) {
@@ -927,6 +1010,8 @@
     renderHourChart(rows);
     if (customDay) {
       $("periodEcho").textContent = "· " + new Date(customDay + "T12:00:00").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", year: "numeric" });
+    } else if (customMonth) {
+      $("periodEcho").textContent = "· " + new Date(customMonth + "-01T12:00:00").toLocaleDateString(undefined, { month: "long", year: "numeric" });
     } else {
       var p = PERIODS.filter(function (x) { return x.key === activePeriod; })[0];
       $("periodEcho").textContent = "· " + p.label;
