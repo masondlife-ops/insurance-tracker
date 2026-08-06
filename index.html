@@ -443,6 +443,7 @@
 </div>
 <div class="tooltip" id="tooltip"></div>
 
+<script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-outcomes.js"></script>
 <script src="hub-settings.js"></script>
@@ -1728,11 +1729,15 @@
       if (window.HubOutcomes) { buildMetricDerivedState(); renderAll(); }
       if (window.HubSettings) HubSettings.refresh();
     });
+    // Brand bar comes from the caller's own agency row (my_branding()), not from
+    // a hardcoded header -- see hub-branding.js. Null for anyone unbranded.
+    if (window.HubBranding) HubBranding.fetch(sb).then(HubBranding.apply);
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(afterBoot);
   }
 
   function onSignedOut() {
+    if (window.HubBranding) HubBranding.clear();
     cloudUser = null;
     $("acctBox").classList.remove("show");
     setSyncPill("", "");

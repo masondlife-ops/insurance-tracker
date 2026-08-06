@@ -518,6 +518,7 @@
   <button type="button" id="restoreBtn">Restore</button>
 </div>
 <script src="comp-guide.js"></script>
+<script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
 <script>
@@ -1858,11 +1859,15 @@
     revealOwnerTab();
     revealBoardTab();
     if (window.HubPrefs) HubPrefs.attachCloud(sb, user.id).then(function () { if (window.HubSettings) HubSettings.refresh(); });
+    // Brand bar comes from the caller's own agency row (my_branding()), not from
+    // a hardcoded header -- see hub-branding.js. Null for anyone unbranded.
+    if (window.HubBranding) HubBranding.fetch(sb).then(HubBranding.apply);
     setSyncPill("Loading…", "saving");
     cloudPull().catch(function () { setSyncPill("Sync error", "err"); }).then(function () { afterBoot(); fetchActivity(); loadMembership(); });
   }
 
   function onSignedOut() {
+    if (window.HubBranding) HubBranding.clear();
     cloudUser = null;
     $("acctBox").classList.remove("show");
     setSyncPill("", "");

@@ -306,6 +306,7 @@
 </div>
 
 <script src="../comp-guide.js"></script>
+<script src="../hub-branding.js"></script>
 <script src="../hub-prefs.js"></script>
 <script src="../hub-settings.js"></script>
 <script>
@@ -884,10 +885,14 @@
     $("acctEmail").textContent = u.email || "";
     updateThemeBtn();
     if (window.HubPrefs) HubPrefs.attachCloud(sb, u.id).then(function () { if (window.HubSettings) HubSettings.refresh(); });
+    // Brand bar comes from the caller's own agency row (my_branding()), not from
+    // a hardcoded header -- see hub-branding.js. Null for anyone unbranded.
+    if (window.HubBranding) HubBranding.fetch(sb).then(HubBranding.apply);
     revealBoardTab();
     refresh();
   }
   function onSignedOut() {
+    if (window.HubBranding) HubBranding.clear();
     user = null; agency = null; members = []; summaries = {};
     $("acctBox").classList.remove("show");
     $("teamView").style.display = "none"; $("setupCard").style.display = "none"; $("monthNav").style.display = "none";
