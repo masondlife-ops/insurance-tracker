@@ -194,6 +194,22 @@
   .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
   .settings-row { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); font-size: 13px; color: var(--text-muted); flex-wrap: wrap; }
   .settings-row input { width: 80px; }
+  /* Once adopted by the Settings panel these rows are sections in their own right,
+     so the in-card divider/spacing they carry here would look wrong. */
+  .hs-sec .settings-row { margin-top: 0; padding-top: 0; border-top: none; margin-bottom: 10px; }
+  #pnlSettingsHolder[hidden] { display: none; }
+
+  /* ---------- deal form: essentials vs. more details ---------- */
+  .more-toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    font: inherit; font-size: 13px; font-weight: 500;
+    color: var(--text-secondary); background: transparent;
+    border: 1px solid var(--baseline); border-radius: 8px;
+    padding: 7px 12px; margin-top: 12px; cursor: pointer;
+  }
+  .more-toggle .chev { font-size: 10px; color: var(--text-muted); }
+  .more-panel { margin-top: 12px; padding-top: 14px; border-top: 1px dashed var(--grid); }
+  .deal-actions { display: flex; gap: 8px; margin-top: 14px; padding-top: 14px; border-top: 1px solid var(--grid); }
   .agency-link { font-size: 13px; color: var(--text-muted); text-decoration: underline; cursor: pointer; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; white-space: nowrap; }
   .mini:hover { color: var(--text-primary); }
@@ -415,36 +431,55 @@
 
   <div class="card">
     <h2 id="dealFormTitle">Add a deal</h2>
-    <form id="dealForm" class="form-grid">
-      <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
-      <div class="field"><label for="d-client">Client name</label><input type="text" id="d-client" class="wide" required placeholder="Client"></div>
-      <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
-      <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
-      <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
-      <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
-      <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
-      <div class="field"><label for="d-com">Commission ($)</label><div class="com-row"><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div></div>
-      <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
-      <div class="field"><label for="d-status">Status</label>
-        <select id="d-status">
-          <option>Submitted</option>
-          <option>Pending</option>
-          <option>Issued</option>
-          <option>Declined</option>
-          <option>Cancelled</option>
-          <option>Chargeback</option>
-        </select>
+    <form id="dealForm">
+      <div class="form-grid">
+        <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
+        <div class="field"><label for="d-client">Client name</label><input type="text" id="d-client" class="wide" required placeholder="Client"></div>
+        <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
+        <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
+        <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
+        <div class="field"><label for="d-status">Status</label>
+          <select id="d-status">
+            <option>Submitted</option>
+            <option>Pending</option>
+            <option>Issued</option>
+            <option>Declined</option>
+            <option>Cancelled</option>
+            <option>Chargeback</option>
+          </select>
+        </div>
       </div>
-      <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
-      <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
-      <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
-      <button type="submit" class="btn" id="dealSubmit">Add deal</button>
-      <button type="button" class="btn secondary" id="dealCancel" style="display:none">Cancel</button>
+
+      <button type="button" class="more-toggle" id="dealMoreToggle" aria-expanded="false" aria-controls="dealMorePanel"><span class="chev" id="dealMoreChev">&#9654;</span> More details</button>
+
+      <!-- Collapsed by default. Nothing in here is `required`, so hiding it can never
+           block submit with an unfocusable invalid control. -->
+      <div class="more-panel" id="dealMorePanel" hidden>
+        <div class="form-grid">
+          <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
+          <div class="field"><label for="d-com">Commission ($)</label><div class="com-row"><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div></div>
+          <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
+          <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
+          <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
+          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
+        </div>
+      </div>
+
+      <div class="deal-actions">
+        <button type="submit" class="btn" id="dealSubmit">Add deal</button>
+        <button type="button" class="btn secondary" id="dealCancel" style="display:none">Cancel</button>
+      </div>
     </form>
     <datalist id="productList"></datalist>
     <datalist id="carrierList"></datalist>
     <datalist id="leadList"></datalist>
-    <div class="settings-row">
+    <!-- Contract level and agency membership are account settings, not deal fields.
+         They stay in the document (lots of code looks them up by id) but live here
+         hidden until the Settings panel adopts the real nodes -- moving rather than
+         cloning keeps every existing handler attached. -->
+    <div id="pnlSettingsHolder" hidden>
+    <div class="settings-row" id="contractRow">
       <span>Your contract level:</span>
       <select id="contractLevel" style="width:auto"><option value="">Set level…</option></select>
     </div>
@@ -458,6 +493,7 @@
         <button type="button" class="btn secondary small" id="agencyCancelBtn">Cancel</button>
       </span>
       <span id="agencyNote" style="display:none"></span>
+    </div>
     </div>
   </div>
 
@@ -1135,6 +1171,9 @@
     apAutoFilled = false;
     comAutoFilled = false;
     $("dealForm").reset();
+    // An edit may have force-opened the panel; going back to a blank form should
+    // return to whatever the person actually chose.
+    setDealMoreOpen(!!(window.HubPrefs && HubPrefs.get("dealMoreOpen", false)), false);
     $("d-date").value = defaultDateForMonth();
     $("dealFormTitle").textContent = "Add a deal";
     $("dealSubmit").textContent = "Add deal";
@@ -1165,6 +1204,10 @@
     $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
     $("dealSubmit").textContent = "Save changes";
     $("dealCancel").style.display = "";
+    // Never hide populated fields mid-edit -- if this deal has anything in the
+    // secondary set, show it rather than making them hunt for it.
+    if (d.face != null || d.monthly != null || d.com != null || d.lead ||
+        d.issuedDate || d.inforce || d.notes) setDealMoreOpen(true, false);
     updateProductList();
     recalcCommission();
     $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1746,6 +1789,33 @@
       loadMembership();
     });
   });
+
+  /* ---------- deal form: "More details" ---------- */
+  function setDealMoreOpen(open, persist) {
+    $("dealMorePanel").hidden = !open;
+    $("dealMoreChev").innerHTML = open ? "&#9660;" : "&#9654;";
+    $("dealMoreToggle").setAttribute("aria-expanded", open ? "true" : "false");
+    // Remember the choice: someone who fills in Notes or Lead type on every deal
+    // shouldn't have to re-open the panel each time.
+    if (persist && window.HubPrefs) HubPrefs.set("dealMoreOpen", open ? true : undefined);
+  }
+  $("dealMoreToggle").addEventListener("click", function () {
+    setDealMoreOpen($("dealMorePanel").hidden, true);
+  });
+  setDealMoreOpen(!!(window.HubPrefs && HubPrefs.get("dealMoreOpen", false)), false);
+
+  /* ---------- contract level + agency belong in Settings ---------- */
+  if (window.HubSettings) {
+    HubSettings.register({
+      title: "Deals & PNL",
+      render: function (wrap) {
+        // Move the live nodes rather than clone them, so the handlers and ids
+        // wired up above keep working exactly as before.
+        wrap.appendChild($("contractRow"));
+        wrap.appendChild($("agencyRow"));
+      }
+    });
+  }
 
   /* ---------- cloud sync (optional) ---------- */
 
