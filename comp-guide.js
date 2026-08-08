@@ -77,6 +77,12 @@
       "Bonusmaster":[5.5,5.25,5,4.75,4.5,4.25,4,4,3.5,3.5,3,2,0,0],
       "Guaranteed Guardian":[80,75,75,70,65,60,55,50,45,40,35,30,0,0]
     }},
+    // Beyond Term pays 5 points over your contract level, so the base table is the
+    // contract levels themselves and the carrier's plus:true adds the 5 on top --
+    // same mechanism Foresters uses. Level 105 -> 110%.
+    "Banner Life": { plus:true, products:{
+      "Beyond Term":[145,140,135,130,125,120,115,110,105,100,95,90,85,80]
+    }},
     "Transamerica": { products:{
       "Trendsetter Super Term":[105,102,100,90,85,80,75,73,70,67,65,63,60,57],
       "Trendsetter LB Term":[115,110,105,100,90,85,80,75,70,65,60,55,50,45],
