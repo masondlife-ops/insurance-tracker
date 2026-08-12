@@ -1819,8 +1819,13 @@
 
   // called from save(); no-op unless we're signed in to the cloud
   function cloudScheduleSave() {
-    try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
+    // The pending flag means "this device has work the cloud hasn't confirmed".
+    // It must only be set while actually signed in. Setting it first meant a
+    // signed-out edit on a fresh browser (e.g. setting a monthly goal) flagged an
+    // EMPTY dataset as unsynced work, and the next login pushed that emptiness
+    // over the real cloud data without ever reading it.
     if (!cloudOn || !cloudUser) return;
+    try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
     setSyncPill("Saving…", "saving");
     clearTimeout(cloudSaveTimer);
     cloudSaveTimer = setTimeout(cloudPush, 700);
@@ -1861,9 +1866,10 @@
     // If this device has local edits the cloud never confirmed (e.g. it dropped
     // offline right after a save), never let a pull silently roll them back --
     // push them first instead of overwriting local with the older cloud copy.
+    // But ALWAYS read the cloud first: pushing blind is how an empty device can
+    // erase a full account.
     var hasPending = false;
     try { hasPending = localStorage.getItem(PENDING_KEY) === "1"; } catch (e) {}
-    if (hasPending) { cloudPush(); return Promise.resolve(); }
 
     return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
@@ -1871,6 +1877,17 @@
         var cloudData = res.data && res.data.data;
         var cloudHas = cloudData && (((cloudData.deals || []).length) || ((cloudData.expenses || []).length));
         var localHas = ((state.deals || []).length) || ((state.expenses || []).length);
+
+        // Nothing local to protect and real data in the cloud: take the cloud,
+        // whatever the pending flag says. This is the guard that stops a wipe.
+        if (!localHas && cloudHas) {
+          try { localStorage.setItem(PENDING_KEY, "0"); } catch (e) {}
+          state = migrate(cloudData);
+          localStorage.setItem(STORE_KEY, JSON.stringify(state));
+          setSyncPill("Saved", "saved");
+          return;
+        }
+        if (hasPending) { cloudPush(); return; }   // genuine unsynced local work
         if (cloudHas) {
           state = migrate(cloudData);
           localStorage.setItem(STORE_KEY, JSON.stringify(state));

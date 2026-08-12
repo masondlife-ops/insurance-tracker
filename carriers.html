@@ -389,7 +389,10 @@
   var sb = null, cloudUser = null, cloudSaveTimer = null, authMode = "signin";
 
   function setSyncPill(txt, cls) { var el = $("syncPill"); if (!el) return; if (!txt) { el.style.display = "none"; return; } el.style.display = ""; el.textContent = txt; el.className = "sync-pill" + (cls ? " " + cls : ""); }
-  function cloudScheduleSave() { try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {} if (!cloudOn || !cloudUser) return; setSyncPill("Saving…", "saving"); clearTimeout(cloudSaveTimer); cloudSaveTimer = setTimeout(cloudPush, 700); }
+  // Only ever flag unsynced work while signed in -- flagging first meant a
+  // signed-out edit on a fresh browser marked an EMPTY dataset as unsynced, and
+  // the next login pushed that emptiness over the real cloud data.
+  function cloudScheduleSave() { if (!cloudOn || !cloudUser) return; try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {} setSyncPill("Saving…", "saving"); clearTimeout(cloudSaveTimer); cloudSaveTimer = setTimeout(cloudPush, 700); }
   function cloudPush() {
     if (!cloudOn || !cloudUser) return;
     clearTimeout(cloudRetryTimer);
@@ -401,15 +404,21 @@
       });
   }
   function cloudPull() {
+    // Always read the cloud before deciding to push -- pushing blind on a pending
+    // flag is how an empty device can erase a full account.
     var hasPending = false;
     try { hasPending = localStorage.getItem(PENDING_KEY) === "1"; } catch (e) {}
-    if (hasPending) { cloudPush(); return Promise.resolve(); }
     return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle().then(function (res) {
       if (res.error) throw res.error;
       var d = res.data && res.data.data;
       var cloudHas = d && ((d.carriers && d.carriers.length) || (d.npn && d.npn.length));
       var localHas = (state.carriers && state.carriers.length) || (state.npn && state.npn.length);
-      if (cloudHas) { state = d; if (!state.carriers) state.carriers = []; var chg = migrateCarriers(state.carriers); localStorage.setItem(STORE_KEY, JSON.stringify(state)); setSyncPill("Saved", "saved"); if (chg) cloudScheduleSave(); }
+      function takeCloud() { state = d; if (!state.carriers) state.carriers = []; var chg = migrateCarriers(state.carriers); localStorage.setItem(STORE_KEY, JSON.stringify(state)); setSyncPill("Saved", "saved"); if (chg) cloudScheduleSave(); }
+      // Nothing local to protect and real data in the cloud: take the cloud,
+      // whatever the pending flag says. This is the guard that stops a wipe.
+      if (!localHas && cloudHas) { try { localStorage.setItem(PENDING_KEY, "0"); } catch (e) {} takeCloud(); return; }
+      if (hasPending) { cloudPush(); return; }   // genuine unsynced local work
+      if (cloudHas) { takeCloud(); }
       else if (localHas) { cloudPush(); }
       else { setSyncPill("Saved", "saved"); }
     });

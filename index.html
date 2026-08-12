@@ -1361,12 +1361,38 @@
       // Every outcome column, core or custom, resolved by header text so an export
       // from before a custom step existed (or from another user's different set of
       // custom steps) still matches whatever columns it actually has.
+      //
+      // Matched in two passes, and each column can only be claimed once. The loose
+      // hints below are substrings, so a custom step named "15+ min" would otherwise
+      // satisfy conv5's "5" before the real "Convos 5+ min" column was reached and
+      // silently import that step's values as 5+ min convos. Exact label matches
+      // therefore win first; the loose hints are only a fallback for older exports
+      // whose headers were worded differently.
       var CORE_COL_HINTS = {
         pickup: ["pickup"], conv2: ["2"], conv5: ["5"],
         presentation: ["present"], appointment: ["appointment", "appt"], sold: ["sold"]
       };
-      var metricCols = METRICS.map(function (m) {
-        return { key: m.key, col: col(CORE_COL_HINTS[m.key] || [m.label.toLowerCase()]) };
+      var claimed = {};
+      // The non-outcome columns are spoken for -- a step called "State of mind"
+      // must not be able to steal the State column.
+      [cDate, cTime, cLead, cState, cNotes].forEach(function (c) { if (c > -1) claimed[c] = true; });
+
+      var metricCols = METRICS.map(function (m) { return { key: m.key, label: m.label, col: -1 }; });
+      metricCols.forEach(function (mc) {                       // pass 1: exact header
+        var want = mc.label.toLowerCase();
+        for (var j = 0; j < header.length; j++) {
+          if (!claimed[j] && header[j] === want) { claimed[j] = true; mc.col = j; return; }
+        }
+      });
+      metricCols.forEach(function (mc) {                       // pass 2: loose hints
+        if (mc.col > -1) return;
+        var want = CORE_COL_HINTS[mc.key] || [mc.label.toLowerCase()];
+        for (var j = 0; j < header.length; j++) {
+          if (claimed[j]) continue;
+          for (var w = 0; w < want.length; w++) {
+            if (header[j].indexOf(want[w]) > -1) { claimed[j] = true; mc.col = j; return; }
+          }
+        }
       });
       var seen = {};
       entries.forEach(function (e) { seen[entrySig(e)] = true; });
@@ -1634,8 +1660,11 @@
   }
 
   function cloudScheduleSave() {
-    try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
+    // Only ever flag unsynced work while signed in -- see the note in cloudPull.
+    // Flagging first meant a signed-out edit on a fresh browser marked an EMPTY
+    // dataset as unsynced and the next login pushed that over the real data.
     if (!cloudOn || !cloudUser) return;
+    try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
     setSyncPill("Saving…", "saving");
     clearTimeout(cloudSaveTimer);
     cloudSaveTimer = setTimeout(cloudPush, 700);
@@ -1659,9 +1688,10 @@
   }
 
   function cloudPull() {
+    // Always read the cloud before deciding to push -- pushing blind on a pending
+    // flag is how an empty device can erase a full account.
     var hasPending = false;
     try { hasPending = localStorage.getItem(PENDING_KEY) === "1"; } catch (e) {}
-    if (hasPending) { cloudPush(); return Promise.resolve(); }
 
     return sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
       .then(function (res) {
@@ -1669,6 +1699,16 @@
         var d = res.data && res.data.data;
         var cloudHas = d && (((d.entries || []).length) || Object.keys(d.dials || {}).length);
         var localHas = (entries.length) || Object.keys(dials).length;
+
+        // Nothing local to protect and real data in the cloud: take the cloud,
+        // whatever the pending flag says. This is the guard that stops a wipe.
+        if (!localHas && cloudHas) {
+          try { localStorage.setItem(PENDING_KEY, "0"); } catch (e) {}
+          applyBlob(d);
+          setSyncPill("Saved", "saved");
+          return;
+        }
+        if (hasPending) { cloudPush(); return; }   // genuine unsynced local work
         if (cloudHas) {
           applyBlob(d);
           setSyncPill("Saved", "saved");
