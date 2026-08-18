@@ -218,7 +218,8 @@
   .agency-link:hover { color: var(--text-secondary); }
   .com-row { display: flex; align-items: center; gap: 8px; }
   .com-note { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
-  .com-note.warn { color: #c2790a; }
+  /* Warnings are full sentences, so let them wrap instead of overflowing the row. */
+  .com-note.warn { color: #c2790a; white-space: normal; max-width: 240px; line-height: 1.35; }
   td.struck { text-decoration: line-through; color: var(--text-muted); }
 
   /* ---------- Goal bar ---------- */
@@ -1090,15 +1091,19 @@
     return null;
   }
   // returns { rate, base, bonus, bonusIncluded, verify } or null
+  // Returns a rate, or { miss: <reason> } explaining why it couldn't price this.
+  // A silent blank was hiding real money: a deal typed as "Banner"/"Term" instead
+  // of "Banner Life"/"Beyond Term" simply never calculated, and nothing said so.
   function compLookup(carrier, product, level) {
-    if (!carrier || !product || level == null || level === "") return null;
+    if (!carrier || !product) return { miss: "incomplete" };   // still being typed
+    if (level == null || level === "") return { miss: "level" };
     var ckey = findCarrierKey(carrier);
-    if (!ckey) return null;
+    if (!ckey) return { miss: "carrier" };
     var c = COMP_CARRIERS[ckey];
     var pkey = findProductKey(c, product);
-    if (!pkey) return null;
+    if (!pkey) return { miss: "product" };
     var li = COMP_LEVELS.indexOf(parseInt(level, 10));
-    if (li < 0) return null;
+    if (li < 0) return { miss: "level" };
     var pv = c.products[pkey];                       // array of rates, or { r:[...], noPlus:true }
     var rates = Array.isArray(pv) ? pv : pv.r;
     var noPlus = !Array.isArray(pv) && !!pv.noPlus;  // product opts out of its carrier's +5
@@ -1126,7 +1131,19 @@
   function recalcCommission() {
     var note = $("comNote");
     var info = compLookup($("d-carrier").value, $("d-policy").value, getSetting("contractLevel"));
-    if (!info) { if (note) { note.textContent = ""; note.className = "com-note"; } return; }
+    if (!info || info.miss) {
+      // Say why there's no rate instead of leaving the field blank and hoping the
+      // person notices. "incomplete" just means they haven't finished typing yet.
+      if (note) {
+        var msg = "";
+        if (info && info.miss === "carrier") msg = "\u26a0 carrier not in comp guide \u2014 enter commission manually";
+        else if (info && info.miss === "product") msg = "\u26a0 product not in comp guide \u2014 check spelling or enter manually";
+        else if (info && info.miss === "level") msg = "\u26a0 set your contract level in Settings to auto-calculate";
+        note.textContent = msg;
+        note.className = "com-note" + (msg ? " warn" : "");
+      }
+      return;
+    }
     var ap = num($("d-ap").value);
     var comEl = $("d-com");
     if (ap != null && (comEl.value === "" || comAutoFilled)) {
