@@ -623,8 +623,12 @@
       (IMPLIES[key] || []).forEach(function (k) { chipState[k] = true; });
     } else {
       // Clearing a step also clears anything built on top of it, so you can't leave
-      // a presentation checked on a call that's no longer a 5+ min convo.
+      // a presentation checked on a call that's no longer a 5+ min convo. Sold is the
+      // one deliberate exception: plenty of sales close without a formal presentation
+      // step (a quick reinstatement, a referral that just needs a signature), so
+      // unchecking Presentation shouldn't take Sold down with it.
       METRICS.forEach(function (m) {
+        if (m.key === "sold" && key === "presentation") return;
         if ((IMPLIES[m.key] || []).indexOf(key) > -1) chipState[m.key] = false;
       });
     }
