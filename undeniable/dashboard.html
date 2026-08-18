@@ -459,15 +459,28 @@
     var isNow = currentMonth === ymOf(todayStr());
     var today = isNow ? new Date().getDate() : daysIn;
 
-    // cumulative issued AP by day of month
-    var cum = [], run = 0;
-    for (var day = 1; day <= daysIn; day++) {
+    // The true total -- same figure the Issued AP tile above uses -- so the two
+    // numbers on this page can never disagree. Deriving "current progress" only
+    // from the day-by-day walk below broke this: a deal issued a few days from
+    // now (data entered ahead of the actual date, or just typo'd) made the walk
+    // stop before ever reaching it, silently dropping it from the total rather
+    // than just from the chart's shape.
+    var run = monthStats(currentMonth).iss;
+
+    // Cumulative issued AP by day, for the shape of the line only -- capped at
+    // "today" since days beyond that haven't happened yet in a real pace sense.
+    var cum = [], plotted = 0;
+    for (var day = 1; day <= Math.min(today, daysIn); day++) {
       var ds = currentMonth + "-" + String(day).padStart(2, "0");
-      run += sum(pnl.deals.filter(function (d) { return effectiveIssuedYm(d) === currentMonth && (d.issuedDate || d.date) === ds; }),
-                 function (d) { return d.ap; });
-      cum.push(run);
-      if (day >= today) break;
+      plotted += sum(pnl.deals.filter(function (d) { return effectiveIssuedYm(d) === currentMonth && (d.issuedDate || d.date) === ds; }),
+                     function (d) { return d.ap; });
+      cum.push(plotted);
     }
+    if (!cum.length) cum = [0];
+    // Any gap between the day-by-day walk and the true total (a deal dated past
+    // "today", or with no issued date at all) still has to show up somewhere --
+    // fold it into today's point so the dot and the headline number always match.
+    if (plotted < run) cum[cum.length - 1] = run;
 
     var W = 520, H = 205, PL = 54, PR = 16, PT = 12, PB = 26;
     var iw = W - PL - PR, ih = H - PT - PB;
