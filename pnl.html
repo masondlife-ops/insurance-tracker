@@ -336,6 +336,12 @@
   .sync-pill.saved { color: var(--good); border-color: var(--good); }
   .sync-pill.err { color: var(--danger); border-color: var(--danger); }
 
+  /* ---------- Requirements flag ---------- */
+  .reqs-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
+               background: rgba(194,121,10,0.16); color: #c2790a; vertical-align: 1px; }
+  :root[data-theme="dark"] .reqs-chip { color: #f5b451; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reqs-chip { color: #f5b451; } }
+
   /* ---------- Hub tab bar ---------- */
   .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
   .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
@@ -440,6 +446,7 @@
           <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
           <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
           <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
+          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-reqs"> Requirements</label></div>
         </div>
       </div>
 
@@ -828,6 +835,7 @@
         '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
         "<td>" + esc(d.lead) + "</td>" +
         '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
+          (!isCrossIn && d.reqs ? ' <span class="reqs-chip" title="Requirements outstanding">REQS</span>' : "") +
           (isCrossIn
             ? '<div class="issued-sub">Submitted ' + shortMonth(String(d.date || "").slice(0, 7)) + "</div>"
             : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
@@ -1194,6 +1202,7 @@
     $("d-status").value = d.status || "Submitted";
     $("d-issued-date").value = d.issuedDate || "";
     $("d-inforce").checked = !!d.inforce;
+    $("d-reqs").checked = !!d.reqs;
     $("d-notes").value = d.notes || "";
     $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
     $("dealSubmit").textContent = "Save changes";
@@ -1201,7 +1210,7 @@
     // Never hide populated fields mid-edit -- if this deal has anything in the
     // secondary set, show it rather than making them hunt for it.
     if (d.face != null || d.monthly != null || d.com != null || d.lead ||
-        d.issuedDate || d.inforce || d.notes) setDealMoreOpen(true, false);
+        d.issuedDate || d.inforce || d.notes || d.reqs) setDealMoreOpen(true, false);
     updateProductList();
     recalcCommission();
     $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1223,6 +1232,7 @@
       status: $("d-status").value,
       issuedDate: $("d-issued-date").value,
       inforce: $("d-inforce").checked,
+      reqs: $("d-reqs").checked,
       notes: $("d-notes").value.trim()
     };
     if (editingId) {
@@ -1382,9 +1392,9 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","In force","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","In force","Requirements","Notes"]);
     deals.forEach(function (d) {
-      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.inforce ? "Y" : "N", d.notes]);
+      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.inforce ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
     });
     rows.push([]);
     rows.push(["EXPENSES"]);
@@ -1488,6 +1498,7 @@
             status: headerIndex(lower, ["status", "app status"]),
             issuedDate: headerIndex(lower, ["issued date", "issued", "date issued"]),
             inforce: headerIndex(lower, ["in force", "in force (y/n)", "inforce"]),
+            reqs: headerIndex(lower, ["requirements", "reqs"]),
             notes: headerIndex(lower, ["notes", "note"])
           };
           return;
@@ -1526,6 +1537,7 @@
             status: get("status") || "Submitted",
             issuedDate: normDate(get("issuedDate")) || "",
             inforce: /^(y|yes|true|1)/i.test(get("inforce")),
+            reqs: /^(y|yes|true|1)/i.test(get("reqs")),
             notes: get("notes")
           });
           addedDeals++; lastDate = date;
