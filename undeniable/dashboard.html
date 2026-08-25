@@ -194,6 +194,8 @@
   .st-chip.pend { background: rgba(194,121,10,0.14); color: #c2790a; }
   .reqs-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
                background: rgba(194,121,10,0.16); color: #c2790a; margin-left: 4px; }
+  .unpaid-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
+                 background: var(--series-1-soft); color: var(--series-1); margin-left: 4px; white-space: nowrap; }
   :root[data-theme="dark"] .reqs-chip { color: #f5b451; }
   @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .reqs-chip { color: #f5b451; } }
   :root[data-theme="dark"] .st-chip.pend { color: #f5b451; }
@@ -389,37 +391,51 @@
   function renderFollowUps() {
     var now = new Date(todayStr() + "T12:00:00");
     var DEAD = { Declined: 1, Cancelled: 1, Chargeback: 1 };
-    var open = pnl.deals.filter(function (d) {
-      if (DEAD[d.status]) return false;
-      return d.status === "Submitted" || d.status === "Pending" || d.reqs;
-    })
+    // Commissions never land the day a policy issues, so an unpaid deal only
+    // becomes worth flagging once it has been sitting a few days.
+    var GRACE_DAYS = 4;
+    // Age is measured from whatever is actually being waited on: for an unpaid
+    // issued deal that is the issue date, not the day it was submitted. So the
+    // days have to be computed before we can decide what belongs in the list.
+    var open = pnl.deals.filter(function (d) { return !DEAD[d.status]; })
       .map(function (d) {
-        return { d: d, days: Math.max(0, daysBetween(new Date(ymOf(d.date) === "" ? todayStr() : d.date + "T12:00:00"), now)) };
+        var unpaid = d.status === "Issued" && !d.paid;
+        var since = (unpaid && d.issuedDate) ? d.issuedDate : d.date;
+        var days = Math.max(0, daysBetween(new Date(ymOf(since) === "" ? todayStr() : since + "T12:00:00"), now));
+        return { d: d, days: days, unpaid: unpaid && days >= GRACE_DAYS };
+      })
+      .filter(function (o) {
+        var d = o.d;
+        return d.status === "Submitted" || d.status === "Pending" || d.reqs || o.unpaid;
       })
       .sort(function (a, b) { return b.days - a.days; });
 
     var total = sum(open.map(function (o) { return o.d; }), function (d) { return d.ap; });
     var stale = open.filter(function (o) { return o.days >= STALE_DAYS; }).length;
     var reqsCount = open.filter(function (o) { return o.d.reqs; }).length;
+    var unpaidCount = open.filter(function (o) { return o.unpaid; }).length;
 
     var badge = $("fuBadge");
     badge.textContent = open.length;
     badge.className = "fu-badge" + (stale ? "" : " calm");
     $("fuSum").innerHTML = open.length
       ? "<b>" + money(total) + "</b> AP open &middot; <b>" + stale + "</b> over a week" +
-        (reqsCount ? " &middot; <b>" + reqsCount + "</b> waiting on requirements" : "")
+        (reqsCount ? " &middot; <b>" + reqsCount + "</b> waiting on requirements" : "") +
+        (unpaidCount ? " &middot; <b>" + unpaidCount + "</b> issued but not paid" : "")
       : "";
 
     $("fuBody").innerHTML = open.length ? open.map(function (o) {
       var d = o.d;
       var cls = o.days >= STALE_DAYS ? "hot" : o.days >= 4 ? "warm" : "ok";
       var reqs = d.reqs ? ' <span class="reqs-chip" title="Requirements outstanding">REQS</span>' : "";
+      var unpaid = o.unpaid
+        ? ' <span class="unpaid-chip" title="Issued, commission not received yet">NOT PAID</span>' : "";
       return "<tr>" +
         "<td>" + (d.client || "—") + "</td>" +
         '<td style="color:var(--text-secondary)">' + [d.carrier, d.policy].filter(Boolean).join(" · ") + "</td>" +
         '<td class="num">' + (d.ap == null ? "—" : money(d.ap)) + "</td>" +
         '<td class="num"><span class="age ' + cls + '">' + o.days + " day" + (o.days === 1 ? "" : "s") + "</span></td>" +
-        '<td><span class="st-chip' + (d.status === "Pending" ? " pend" : "") + '">' + d.status + "</span>" + reqs + "</td>" +
+        '<td><span class="st-chip' + (d.status === "Pending" ? " pend" : "") + '">' + d.status + "</span>" + reqs + unpaid + "</td>" +
       "</tr>";
     }).join("")
       : '<tr><td colspan="5" class="dash-empty">Nothing waiting on a decision — every deal is closed out.</td></tr>';
