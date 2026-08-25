@@ -335,6 +335,9 @@
   .sync-pill.saved { color: var(--good); border-color: var(--good); }
   .sync-pill.err { color: var(--danger); border-color: var(--danger); }
 
+  .paid-yes { color: var(--good); font-weight: 700; }
+  .paid-no { color: var(--text-muted); }
+
   /* ---------- Requirements flag ---------- */
   .reqs-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
                background: rgba(194,121,10,0.16); color: #c2790a; vertical-align: 1px; }
@@ -470,7 +473,7 @@
           <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
           <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
           <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
-          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-inforce"> In force</label></div>
+          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-paid"> Paid</label></div>
           <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-reqs"> Requirements</label></div>
         </div>
       </div>
@@ -514,7 +517,7 @@
           <tr>
             <th>Date</th><th>Client</th><th>Product</th><th>Carrier</th>
             <th class="num">Face</th><th class="num">Monthly</th><th class="num">AP</th><th class="num">Com</th>
-            <th>Lead type</th><th>Status</th><th>In force</th><th>Notes</th><th></th>
+            <th>Lead type</th><th>Status</th><th>Paid</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="dealsBody"></tbody>
@@ -864,7 +867,7 @@
             ? '<div class="issued-sub">Submitted ' + shortMonth(String(d.date || "").slice(0, 7)) + "</div>"
             : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
                 (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(String(effectiveIssuedYm(d) || "")) : "") + "</div>" : "")) + "</td>" +
-        "<td>" + (isCrossIn ? "—" : (d.inforce ? "Y" : "—")) + "</td>" +
+        "<td>" + (isCrossIn ? "—" : (d.paid ? '<span class="paid-yes" title="Commission received">&#10003;</span>' : '<span class="paid-no" title="Not paid yet">&mdash;</span>')) + "</td>" +
         '<td class="notes">' + (isCrossIn ? "" : esc(d.notes)) + "</td>" +
         "<td>" + actions + "</td></tr>";
     }
@@ -1225,7 +1228,7 @@
     $("d-lead").value = d.lead || "";
     $("d-status").value = d.status || "Submitted";
     $("d-issued-date").value = d.issuedDate || "";
-    $("d-inforce").checked = !!d.inforce;
+    $("d-paid").checked = !!d.paid;
     $("d-reqs").checked = !!d.reqs;
     $("d-notes").value = d.notes || "";
     $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
@@ -1234,7 +1237,7 @@
     // Never hide populated fields mid-edit -- if this deal has anything in the
     // secondary set, show it rather than making them hunt for it.
     if (d.face != null || d.monthly != null || d.com != null || d.lead ||
-        d.issuedDate || d.inforce || d.notes || d.reqs) setDealMoreOpen(true, false);
+        d.issuedDate || d.paid || d.notes || d.reqs) setDealMoreOpen(true, false);
     updateProductList();
     recalcCommission();
     $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
@@ -1255,7 +1258,7 @@
       lead: $("d-lead").value.trim(),
       status: $("d-status").value,
       issuedDate: $("d-issued-date").value,
-      inforce: $("d-inforce").checked,
+      paid: $("d-paid").checked,
       reqs: $("d-reqs").checked,
       notes: $("d-notes").value.trim()
     };
@@ -1416,9 +1419,9 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","In force","Requirements","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","Paid","Requirements","Notes"]);
     deals.forEach(function (d) {
-      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.inforce ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
+      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.paid ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
     });
     rows.push([]);
     rows.push(["EXPENSES"]);
@@ -1521,7 +1524,7 @@
             lead: headerIndex(lower, ["lead type", "lead"]),
             status: headerIndex(lower, ["status", "app status"]),
             issuedDate: headerIndex(lower, ["issued date", "issued", "date issued"]),
-            inforce: headerIndex(lower, ["in force", "in force (y/n)", "inforce"]),
+            paid: headerIndex(lower, ["paid", "paid (y/n)", "commission paid"]),
             reqs: headerIndex(lower, ["requirements", "reqs"]),
             notes: headerIndex(lower, ["notes", "note"])
           };
@@ -1560,7 +1563,7 @@
             lead: get("lead"),
             status: get("status") || "Submitted",
             issuedDate: normDate(get("issuedDate")) || "",
-            inforce: /^(y|yes|true|1)/i.test(get("inforce")),
+            paid: /^(y|yes|true|1)/i.test(get("paid")),
             reqs: /^(y|yes|true|1)/i.test(get("reqs")),
             notes: get("notes")
           });
