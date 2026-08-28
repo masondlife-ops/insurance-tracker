@@ -779,6 +779,11 @@
   function saveTileHidden(o) {
     try { localStorage.setItem(TILES_KEY, JSON.stringify(Object.keys(o).filter(function (k) { return o[k]; }))); } catch (e) {}
   }
+  // Cached: this node is moved into the settings panel, which clears itself
+  // with innerHTML = "" on each open. An id lookup after that finds nothing.
+  var tilesPopNode = null;
+  function tilesPop() { if (!tilesPopNode) tilesPopNode = $("tilesPop"); return tilesPopNode; }
+
   function buildTilesPop() {
     var hidden = tileHiddenSet();
     var defs = window.__pnlAllTiles || [];
@@ -792,14 +797,14 @@
         "<span>" + t.label + "</span></label>";
     });
     html += '<div class="hint">Just changes what you see on this device.</div>';
-    $("tilesPop").innerHTML = html;
+    tilesPop().innerHTML = html;
   }
   // Picking an action closes the settings panel -- otherwise it sits open over
   // the download or file picker that just fired.
   $("morePop").addEventListener("click", function (ev) {
     if (ev.target.tagName === "BUTTON" && window.HubSettings) HubSettings.close();
   });
-  $("tilesPop").addEventListener("change", function (ev) {
+  tilesPop().addEventListener("change", function (ev) {
     var el = ev.target;
     if (!el.matches || !el.matches('input[type="checkbox"]')) return;
     var hidden = tileHiddenSet();
@@ -1858,32 +1863,36 @@
 
   /* ---------- contract level + agency belong in Settings ---------- */
   if (window.HubSettings) {
+    // These sections MOVE live nodes into the panel so the handlers already bound
+    // to them keep working. Hold the references here rather than re-querying by
+    // id on each render: the panel clears itself with innerHTML = "" every time
+    // it opens, which detaches these nodes from the document. A second open
+    // would then look them up and find nothing.
+    var contractRowEl = $("contractRow"), agencyRowEl = $("agencyRow");
+    var morePopEl = $("morePop");
+
     HubSettings.register({
       title: "Deals & PNL",
       render: function (wrap) {
-        // Move the live nodes rather than clone them, so the handlers and ids
-        // wired up above keep working exactly as before.
-        wrap.appendChild($("contractRow"));
-        wrap.appendChild($("agencyRow"));
+        wrap.appendChild(contractRowEl);
+        wrap.appendChild(agencyRowEl);
       }
     });
     HubSettings.register({
       title: "Stat tiles",
       render: function (wrap) {
         buildTilesPop();                       // repopulate from current state
-        var pop = $("tilesPop");
-        pop.classList.add("in-settings");
-        pop.classList.remove("show");
-        wrap.appendChild(pop);                 // moved, so its change handler survives
+        tilesPop().classList.add("in-settings");
+        tilesPop().classList.remove("show");
+        wrap.appendChild(tilesPop());
       }
     });
     HubSettings.register({
       title: "Data",
       render: function (wrap) {
-        var pop = $("morePop");
-        pop.classList.add("in-settings");
-        pop.classList.remove("show");
-        wrap.appendChild(pop);
+        morePopEl.classList.add("in-settings");
+        morePopEl.classList.remove("show");
+        wrap.appendChild(morePopEl);
       }
     });
   }

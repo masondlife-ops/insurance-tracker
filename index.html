@@ -1511,13 +1511,15 @@
   }
 
   if (window.HubSettings && window.HubOutcomes) {
+    // Held rather than re-queried: the panel clears with innerHTML = "" on every
+    // open, which detaches this node, so a second open would find nothing.
+    var morePopEl = $("morePop");
     HubSettings.register({
       title: "Data",
       render: function (wrap) {
-        var pop = $("morePop");
-        pop.classList.add("in-settings");
-        pop.classList.remove("show");
-        wrap.appendChild(pop);              // moved, so its handlers survive
+        morePopEl.classList.add("in-settings");
+        morePopEl.classList.remove("show");
+        wrap.appendChild(morePopEl);
       }
     });
     HubSettings.register({

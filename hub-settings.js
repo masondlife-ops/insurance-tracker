@@ -17,6 +17,11 @@
   var els = {};
 
   var CSS = [
+    // Log out now lives in the Account section of this panel. Hiding the header
+    // box from HERE is deliberate: if this module ever fails to load, the header
+    // button stays visible rather than leaving no way to sign out.
+    ".acct-box, .acct-box.show { display: none !important; }",
+    ".hs-sec #logoutBtn { margin-top: 2px; }",
     ".hs-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:80;display:none;}",
     ".hs-backdrop.show{display:block;}",
     ".hs-panel{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);z-index:81;",
@@ -224,6 +229,31 @@
     built = true;
   }
 
+  // Every page has a Log out button in its header. Rather than each page
+  // registering its own section, move the live button in here -- it keeps the
+  // sign-out handler the page already bound to it, and pages that have no such
+  // button (or aren't signed in) simply get no section.
+  var logoutBtnEl = null;
+  function accountSection(body) {
+    // Cached on first sight: once moved in here the button is detached by the
+    // panel's own innerHTML = "" on the next open, so re-querying by id would
+    // find nothing and the section would silently vanish.
+    if (!logoutBtnEl) logoutBtnEl = document.getElementById("logoutBtn");
+    var btn = logoutBtnEl;
+    if (!btn) return;
+    var box = document.getElementById("acctBox");
+    // acct-box only gets .show once signed in; no point offering Log out before that.
+    if (box && !box.classList.contains("show")) return;
+
+    var wrap = el("div", "hs-sec");
+    wrap.appendChild(el("h3", null, "Account"));
+    var email = document.getElementById("acctEmail");
+    var addr = email && email.textContent.trim();
+    if (addr) wrap.appendChild(el("div", "hs-note", "Signed in as " + addr));
+    wrap.appendChild(btn);
+    body.appendChild(wrap);
+  }
+
   function render() {
     build();
     els.body.innerHTML = "";
@@ -237,6 +267,7 @@
       }
       els.body.appendChild(wrap);
     });
+    accountSection(els.body);
     els.sync.textContent = global.HubPrefs.isSynced()
       ? "Saved to your account — these settings follow you to any device."
       : "Saved on this device only. Run supabase-prefs-setup.sql to sync them to your account.";
