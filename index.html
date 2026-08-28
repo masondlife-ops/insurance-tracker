@@ -140,6 +140,11 @@
     font-weight: 500;
   }
   .btn:active { transform: translateY(1px); }
+  /* Superseded by Settings > Appearance > Theme -- the header switch was a
+     second control for the same preference. Hidden rather than deleted:
+     every page mounts the settings gear relative to this element, and
+     updateThemeBtn() still writes to it. */
+  .theme-toggle { display: none !important; }
   .theme-toggle {
     position: relative;
     width: 30px; height: 16px;
@@ -285,6 +290,10 @@
   #morePop.show { display: block; }
   #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
   #morePop button:hover { background: var(--page); }
+  /* The popover is MOVED into the settings panel rather than rebuilt, so the
+     handlers already bound to its buttons keep working. */
+  #morePop.in-settings { position: static; display: flex; flex-wrap: wrap; gap: 8px;
+    min-width: 0; background: none; border: none; box-shadow: none; padding: 0; z-index: auto; }
   #moreBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
   #moreBackdrop.show { display: block; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
@@ -353,7 +362,6 @@
       </div>
       <input type="file" id="importFile" accept=".csv,text/csv" hidden>
       <div class="side-controls">
-        <button class="mini" id="moreGear" type="button" title="Import, export">&#8942;</button>
         <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
         <span class="sync-pill" id="syncPill" style="display:none"></span>
         <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="mini" id="logoutBtn">Log out</button></div>
@@ -1504,6 +1512,15 @@
 
   if (window.HubSettings && window.HubOutcomes) {
     HubSettings.register({
+      title: "Data",
+      render: function (wrap) {
+        var pop = $("morePop");
+        pop.classList.add("in-settings");
+        pop.classList.remove("show");
+        wrap.appendChild(pop);              // moved, so its handlers survive
+      }
+    });
+    HubSettings.register({
       title: "Call outcomes",
       render: function (wrap) {
         var list = document.createElement("div");
@@ -1614,18 +1631,11 @@
     });
   }
 
-  function openMorePop() {
-    var r = $("moreGear").getBoundingClientRect();
-    var pop = $("morePop");
-    pop.style.top = (r.bottom + 6) + "px";
-    pop.style.right = (window.innerWidth - r.right) + "px";
-    pop.style.left = "auto";
-    pop.classList.add("show"); $("moreBackdrop").classList.add("show");
-  }
-  function closeMorePop() { $("morePop").classList.remove("show"); $("moreBackdrop").classList.remove("show"); }
-  $("moreGear").addEventListener("click", function () { $("morePop").classList.contains("show") ? closeMorePop() : openMorePop(); });
-  $("moreBackdrop").addEventListener("click", closeMorePop);
-  $("morePop").addEventListener("click", function (ev) { if (ev.target.tagName === "BUTTON") closeMorePop(); });
+  // Picking an action closes the settings panel, which would otherwise sit over
+  // the file picker or download that just fired.
+  $("morePop").addEventListener("click", function (ev) {
+    if (ev.target.tagName === "BUTTON" && window.HubSettings) HubSettings.close();
+  });
 
   /* ---------------- Boot ---------------- */
   function renderAll() {

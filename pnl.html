@@ -180,6 +180,11 @@
     background: transparent; border-color: var(--baseline); color: var(--text-secondary);
     padding: 5px 10px; font-size: 14px; line-height: 1;
   }
+  /* Superseded by Settings > Appearance > Theme -- the header switch was a
+     second control for the same preference. Hidden rather than deleted:
+     every page mounts the settings gear relative to this element, and
+     updateThemeBtn() still writes to it. */
+  .theme-toggle { display: none !important; }
   .theme-toggle {
     position: relative;
     width: 30px; height: 16px;
