@@ -57,7 +57,10 @@
   header h1 { font-size: 20px; font-weight: 650; }
   header .sub { color: var(--text-muted); font-size: 13px; }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .month-nav { display: flex; align-items: center; gap: 4px; }
+  .month-nav { display: flex; align-items: center; gap: 2px; padding: 2px;
+               border: 1px solid var(--border); background: var(--surface-1); border-radius: 9px; }
+  .month-nav .btn.icon { border-color: transparent; background: transparent; padding: 4px 9px; }
+  .month-nav .btn.icon:hover:not(:disabled) { background: var(--page); }
   .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
   .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--card-shadow, none); }
   .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
@@ -97,7 +100,7 @@
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
-  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  #acctEmail { display: none; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
   .mini:hover { color: var(--text-primary); }
 
@@ -128,22 +131,9 @@
   .note { font-size: 12.5px; color: var(--text-muted); }
 
   /* ---------- Inevitable HQ branding ---------- */
-  .brandbar { display: flex; align-items: center; gap: 18px; background: #000; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 20px; }
-  .brand-logo { height: 84px; width: auto; flex: none; display: block; }
-  .brand-copy { min-width: 0; }
-  .brand-hi { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
-  .brand-user { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: #f0f0f0; }
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .brand-user { background: linear-gradient(180deg,#ffffff 0%,#d2d2d2 45%,#8e8e8e 62%,#ededed 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
-  }
-  .brand-tag { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #6f6f6f; margin-top: 5px; }
-  @media (max-width: 640px) {
-    .brandbar { gap: 12px; padding: 12px 14px; }
-    .brand-logo { height: 58px; }
-    .brand-user { font-size: 20px; }
-    .brand-tag { display: none; }
-  }
+  /* Matches the root pages: just the mark, no dark hero panel, no name block. */
+  .brandbar { display: flex; align-items: center; padding: 2px 0 12px; }
+  .brand-logo { height: 36px; width: auto; display: block; }
 </style>
 </head>
 <body>
@@ -162,11 +152,6 @@
 <div class="wrap">
   <div class="brandbar">
     <img class="brand-logo" src="logo.png" alt="Inevitable HQ">
-    <div class="brand-copy">
-      <div class="brand-hi">Welcome</div>
-      <div class="brand-user">SexyBeast69</div>
-      <div class="brand-tag">Built different. Proven always.</div>
-    </div>
   </div>
   <nav class="hub-tabs">
     <a href="dashboard.html" class="hub-tab">Dashboard</a>

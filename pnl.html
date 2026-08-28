@@ -96,7 +96,10 @@
   header h1 { font-size: 20px; font-weight: 650; }
   header .sub { color: var(--text-muted); font-size: 13px; }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-  .month-nav { display: flex; align-items: center; gap: 4px; }
+  .month-nav { display: flex; align-items: center; gap: 2px; padding: 2px;
+               border: 1px solid var(--border); background: var(--surface-1); border-radius: 9px; }
+  .month-nav .btn.icon { border-color: transparent; background: transparent; padding: 4px 9px; }
+  .month-nav .btn.icon:hover:not(:disabled) { background: var(--page); }
   .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
   .card {
     background: var(--surface-1);
@@ -117,6 +120,13 @@
   #tilesPop label.locked { opacity: .55; cursor: default; }
   #tilesPop input[type="checkbox"] { width: 16px; height: 16px; flex: none; cursor: pointer; }
   #tilesPop .hint { font-size: 11.5px; color: var(--text-muted); margin-top: 9px; line-height: 1.4; }
+  /* Both popovers are MOVED into the settings panel rather than rebuilt, so every
+     handler already bound to them keeps working. This just undoes the floating
+     styling once they are sitting inline in a settings section. */
+  #tilesPop.in-settings, #morePop.in-settings { position: static; display: block; min-width: 0;
+    background: none; border: none; box-shadow: none; padding: 0; z-index: auto; }
+  #tilesPop.in-settings h3 { display: none; }
+  #morePop.in-settings { display: flex; flex-wrap: wrap; gap: 8px; }
   #tilesBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
   #tilesBackdrop.show { display: block; }
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
@@ -337,8 +347,9 @@
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
   .toolbar { justify-content: space-between; }
-  .side-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  .side-controls { display: flex; align-items: center; gap: 6px; margin-left: auto;
+                   padding-left: 10px; border-left: 1px solid var(--border); }
+  #acctEmail { display: none; }
   #morePop { position: fixed; z-index: 200; min-width: 170px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 8px; display: none; }
   #morePop.show { display: block; }
   #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
@@ -410,7 +421,6 @@
       <input type="file" id="importFile" accept=".csv,text/csv" style="display:none">
       <input type="file" id="restoreFile" accept=".json" style="display:none">
       <div class="side-controls">
-        <button class="mini" id="moreGear" type="button" title="Export, import, backup, restore">&#8942;</button>
         <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
         <span class="sync-pill" id="syncPill" style="display:none"></span>
         <div class="acct-box" id="acctBox"><span id="acctEmail"></span><button class="mini" id="logoutBtn">Log out</button></div>
@@ -418,9 +428,6 @@
     </div>
   </header>
 
-  <div class="tiles-head">
-    <button class="mini" id="tilesGear" type="button" title="Choose which stat tiles to show">&#9881; Customize tiles</button>
-  </div>
   <div class="tiles" id="tiles"></div>
 
   <div class="card" id="goalCard">
@@ -782,31 +789,11 @@
     html += '<div class="hint">Just changes what you see on this device.</div>';
     $("tilesPop").innerHTML = html;
   }
-  function openTilesPop() {
-    buildTilesPop();
-    var r = $("tilesGear").getBoundingClientRect();
-    var pop = $("tilesPop");
-    pop.style.top = (r.bottom + 6) + "px";
-    pop.style.right = (window.innerWidth - r.right) + "px";
-    pop.style.left = "auto";
-    pop.classList.add("show"); $("tilesBackdrop").classList.add("show");
-  }
-  function closeTilesPop() { $("tilesPop").classList.remove("show"); $("tilesBackdrop").classList.remove("show"); }
-  $("tilesGear").addEventListener("click", function () { $("tilesPop").classList.contains("show") ? closeTilesPop() : openTilesPop(); });
-
-  function openMorePop() {
-    var r = $("moreGear").getBoundingClientRect();
-    var pop = $("morePop");
-    pop.style.top = (r.bottom + 6) + "px";
-    pop.style.right = (window.innerWidth - r.right) + "px";
-    pop.style.left = "auto";
-    pop.classList.add("show"); $("moreBackdrop").classList.add("show");
-  }
-  function closeMorePop() { $("morePop").classList.remove("show"); $("moreBackdrop").classList.remove("show"); }
-  $("moreGear").addEventListener("click", function () { $("morePop").classList.contains("show") ? closeMorePop() : openMorePop(); });
-  $("moreBackdrop").addEventListener("click", closeMorePop);
-  $("morePop").addEventListener("click", function (ev) { if (ev.target.tagName === "BUTTON") closeMorePop(); });
-  $("tilesBackdrop").addEventListener("click", closeTilesPop);
+  // Picking an action closes the settings panel -- otherwise it sits open over
+  // the download or file picker that just fired.
+  $("morePop").addEventListener("click", function (ev) {
+    if (ev.target.tagName === "BUTTON" && window.HubSettings) HubSettings.close();
+  });
   $("tilesPop").addEventListener("change", function (ev) {
     var el = ev.target;
     if (!el.matches || !el.matches('input[type="checkbox"]')) return;
@@ -1873,6 +1860,25 @@
         // wired up above keep working exactly as before.
         wrap.appendChild($("contractRow"));
         wrap.appendChild($("agencyRow"));
+      }
+    });
+    HubSettings.register({
+      title: "Stat tiles",
+      render: function (wrap) {
+        buildTilesPop();                       // repopulate from current state
+        var pop = $("tilesPop");
+        pop.classList.add("in-settings");
+        pop.classList.remove("show");
+        wrap.appendChild(pop);                 // moved, so its change handler survives
+      }
+    });
+    HubSettings.register({
+      title: "Data",
+      render: function (wrap) {
+        var pop = $("morePop");
+        pop.classList.add("in-settings");
+        pop.classList.remove("show");
+        wrap.appendChild(pop);
       }
     });
   }

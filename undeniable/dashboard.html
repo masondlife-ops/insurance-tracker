@@ -96,7 +96,7 @@
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
-  #acctEmail { font-size: 12px; color: var(--text-muted); }
+  #acctEmail { display: none; }
   .sync-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap; }
   .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
   .sync-pill.saved { color: var(--good); border-color: var(--good); }
@@ -137,22 +137,9 @@
   .pw-wrap { display: flex; gap: 6px; }
   .security-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--grid); }
   /* ---------- Inevitable HQ branding ---------- */
-  .brandbar { display: flex; align-items: center; gap: 18px; background: #000; border: 1px solid #2a2a2a; border-radius: 12px; padding: 14px 20px; }
-  .brand-logo { height: 84px; width: auto; flex: none; display: block; }
-  .brand-copy { min-width: 0; }
-  .brand-hi { font-size: 11px; letter-spacing: .22em; text-transform: uppercase; color: #8b8b8b; }
-  .brand-user { font-size: 26px; font-weight: 700; line-height: 1.15; margin-top: 2px; color: #f0f0f0; }
-  @supports (-webkit-background-clip: text) or (background-clip: text) {
-    .brand-user { background: linear-gradient(180deg,#ffffff 0%,#d2d2d2 45%,#8e8e8e 62%,#ededed 100%);
-      -webkit-background-clip: text; background-clip: text; color: transparent; -webkit-text-fill-color: transparent; }
-  }
-  .brand-tag { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: #6f6f6f; margin-top: 5px; }
-  @media (max-width: 640px) {
-    .brandbar { gap: 12px; padding: 12px 14px; }
-    .brand-logo { height: 58px; }
-    .brand-user { font-size: 20px; }
-    .brand-tag { display: none; }
-  }
+  /* Matches the root pages: just the mark, no dark hero panel, no name block. */
+  .brandbar { display: flex; align-items: center; padding: 2px 0 12px; }
+  .brand-logo { height: 36px; width: auto; display: block; }
 </style><style>
   /* ---------- dashboard ---------- */
   /* The Carrier-links shell this page is built on has no tile or table styling,
@@ -226,11 +213,6 @@
 <div class="wrap" id="dashRoot">
   <div class="brandbar">
     <img class="brand-logo" src="logo.png" alt="Inevitable HQ">
-    <div class="brand-copy">
-      <div class="brand-hi">Welcome</div>
-      <div class="brand-user">SexyBeast69</div>
-      <div class="brand-tag">Built different. Proven always.</div>
-    </div>
   </div>
   <nav class="hub-tabs">
     <a href="dashboard.html" class="hub-tab is-active">Dashboard</a>

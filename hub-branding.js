@@ -13,14 +13,24 @@
 (function (global) {
   "use strict";
 
-  // Just the mark -- no name/tagline text block, no dark panel. A small logo
-  // sitting above the tabs, nothing else.
+  // The logo anchors the page title rather than floating on a row of its own.
+  // The agency name sits small above the page name, so branding is present
+  // without taking over the <h1> -- otherwise every page is titled the same
+  // thing and only the highlighted tab says where you are.
   var CSS = [
-    ".brandbar { display: flex; align-items: center; padding: 2px 0 12px; }",
-    ".brand-logo { height: 36px; width: auto; display: block; }"
+    ".brandhead { display: flex; align-items: center; gap: 12px; min-width: 0; }",
+    ".brand-logo { height: 30px; width: auto; display: block; flex: none; }",
+    ".brand-eyebrow { font-size: 11.5px; letter-spacing: .04em; color: var(--text-muted); line-height: 1.2; }",
+    ".brandhead h1 { line-height: 1.15; }"
   ].join("\n");
 
   var baseTitle = null;
+
+  // The page's own title, read before anything can overwrite it. hub-settings
+  // rewrites this slot when a Hub name is set, so capturing it lazily later
+  // would capture the hub name instead of the page name.
+  var titleSlot = document.querySelector("[data-brand-name]");
+  var pageTitle = titleSlot ? titleSlot.textContent : null;
 
   function injectCss() {
     if (document.getElementById("hub-brand-css")) return;
@@ -37,10 +47,29 @@
     return n;
   }
 
+  // Unwind back to the plain header: drop the logo and eyebrow, lift the title
+  // block out of the wrapper, and put the page title back.
   function remove() {
-    var bar = document.getElementById("hubBrandbar");
-    if (bar && bar.parentNode) bar.parentNode.removeChild(bar);
+    var head = document.getElementById("hubBrandhead");
+    if (head && head.parentNode) {
+      var titleBlock = head.querySelector(".brand-titleblock");
+      if (titleBlock) {
+        titleBlock.classList.remove("brand-titleblock");
+        head.parentNode.insertBefore(titleBlock, head);
+      }
+      head.parentNode.removeChild(head);
+    }
+    var eye = document.getElementById("hubBrandEyebrow");
+    if (eye && eye.parentNode) eye.parentNode.removeChild(eye);
+    var slot = document.querySelector("[data-brand-name]");
+    if (slot && pageTitle != null && !nameFromPrefs()) slot.textContent = pageTitle;
     if (baseTitle !== null) document.title = baseTitle;
+  }
+
+  // A Hub name set in Settings still wins over the agency name.
+  function nameFromPrefs() {
+    try { return (global.HubPrefs && global.HubPrefs.get("brandName", null)) || null; }
+    catch (e) { return null; }
   }
 
   var API = {
@@ -54,24 +83,45 @@
       if (!cfg || !cfg.logoUrl) { remove(); return; }
 
       injectCss();
-      var wrap = document.querySelector(".wrap");
-      if (!wrap) return;
+      var slot = document.querySelector("[data-brand-name]");
+      var titleBlock = slot ? slot.parentNode : null;
+      if (!titleBlock || !titleBlock.parentNode) return;
 
-      var bar = document.getElementById("hubBrandbar");
-      if (!bar) {
-        bar = el("div", "brandbar");
-        bar.id = "hubBrandbar";
-        wrap.insertBefore(bar, wrap.firstChild);
+      var head = document.getElementById("hubBrandhead");
+      if (!head) {
+        head = el("div", "brandhead");
+        head.id = "hubBrandhead";
+        titleBlock.parentNode.insertBefore(head, titleBlock);
+        titleBlock.classList.add("brand-titleblock");
+        head.appendChild(titleBlock);
       }
-      bar.innerHTML = "";
 
-      var img = el("img", "brand-logo");
+      var img = document.getElementById("hubBrandLogo");
+      if (!img) {
+        img = el("img", "brand-logo");
+        img.id = "hubBrandLogo";
+        head.insertBefore(img, head.firstChild);
+      }
+      // A broken logo would leave a torn box next to the title -- drop the
+      // whole treatment and fall back to the plain header instead.
+      img.onerror = function () { remove(); };
       img.src = cfg.logoUrl;
       img.alt = cfg.name || "";
-      // A broken logo means there's nothing left to show -- drop the whole bar
-      // rather than leave a torn-looking empty box sitting above the tabs.
-      img.onerror = function () { remove(); };
-      bar.appendChild(img);
+
+      // Agency name above the page name; the page name goes back in the <h1>.
+      var label = nameFromPrefs() || cfg.name || "";
+      var eye = document.getElementById("hubBrandEyebrow");
+      if (label) {
+        if (!eye) {
+          eye = el("div", "brand-eyebrow");
+          eye.id = "hubBrandEyebrow";
+          titleBlock.insertBefore(eye, titleBlock.firstChild);
+        }
+        eye.textContent = label;
+      } else if (eye && eye.parentNode) {
+        eye.parentNode.removeChild(eye);
+      }
+      if (pageTitle != null) slot.textContent = pageTitle;
 
       if (cfg.name) document.title = cfg.name + " — " + baseTitle;
       if (cfg.accent) {

@@ -178,7 +178,16 @@
     captureOriginal();
     var name = global.HubPrefs.get("brandName", null);
     var slot = document.querySelector("[data-brand-name]");
-    if (slot) slot.textContent = name || originalBrandText;
+    // When a logo is showing, the header has an eyebrow above the page title --
+    // the hub name belongs there, and the <h1> stays the page name. Without a
+    // logo there's nowhere else to put it, so it takes over the title as before.
+    var eyebrow = document.getElementById("hubBrandEyebrow");
+    if (eyebrow) {
+      if (name) eyebrow.textContent = name;
+      if (slot) slot.textContent = originalBrandText;
+    } else if (slot) {
+      slot.textContent = name || originalBrandText;
+    }
   }
 
   function hexToSoft(hex) {
