@@ -268,7 +268,24 @@
   th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
   td { border-bottom: 1px solid var(--grid); }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  td.notes { white-space: normal; min-width: 140px; max-width: 260px; color: var(--text-secondary); }
+  td.notes { max-width: 210px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+             color: var(--text-secondary); font-size: 12.5px; }
+  /* Notes are the first thing to go when the window is too narrow -- the full
+     text is still one click away in the row detail, and a clipped column is
+     not worth reintroducing sideways scrolling for. */
+  @media (max-width: 1040px) {
+    #dealsTable th:nth-child(9), #dealsTable td.notes { display: none; }
+  }
+  .cp-sub { font-size: 12px; color: var(--text-muted); }
+  .dd-chev { display: inline-block; color: var(--text-muted); font-size: 11px; cursor: pointer; user-select: none;
+             transition: transform .12s ease; }
+  tr.deal-row { cursor: pointer; }
+  tr.deal-row.open .dd-chev { transform: rotate(90deg); }
+  tr.deal-detail > td { background: rgba(127,127,127,0.05); }
+  .dd-grid { display: flex; flex-wrap: wrap; gap: 6px 26px; padding: 4px 0 6px; }
+  .dd-grid > div { display: flex; gap: 7px; align-items: baseline; font-size: 13px; }
+  .dd-k { color: var(--text-muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; }
+  .dd-v { color: var(--text-primary); white-space: normal; }
   tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--baseline); }
   .status-chip {
     display: inline-block; font-size: 12px; font-weight: 600;
@@ -515,9 +532,9 @@
       <table id="dealsTable">
         <thead>
           <tr>
-            <th>Date</th><th>Client</th><th>Product</th><th>Carrier</th>
-            <th class="num">Face</th><th class="num">Monthly</th><th class="num">AP</th><th class="num">Com</th>
-            <th>Lead type</th><th>Status</th><th>Paid</th><th>Notes</th><th></th>
+            <th></th><th>Date</th><th>Client</th><th>Carrier / product</th>
+            <th class="num">AP</th><th class="num">Com</th>
+            <th>Status</th><th>Paid</th><th>Notes</th><th></th>
           </tr>
         </thead>
         <tbody id="dealsBody"></tbody>
@@ -851,16 +868,30 @@
             '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
             '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
           "</div>";
-      return "<tr" + (isCrossIn ? ' class="cross-in"' : "") + ">" +
+      // Face, monthly, lead type and notes moved into a detail row that opens on
+      // click. Thirteen columns never fit, and sideways scrolling to read your
+      // own deals is worse than one click to see the secondary numbers.
+      var detailBits = [
+        ["Face", money(d.face)],
+        ["Monthly", money(d.monthly)],
+        ["Lead type", esc(d.lead) || "&mdash;"],
+        ["Issued", d.issuedDate ? fmtDay(d.issuedDate) : "&mdash;"],
+        ["Notes", esc(d.notes) || "&mdash;"]
+      ];
+      var detail = isCrossIn ? "" :
+        '<tr class="deal-detail" hidden><td></td><td colspan="9"><div class="dd-grid">' +
+        detailBits.map(function (b) {
+          return '<div><span class="dd-k">' + b[0] + '</span><span class="dd-v">' + b[1] + "</span></div>";
+        }).join("") + "</div></td></tr>";
+
+      return "<tr" + (isCrossIn ? ' class="cross-in"' : ' class="deal-row"') + ">" +
+        "<td>" + (isCrossIn ? "" : '<span class="dd-chev" title="Show details">&#9656;</span>') + "</td>" +
         "<td>" + fmtDay(isCrossIn ? d.issuedDate : d.date) + "</td>" +
         "<td>" + esc(d.client) + "</td>" +
-        "<td>" + esc(d.policy) + "</td>" +
-        "<td>" + esc(d.carrier) + "</td>" +
-        '<td class="num">' + (isCrossIn ? "—" : money(d.face)) + "</td>" +
-        '<td class="num">' + (isCrossIn ? "—" : money(d.monthly)) + "</td>" +
+        "<td>" + esc(d.carrier) +
+          (d.policy ? '<div class="cp-sub">' + esc(d.policy) + "</div>" : "") + "</td>" +
         '<td class="num">' + (isCrossIn ? "—" : money(d.ap)) + "</td>" +
         '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
-        "<td>" + esc(d.lead) + "</td>" +
         '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
           (!isCrossIn && d.reqs ? ' <span class="reqs-chip" title="Requirements outstanding">REQS</span>' : "") +
           (isCrossIn
@@ -868,22 +899,36 @@
             : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
                 (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(String(effectiveIssuedYm(d) || "")) : "") + "</div>" : "")) + "</td>" +
         "<td>" + (isCrossIn ? "—" : (d.paid ? '<span class="paid-yes" title="Commission received">&#10003;</span>' : '<span class="paid-no" title="Not paid yet">&mdash;</span>')) + "</td>" +
-        '<td class="notes">' + (isCrossIn ? "" : esc(d.notes)) + "</td>" +
-        "<td>" + actions + "</td></tr>";
+        '<td class="notes"' + (!isCrossIn && d.notes ? ' title="' + esc(d.notes) + '"' : "") + ">" +
+          (isCrossIn ? "" : esc(d.notes)) + "</td>" +
+        "<td>" + actions + "</td></tr>" + detail;
     }
 
     body.innerHTML = deals.map(function (d) { return row(d, false); }).join("") +
       crossIn.map(function (d) { return row(d, true); }).join("");
 
+    // Row click opens the detail row. Buttons inside the row keep their own
+    // behaviour -- editing or deleting must not also toggle the drawer.
+    if (!body._ddBound) {
+      body._ddBound = true;
+      body.addEventListener("click", function (ev) {
+        if (ev.target.closest("button, a, input")) return;
+        var tr = ev.target.closest("tr.deal-row");
+        if (!tr) return;
+        var det = tr.nextElementSibling;
+        if (!det || !det.classList.contains("deal-detail")) return;
+        det.hidden = !det.hidden;
+        tr.classList.toggle("open", !det.hidden);
+      });
+    }
+
     var foot = $("dealsFoot");
     var totalRows = deals.length + crossIn.length;
     if (totalRows) {
       foot.innerHTML = "<tr><td colspan=\"4\">Total</td>" +
-        '<td class="num">' + money(sum(deals, function (d) { return d.face; })) + "</td>" +
-        '<td class="num">' + money(sum(deals, function (d) { return d.monthly; })) + "</td>" +
         '<td class="num">' + money(sum(deals, function (d) { return d.ap; })) + "</td>" +
         '<td class="num">' + money(sum(deals.concat(crossIn).filter(function (d) { return effectiveIssuedYm(d) === currentMonth; }), earnedCom)) + "</td>" +
-        '<td colspan="5"></td></tr>';
+        '<td colspan="4"></td></tr>';
     } else foot.innerHTML = "";
 
     $("dealsEmpty").style.display = totalRows ? "none" : "";
