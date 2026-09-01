@@ -571,11 +571,16 @@
       $("k-funnel").innerHTML = "";
       return;
     }
-    var top = Math.max(steps[0].v, 1);
+    // Scale to the largest step, not to dials. Dials can legitimately be zero --
+    // someone logs calls without ever entering a dial count -- and anchoring the
+    // scale to a number smaller than the steps below it pushes every one of
+    // those bars past the width of the chart, taking its count label with it.
+    var top = 1;
+    steps.forEach(function (st) { if (st.v > top) top = st.v; });
     var W = 1100, rowH = 42, H = steps.length * rowH + 8, PL = 118, PR = 118, iw = W - PL - PR;
     var s = mk("c-funnel", W, H);
     steps.forEach(function (st, i) {
-      var y = 5 + i * rowH, w = st.v / top * iw;
+      var y = 5 + i * rowH, w = Math.min(st.v / top * iw, iw);
       tx(s, PL - 10, y + 17, st.k, { anchor:"end", size:12, fill:"var(--text-secondary)" });
       s.appendChild(e("rect", { x:PL, y:y, width:Math.max(w,3), height:24, rx:4, fill:"var(--series-1)", opacity:(1 - i*0.11).toFixed(2) }));
       tx(s, PL + Math.max(w,3) + 8, y + 17, st.v.toLocaleString(), { size:12.5, fill:"var(--text-primary)", weight:600 });
