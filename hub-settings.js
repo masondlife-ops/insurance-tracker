@@ -258,7 +258,9 @@
     build();
     els.body.innerHTML = "";
     themeSection(els.body);
-    sections.forEach(function (s) {
+    sections.slice().sort(function (a, b) {
+      return (a.order == null ? 50 : a.order) - (b.order == null ? 50 : b.order);
+    }).forEach(function (s) {
       var wrap = el("div", "hs-sec");
       wrap.appendChild(el("h3", null, s.title));
       try { s.render(wrap); } catch (e) {
@@ -278,6 +280,9 @@
 
   global.HubSettings = {
     /* Page-specific section: {title, render(containerEl)} */
+    /* Optional `order` keeps the panel in the same sequence on every page --
+       otherwise sections appear in whatever order the scripts happened to load.
+       Lower sorts first; anything without one lands in the middle. */
     register: function (s) { if (s && s.title && typeof s.render === "function") sections.push(s); },
     open: open,
     close: close,

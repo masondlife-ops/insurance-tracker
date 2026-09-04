@@ -628,6 +628,9 @@
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
+<script src="hub-outcomes.js"></script>
+<script src="hub-outcomes-ui.js"></script>
+<script src="hub-contract.js"></script>
 <script>
 (function () {
   "use strict";
@@ -1167,7 +1170,15 @@
   }
 
   // settings (lazy; persists via save() and cloud sync)
-  function getSetting(k) { return (state.settings || {})[k]; }
+  function getSetting(k) {
+    // Contract level moved to HubPrefs so every page can edit it. Read through
+    // the shared module, which falls back to whatever is still stored here.
+    if (k === "contractLevel" && window.HubContract) {
+      var v = HubContract.get();
+      if (v != null && v !== "") return v;
+    }
+    return (state.settings || {})[k];
+  }
   function setSetting(k, v) { state.settings = state.settings || {}; state.settings[k] = v; save(); }
 
   function updateProductList() {
@@ -1220,12 +1231,21 @@
   }
 
   (function initContractLevel() {
+    // Hand the stored value to the shared module. If prefs has nothing yet this
+    // is the migration -- it adopts this level and writes it up, so an existing
+    // user never has to set it again.
+    if (window.HubContract) {
+      HubContract.adoptLegacy((state.settings || {}).contractLevel);
+      HubContract.onChange(function () { recalcCommission(); refreshContractLevel(); });
+    }
     var sel = $("contractLevel");
+    if (!sel) return;
     COMP_LEVELS.forEach(function (l) {
       var o = document.createElement("option"); o.value = l; o.textContent = l; sel.appendChild(o);
     });
     sel.addEventListener("change", function () {
-      setSetting("contractLevel", this.value);
+      if (window.HubContract) HubContract.set(this.value);
+      else setSetting("contractLevel", this.value);
       recalcCommission();
     });
   })();
@@ -1936,7 +1956,8 @@
     HubSettings.register({
       title: "Deals & PNL",
       render: function (wrap) {
-        wrap.appendChild(contractRowEl);
+        // Agency membership only -- contract level is its own shared section
+        // now, shown on every page instead of just this one.
         wrap.appendChild(agencyRowEl);
       }
     });
@@ -1951,6 +1972,7 @@
     });
     HubSettings.register({
       title: "Data",
+      order: 80,
       render: function (wrap) {
         morePopEl.classList.add("in-settings");
         morePopEl.classList.remove("show");
