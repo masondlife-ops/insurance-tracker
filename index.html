@@ -117,7 +117,16 @@
                     color: var(--text-muted); white-space: nowrap; }
   .logbar input, .logbar select { font: inherit; font-size: 12.5px; color: var(--text-primary); background: var(--page);
             border: 1px solid var(--baseline); border-radius: 8px; padding: 6px 7px; flex: none; min-width: 0; }
-  .logbar #fTime { width: 172px; }
+  /* The datetime field is only ever "now" unless someone is back-filling, so it
+     collapses to a calendar button. The input itself stays in the DOM -- it holds
+     the value the save reads -- and the button shows the date whenever it is not
+     today, so a back-dated entry can never look like a normal one. */
+  .logbar #fTime { position: absolute; opacity: 0; pointer-events: none; width: 1px; height: 1px; }
+  .logbar .lb-date { font: inherit; font-size: 14px; line-height: 1; padding: 6px 9px; border-radius: 8px;
+                     border: 1px solid var(--baseline); background: var(--page); color: var(--text-secondary);
+                     cursor: pointer; flex: none; white-space: nowrap; }
+  .logbar .lb-date:hover { color: var(--text-primary); }
+  .logbar .lb-date.set { border-color: var(--series-1); color: var(--series-1); }
   .logbar #fLead { max-width: 122px; }
   .logbar #fState { width: 62px; }
   .logbar .lb-notes { flex: 1 1 90px; min-width: 90px; }
@@ -414,6 +423,7 @@
        dozens of times a day and never needed a form's worth of chrome. -->
   <section class="logbar">
     <span class="lb-lab">Log</span>
+    <button type="button" class="lb-date" id="fTimeBtn" title="Date and time of the call">&#128197;</button>
     <input type="datetime-local" id="fTime" title="Date and time">
     <select id="fLead" title="Lead type"></select>
     <select id="fState" title="State"></select>
@@ -615,8 +625,27 @@
 
   var DEFAULT_LEAD = "General Mortgage";
 
+  // Shows just a calendar unless the chosen day isn't today, in which case it
+  // says which day -- otherwise a back-dated call looks identical to a live one.
+  function refreshTimeBtn() {
+    var btn = $("fTimeBtn");
+    if (!btn) return;
+    var v = $("fTime").value;
+    var d = v ? new Date(v) : null;
+    var today = new Date();
+    var sameDay = d && d.toDateString() === today.toDateString();
+    if (!d || sameDay) {
+      btn.textContent = "\uD83D\uDCC5";
+      btn.classList.remove("set");
+    } else {
+      btn.textContent = "\uD83D\uDCC5 " + d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+      btn.classList.add("set");
+    }
+  }
+
   function resetForm() {
     $("fTime").value = toLocalInputValue(new Date());
+    refreshTimeBtn();
     $("fNotes").value = "";
     if (leadTypes.indexOf(DEFAULT_LEAD) > -1) $("fLead").value = DEFAULT_LEAD;
     $("fState").value = "N/A";
@@ -682,6 +711,18 @@
       box.appendChild(b);
     });
   }
+
+  // showPicker() is the supported way to open a native date picker from a
+  // button; focus+click is the fallback where it isn't available.
+  $("fTimeBtn").onclick = function () {
+    var inp = $("fTime");
+    try {
+      if (typeof inp.showPicker === "function") { inp.showPicker(); return; }
+    } catch (e) {}
+    inp.focus();
+    inp.click();
+  };
+  $("fTime").addEventListener("change", refreshTimeBtn);
 
   $("saveBtn").onclick = function () {
     var ts = $("fTime").value ? new Date($("fTime").value).toISOString() : new Date().toISOString();
