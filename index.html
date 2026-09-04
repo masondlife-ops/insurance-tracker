@@ -127,11 +127,11 @@
 
   /* ---------- Funnel: counts and the rate between steps, in one place ---------- */
   .funnel { display: flex; flex-direction: column; gap: 2px; }
-  .fn-row { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 14px; padding: 6px 0; }
+  .fn-row { display: grid; grid-template-columns: 128px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 6px 0; }
   .fn-name { font-size: 13px; color: var(--text-secondary); text-align: right; }
-  .fn-bar { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .fn-bar { min-width: 0; }
   .fn-track { height: 30px; border-radius: 7px; background: var(--series-1); display: flex; align-items: center;
-              padding-left: 11px; min-width: 44px; flex: none; }
+              padding-left: 11px; min-width: 44px; box-sizing: border-box; }
   .fn-track.end { background: var(--good); }
   .fn-track b { font-size: 15px; font-weight: 680; font-variant-numeric: tabular-nums; color: #fff; }
   .fn-conv { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
@@ -427,7 +427,7 @@
   <div class="tabs" id="tabs"></div>
 
   <section class="card">
-    <h2>Funnel <span class="fn-period" id="funnelPeriod"></span></h2>
+    <h2>Funnel</h2>
     <div class="funnel" id="funnel"></div>
     <div class="fn-note" id="funnelNote"></div>
   </section>
@@ -1089,6 +1089,11 @@
       track.appendChild(b);
       bar.appendChild(track);
 
+      row.appendChild(name);
+      row.appendChild(bar);
+
+      // Its own grid column, not inside the bar: a step at 100% width would
+      // otherwise have nowhere to put this and shove it off the card.
       if (prev) {
         var conv = document.createElement("div");
         conv.className = "fn-conv";
@@ -1099,11 +1104,8 @@
           var t = trendArrow(st.v, prev.v, st.bv, prev.bv, base.label);
           if (t) conv.innerHTML += " " + t;
         }
-        bar.appendChild(conv);
+        row.appendChild(conv);
       }
-
-      row.appendChild(name);
-      row.appendChild(bar);
       box.appendChild(row);
     });
 
@@ -1115,8 +1117,6 @@
     extras.push("<b>" + pct(sold, totalDials) + "</b> of dials became a sale");
     $("funnelNote").innerHTML = extras.join(" &middot; ");
 
-    var per = $("funnelPeriod");
-    if (per) per.textContent = base ? "vs " + base.label : "";
   }
 
   /* ---------------- Breakdown charts ---------------- */
