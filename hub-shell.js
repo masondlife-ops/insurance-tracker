@@ -131,7 +131,9 @@
     var scrim = el("div", "rail-scrim");
 
     var brand = el("div", "rail-brand");
-    brand.innerHTML = '<div class="rail-mark" id="shellMark">&bull;</div><div class="rail-name" id="shellName">Agent Hub</div>';
+    var BRAND_DEFAULT = '<div class="rail-mark" id="shellMark">&bull;</div>' +
+                        '<div class="rail-name" id="shellName">Agent Hub</div>';
+    brand.innerHTML = BRAND_DEFAULT;
     rail.appendChild(brand);
 
     var groups = {};
@@ -277,24 +279,46 @@
     };
 
     // Branding and account both arrive asynchronously after auth.
+    // These guards are load-bearing: sniff() writes into the rail, and the
+    // observer below watches the DOM. Without "only act on a change", every
+    // write would retrigger the observer and spin forever.
+    var lastName = null, lastLogo = null, lastUser = null;
+
     function sniff() {
       var eyebrow = document.getElementById("hubBrandEyebrow");
       var logo = document.getElementById("hubBrandLogo");
       var em = document.getElementById("acctEmail");
-      if (eyebrow && eyebrow.textContent.trim()) {
-        // Rail only. Repeating it as a crumb above the page title would be the
-        // third copy of the same name.
-        global.HubShell.setBrand(eyebrow.textContent.trim(), null);
+
+      var name = eyebrow && eyebrow.textContent.trim();
+      var src = logo && logo.getAttribute("src");
+      var mail = em && em.textContent.trim();
+
+      // Rail only -- echoing the agency name into the crumb would be a third
+      // copy of it, on top of the rail and the header.
+      // Branding gone means signed out, or no longer in an agency. Put the rail
+      // back to the default -- leaving the old logo up would show the next
+      // person on this browser which agency the last one belonged to.
+      if (!name && !src) {
+        if (lastName || lastLogo) {
+          lastName = lastLogo = null;
+          brand.innerHTML = BRAND_DEFAULT;
+        }
+        if (!mail && lastUser) { lastUser = null; global.HubShell.setUser(null, ""); }
+        return;
       }
-      if (logo && logo.src) global.HubShell.setBrand(null, logo.src);
-      if (em && em.textContent.trim()) global.HubShell.setUser(em.textContent.trim(), "");
+      if (name && name !== lastName) { lastName = name; global.HubShell.setBrand(name, null); }
+      if (src && src !== lastLogo) { lastLogo = src; global.HubShell.setBrand(null, src); }
+      if (mail && mail !== lastUser) { lastUser = mail; global.HubShell.setUser(mail, ""); }
     }
+
     sniff();
     // Branding lands whenever the auth round-trip finishes, which is not a time
-    // we can guess -- so watch for it rather than polling on a hopeful timer.
-    var bo = new MutationObserver(function () { sniff(); });
-    bo.observe(document.body, { childList: true, subtree: true, characterData: true });
-    setTimeout(sniff, 1200);   // belt and braces for anything set before we attached
+    // worth guessing at, so watch for it. Scoped to the topbar, which is where
+    // both the brand block and the account email live once the shell adopts the
+    // page header -- watching all of document.body would wake on every render.
+    var bo = new MutationObserver(sniff);
+    bo.observe(topbar, { childList: true, subtree: true, characterData: true });
+    setTimeout(sniff, 1200);   // covers anything set before the observer attached
   }
 
   // Build as soon as this script runs. It is a body script, so the nav and wrap
