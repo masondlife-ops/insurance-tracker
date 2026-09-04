@@ -56,6 +56,8 @@
     ".rail .nav.on { background: var(--series-1-soft); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--series-1); }",
     ".rail .nav svg { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }",
     ".rail-util { margin-top: auto; padding-top: 6px; }",
+    ".rail-sync { padding: 10px 10px 0; }",
+    ".rail-sync .sync-pill { display: block; width: 100%; text-align: center; font-size: 11px; }",
     ".rail-foot { padding-top: 13px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; min-width: 0; }",
     // Settings has a home in the rail now, so the floating gear is a second
     // door to the same room.
@@ -215,6 +217,19 @@
       }
       header.parentNode.removeChild(header);
     }
+    // The sync pill belongs with the account, not among the page actions. It is
+    // the live node the page already writes to, so moving it keeps every
+    // saving/saved/error update working untouched.
+    // Search `actions`, not the document: the header's controls have just been
+    // moved into the topbar, which is still detached at this point, so
+    // getElementById would not find them.
+    var pill = actions.querySelector("#syncPill") || document.getElementById("syncPill");
+    if (pill) {
+      var syncWrap = el("div", "rail-sync");
+      syncWrap.appendChild(pill);
+      rail.appendChild(syncWrap);
+    }
+
     var crumb = el("div", "crumb");
     crumb.id = "shellCrumb";
     titleBox.insertBefore(crumb, titleBox.firstChild);
