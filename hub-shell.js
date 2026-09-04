@@ -55,7 +55,11 @@
     ".rail .nav:hover { background: var(--rail-hover); color: var(--text-primary); }",
     ".rail .nav.on { background: var(--series-1-soft); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--series-1); }",
     ".rail .nav svg { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }",
-    ".rail-foot { margin-top: auto; padding-top: 13px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; min-width: 0; }",
+    ".rail-util { margin-top: auto; padding-top: 6px; }",
+    ".rail-foot { padding-top: 13px; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; min-width: 0; }",
+    // Settings has a home in the rail now, so the floating gear is a second
+    // door to the same room.
+    ".topbar #hubSettingsBtn { display: none !important; }",
     ".rail-av { width: 30px; height: 30px; border-radius: 50%; background: var(--grid); display: grid; place-items: center; font-size: 11px; font-weight: 700; color: var(--text-secondary); flex: none; }",
     ".rail-who { min-width: 0; }",
     ".rail-who b { display: block; font-size: 12.5px; font-weight: 600; }",
@@ -164,6 +168,25 @@
       made.push({ secEl: secEl, items: built });
     });
     nav.parentNode.removeChild(nav);   // drop the originals so ids resolve to the rail
+
+    // Settings sits at the bottom of the rail, away from the pages -- it is a
+    // destination you visit occasionally, not part of the daily rotation.
+    var util = el("div", "rail-util");
+    var setBtn = el("a", "nav");
+    setBtn.setAttribute("href", "#");
+    setBtn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/>' +
+      '<path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1A1.7 1.7 0 0 0 8.9 19a1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1A1.7 1.7 0 0 0 5 8.9a1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>' +
+      "<span>Settings</span>";
+    setBtn.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      // Prefer the API; fall back to the page's own gear in case this page
+      // mounted the panel after the shell was built.
+      if (global.HubSettings && typeof global.HubSettings.open === "function") global.HubSettings.open();
+      else { var g = document.getElementById("hubSettingsBtn"); if (g) g.click(); }
+      document.body.classList.remove("rail-open");   // close the drawer on mobile
+    });
+    util.appendChild(setBtn);
+    rail.appendChild(util);
 
     var foot = el("div", "rail-foot");
     foot.innerHTML = '<div class="rail-av" id="shellAv">?</div>' +
