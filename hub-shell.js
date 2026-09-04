@@ -67,6 +67,11 @@
     ".topbar .tb-title .crumb { font-size: 12px; color: var(--text-muted); }",
     ".topbar .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
     ".shell-main > .wrap { max-width: 1180px; margin: 0; padding: 20px 22px 40px; }",
+    // hub-branding.js puts the logo and agency name beside the page title. With
+    // the rail showing both, that is the same brand twice on one screen -- so
+    // inside the shell the header keeps only the page title.
+    ".topbar .brand-logo, .topbar .brand-eyebrow { display: none !important; }",
+    ".topbar .brandhead { gap: 0; }",
 
     ".burger { display: none; width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--baseline); background: transparent; cursor: pointer; flex: none; padding: 0; }",
     ".burger i { display: block; width: 15px; height: 1.8px; margin: 3.2px auto; background: var(--text-secondary); border-radius: 2px; }",
@@ -277,15 +282,19 @@
       var logo = document.getElementById("hubBrandLogo");
       var em = document.getElementById("acctEmail");
       if (eyebrow && eyebrow.textContent.trim()) {
+        // Rail only. Repeating it as a crumb above the page title would be the
+        // third copy of the same name.
         global.HubShell.setBrand(eyebrow.textContent.trim(), null);
-        global.HubShell.setCrumb(eyebrow.textContent.trim());
       }
       if (logo && logo.src) global.HubShell.setBrand(null, logo.src);
       if (em && em.textContent.trim()) global.HubShell.setUser(em.textContent.trim(), "");
     }
     sniff();
-    setTimeout(sniff, 900);
-    setTimeout(sniff, 2500);
+    // Branding lands whenever the auth round-trip finishes, which is not a time
+    // we can guess -- so watch for it rather than polling on a hopeful timer.
+    var bo = new MutationObserver(function () { sniff(); });
+    bo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    setTimeout(sniff, 1200);   // belt and braces for anything set before we attached
   }
 
   // Build as soon as this script runs. It is a body script, so the nav and wrap
