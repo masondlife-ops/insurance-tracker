@@ -281,6 +281,7 @@
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
   .dial-entry { display: flex; align-items: center; gap: 6px; }
+  .dial-entry .dial-tap { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
   .dial-entry input[type="date"] { width: 128px; }
   .dial-entry input[type="number"] { width: 68px; }
   .mini:hover { color: var(--text-primary); }
@@ -355,6 +356,7 @@
     <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
       <span class="saved-note" id="importNote"></span>
       <div class="dial-entry">
+        <button class="btn dial-tap" id="dialBtn" type="button" title="Adds 1 to today's dials">&#65291; Dial</button>
         <input type="date" id="dDate" title="Day">
         <input type="number" id="dCount" min="0" step="1" placeholder="Dials">
         <button class="mini" id="dialsSaveBtn">Save</button>
@@ -685,7 +687,25 @@
     var k = $("dDate").value;
     var existing = dials[k];
     $("dCount").value = existing != null ? existing : "";
+    updateDialBtn();
   }
+
+  // Always today, regardless of which day the date field is pointed at -- the
+  // button is for tapping while you dial, and silently adding to a day you were
+  // reviewing would be worse than useless.
+  function updateDialBtn() {
+    var b = $("dialBtn");
+    if (!b) return;
+    b.textContent = "\uFF0B Dial \u00b7 " + (dials[dateKey(new Date())] || 0) + " today";
+  }
+
+  $("dialBtn").addEventListener("click", function () {
+    var k = dateKey(new Date());
+    dials[k] = (dials[k] || 0) + 1;
+    save(DIALS_KEY, dials);   // save() already schedules the cloud push
+    refreshDialsForm();
+    renderAll();
+  });
 
   $("dialsSaveBtn").onclick = function () {
     var k = $("dDate").value;
