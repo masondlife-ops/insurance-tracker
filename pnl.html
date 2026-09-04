@@ -372,6 +372,24 @@
   .paid-yes { color: var(--good); font-weight: 700; }
   .paid-no { color: var(--text-muted); }
 
+  /* ---------- Add-a-deal slide-over ---------- */
+  .deal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 90; display: none; }
+  .deal-scrim.show { display: block; }
+  .deal-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(460px, 100%); z-index: 91;
+                background: var(--surface-1); border-left: 1px solid var(--border);
+                box-shadow: -10px 0 30px rgba(0,0,0,.35); overflow-y: auto; padding: 14px;
+                transform: translateX(100%); transition: transform .2s ease; }
+  .deal-sheet.show { transform: none; }
+  .deal-sheet > .card { border: none; box-shadow: none; padding: 4px; }
+  .deal-sheet .form-grid { grid-template-columns: 1fr 1fr; }
+  .deal-sheet .field .wide, .deal-sheet .field .narrow { width: 100%; }
+  .sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted);
+             font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+  .sheet-x:hover { color: var(--text-primary); }
+  .tb-add { font: inherit; font-size: 13px; font-weight: 600; padding: 6px 13px; border-radius: 8px;
+            border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
+
   /* ---------- Requirements flag ---------- */
   .reqs-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
                background: rgba(194,121,10,0.16); color: #c2790a; vertical-align: 1px; }
@@ -444,8 +462,13 @@
     <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
   </div>
 
+  <div class="deal-scrim" id="dealScrim"></div>
+  <aside class="deal-sheet" id="dealSheet">
   <div class="card">
-    <h2 id="dealFormTitle">Add a deal</h2>
+    <div class="sheet-head">
+      <h2 id="dealFormTitle">Add a deal</h2>
+      <button type="button" class="sheet-x" id="dealSheetClose" aria-label="Close">&times;</button>
+    </div>
     <form id="dealForm">
       <div class="form-grid">
         <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
@@ -512,6 +535,7 @@
     </div>
     </div>
   </div>
+  </aside>
 
   <div class="card">
     <h2>Deals <span class="hint" id="dealCount"></span></h2>
@@ -1213,6 +1237,23 @@
     return t.slice(0, 7) === currentMonth ? t : currentMonth + "-01";
   }
 
+  /* ---------- add-a-deal slide-over ----------
+     The form is the same live node it always was, just parked in a panel. That
+     keeps every handler, datalist and auto-calc wired exactly as before -- only
+     where it sits on screen changed. */
+  function openDealSheet() {
+    $("dealScrim").classList.add("show");
+    $("dealSheet").classList.add("show");
+    setTimeout(function () { var c = $("d-client"); if (c) c.focus(); }, 180);
+  }
+  function closeDealSheet() {
+    $("dealSheet").classList.remove("show");
+    $("dealScrim").classList.remove("show");
+    // Leaving a half-finished edit open would silently keep editingId set, so a
+    // later "Add deal" would overwrite that deal instead of creating one.
+    if (editingId) resetDealForm();
+  }
+
   function resetDealForm() {
     editingId = null;
     apAutoFilled = false;
@@ -1258,7 +1299,7 @@
         d.issuedDate || d.paid || d.notes || d.reqs) setDealMoreOpen(true, false);
     updateProductList();
     recalcCommission();
-    $("dealForm").scrollIntoView({ behavior: "smooth", block: "center" });
+    openDealSheet();
   }
 
   $("dealForm").addEventListener("submit", function (ev) {
@@ -1289,6 +1330,7 @@
     save();
     currentMonth = rec.date.slice(0, 7);
     resetDealForm();
+    closeDealSheet();
     render();
   });
 
@@ -1296,7 +1338,7 @@
     if (this.value === "Issued" && !$("d-issued-date").value) $("d-issued-date").value = todayStr();
   });
 
-    $("dealCancel").addEventListener("click", function () { resetDealForm(); });
+    $("dealCancel").addEventListener("click", function () { resetDealForm(); closeDealSheet(); });
 
   // auto-fill AP from monthly premium (AP = monthly × 12), then auto-calc commission
   // from the comp guide; neither ever overwrites a value the user typed themselves
@@ -1684,6 +1726,26 @@
   });
 
   if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
+
+  $("dealSheetClose").addEventListener("click", closeDealSheet);
+  $("dealScrim").addEventListener("click", closeDealSheet);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && $("dealSheet").classList.contains("show")) closeDealSheet();
+  });
+  // The primary action belongs in the topbar the shell builds. hub-shell.js runs
+  // after this inline script, so placement waits a tick; without the shell there
+  // is no topbar and the button falls back to sitting above the deals table.
+  function placeAddButton() {
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "tb-add"; b.textContent = "+ Add deal";
+    b.addEventListener("click", function () { resetDealForm(); openDealSheet(); });
+    if (window.HubShell && HubShell.actions) HubShell.actions.insertBefore(b, HubShell.actions.firstChild);
+    else document.querySelector(".wrap").insertBefore(b, document.getElementById("dealScrim"));
+  }
+  // DOMContentLoaded, not setTimeout(0): hub-shell.js is a body script parsed
+  // after this one, and a zero timer can fire before the parser reaches it.
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", placeAddButton);
+  else placeAddButton();
 
 
 
@@ -2137,5 +2199,6 @@
 </script>
 <!-- APP-END -->
 <script src="tabs-customize.js"></script>
+<script src="hub-shell.js"></script>
 </body>
 </html>
