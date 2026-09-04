@@ -109,16 +109,21 @@
   }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
   /* ---------- Compact call logger ---------- */
-  .logbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-            background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .logbar { display: flex; align-items: center; gap: 7px; flex-wrap: nowrap;
+            background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; }
+  /* One row wherever it genuinely fits; wrapping beats clipping below that. */
+  @media (max-width: 1220px) { .logbar { flex-wrap: wrap; } }
   .logbar .lb-lab { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
                     color: var(--text-muted); white-space: nowrap; }
-  .logbar input, .logbar select { font: inherit; font-size: 13px; color: var(--text-primary); background: var(--page);
-            border: 1px solid var(--baseline); border-radius: 8px; padding: 7px 9px; }
-  .logbar .lb-notes { flex: 1; min-width: 130px; }
-  .logbar .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
-  .logbar .chip { font-size: 13px; padding: 6px 12px; }
-  .logbar .btn { padding: 8px 16px; font-size: 13px; }
+  .logbar input, .logbar select { font: inherit; font-size: 12.5px; color: var(--text-primary); background: var(--page);
+            border: 1px solid var(--baseline); border-radius: 8px; padding: 6px 7px; flex: none; min-width: 0; }
+  .logbar #fTime { width: 172px; }
+  .logbar #fLead { max-width: 122px; }
+  .logbar #fState { width: 62px; }
+  .logbar .lb-notes { flex: 1 1 90px; min-width: 90px; }
+  .logbar .chips { display: flex; gap: 5px; flex-wrap: nowrap; margin: 0; flex: none; }
+  .logbar .chip { font-size: 12.5px; padding: 6px 10px; white-space: nowrap; }
+  .logbar .btn { padding: 7px 14px; font-size: 12.5px; flex: none; }
 
   /* ---------- Funnel: counts and the rate between steps, in one place ---------- */
   .funnel { display: flex; flex-direction: column; gap: 2px; }
@@ -408,7 +413,7 @@
   <!-- One action, one bar. Labels move into the controls themselves: this is used
        dozens of times a day and never needed a form's worth of chrome. -->
   <section class="logbar">
-    <span class="lb-lab">Log a call</span>
+    <span class="lb-lab">Log</span>
     <input type="datetime-local" id="fTime" title="Date and time">
     <select id="fLead" title="Lead type"></select>
     <select id="fState" title="State"></select>
@@ -667,7 +672,12 @@
       var b = document.createElement("button");
       b.type = "button";
       b.className = "chip" + (chipState[m.key] ? " on" : "");
-      b.textContent = (chipState[m.key] ? "✓ " : "") + (m.chipLabel || m.label);
+      // The bar is one row, and these two labels are what push it over. Only the
+      // built-ins are shortened -- a custom outcome keeps whatever it was named.
+      var full = m.chipLabel || m.label;
+      var SHORT = { appointment: "Appt", presentation: "Present." };
+      b.textContent = SHORT[m.key] || full;
+      if (SHORT[m.key]) b.title = full;
       b.onclick = function () { toggleChip(m.key); };
       box.appendChild(b);
     });
