@@ -45,7 +45,11 @@
     ".hub-tabs { display: none !important; }",
     ".shell { display: grid; grid-template-columns: var(--rail-w) 1fr; min-height: 100vh; }",
 
-    ".rail { background: var(--rail); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 14px 12px; gap: 3px; }",
+    // Sticky, not just tall: a grid item stretches to the height of the whole
+    // grid, so without an explicit viewport height and align-self it would
+    // scroll away with the page. Its own overflow keeps a long nav reachable.
+    ".rail { background: var(--rail); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 14px 12px; gap: 3px;",
+    "        position: sticky; top: 0; align-self: start; height: 100vh; overflow-y: auto; }",
     ".rail-brand { display: flex; align-items: center; gap: 10px; padding: 6px 8px 16px; min-width: 0; }",
     ".rail-mark { width: 30px; height: 30px; border-radius: 8px; background: linear-gradient(145deg, var(--series-1), #1d5fae); display: grid; place-items: center; font-weight: 700; font-size: 13px; color: #fff; flex: none; }",
     ".rail-logo { height: 28px; width: auto; max-width: 150px; display: block; }",
