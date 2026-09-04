@@ -108,6 +108,33 @@
     min-width: 130px;
   }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+  /* ---------- Compact call logger ---------- */
+  .logbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; }
+  .logbar .lb-lab { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+                    color: var(--text-muted); white-space: nowrap; }
+  .logbar input, .logbar select { font: inherit; font-size: 13px; color: var(--text-primary); background: var(--page);
+            border: 1px solid var(--baseline); border-radius: 8px; padding: 7px 9px; }
+  .logbar .lb-notes { flex: 1; min-width: 130px; }
+  .logbar .chips { display: flex; gap: 6px; flex-wrap: wrap; margin: 0; }
+  .logbar .chip { font-size: 13px; padding: 6px 12px; }
+  .logbar .btn { padding: 8px 16px; font-size: 13px; }
+
+  /* ---------- Funnel: counts and the rate between steps, in one place ---------- */
+  .funnel { display: flex; flex-direction: column; gap: 2px; }
+  .fn-row { display: grid; grid-template-columns: 128px 1fr; align-items: center; gap: 14px; padding: 6px 0; }
+  .fn-name { font-size: 13px; color: var(--text-secondary); text-align: right; }
+  .fn-bar { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .fn-track { height: 30px; border-radius: 7px; background: var(--series-1); display: flex; align-items: center;
+              padding-left: 11px; min-width: 44px; flex: none; }
+  .fn-track.end { background: var(--good); }
+  .fn-track b { font-size: 15px; font-weight: 680; font-variant-numeric: tabular-nums; color: #fff; }
+  .fn-conv { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .fn-conv b { color: var(--text-secondary); font-weight: 650; }
+  .fn-period { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+  .fn-note { font-size: 12.5px; color: var(--text-muted); margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--grid); }
+  .fn-note b { color: var(--text-secondary); }
+
   .chip {
     font: inherit; font-size: 14px;
     padding: 8px 14px;
@@ -217,10 +244,10 @@
   /* ---------- Breakdown charts ---------- */
   .chart-controls { display: flex; gap: 10px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
   .chart-controls .lbl { font-size: 13px; color: var(--text-muted); }
-  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 16px; }
-  .hbar-row { display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 16px; align-items: start; }
+  .hbar-row { display: grid; grid-template-columns: 104px 1fr 34px; align-items: center; gap: 8px; margin-bottom: 5px; }
   .hbar-name { font-size: 13px; color: var(--text-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
-  .hbar-track { position: relative; height: 18px; }
+  .hbar-track { position: relative; height: 14px; }
   .hbar-fill {
     position: absolute; left: 0; top: 0; bottom: 0;
     background: var(--series-1);
@@ -228,7 +255,7 @@
     min-width: 2px;
   }
   .hbar-val { font-size: 13px; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-  .cols { display: flex; align-items: flex-end; gap: 6px; height: 120px; border-bottom: 1px solid var(--baseline); padding: 0 4px; }
+  .cols { display: flex; align-items: flex-end; gap: 5px; height: 84px; border-bottom: 1px solid var(--baseline); padding: 0 4px; }
   .col-slot { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; position: relative; }
   .col-fill { width: 100%; max-width: 22px; background: var(--series-1); border-radius: 4px 4px 0 0; min-height: 2px; }
   .col-fill.zero { background: var(--grid); }
@@ -378,41 +405,26 @@
   </div>
 
   <!-- ============ LOG A CALL ============ -->
-  <section class="card">
-    <h2>Log a call</h2>
-    <div class="form-grid">
-      <div class="field">
-        <label for="fTime">Date &amp; time</label>
-        <input type="datetime-local" id="fTime">
-      </div>
-      <div class="field">
-        <label for="fLead">Lead type</label>
-        <select id="fLead"></select>
-      </div>
-      <div class="field">
-        <label for="fState">State</label>
-        <select id="fState"></select>
-      </div>
-      <div class="field" style="flex:1; min-width:160px;">
-        <label for="fNotes">Notes (optional)</label>
-        <input type="text" id="fNotes" placeholder="Client name, follow-up, etc." style="width:100%;">
-      </div>
-    </div>
+  <!-- One action, one bar. Labels move into the controls themselves: this is used
+       dozens of times a day and never needed a form's worth of chrome. -->
+  <section class="logbar">
+    <span class="lb-lab">Log a call</span>
+    <input type="datetime-local" id="fTime" title="Date and time">
+    <select id="fLead" title="Lead type"></select>
+    <select id="fState" title="State"></select>
     <div class="chips" id="chips"></div>
-    <div>
-      <button class="btn" id="saveBtn">Save call</button>
-      <span class="saved-note" id="savedNote">Saved ✓</span>
-    </div>
+    <input type="text" id="fNotes" placeholder="Notes" class="lb-notes">
+    <button class="btn" id="saveBtn">Save call</button>
+    <span class="saved-note" id="savedNote">Saved ✓</span>
   </section>
 
 <!-- ============ DASHBOARD ============ -->
   <div class="tabs" id="tabs"></div>
 
-  <div class="tiles" id="tiles"></div>
-
   <section class="card">
-    <h2>Conversion rates</h2>
-    <div class="rates" id="rates"></div>
+    <h2>Funnel <span class="fn-period" id="funnelPeriod"></span></h2>
+    <div class="funnel" id="funnel"></div>
+    <div class="fn-note" id="funnelNote"></div>
   </section>
 
   <section class="card">
@@ -906,20 +918,6 @@
     return rows.reduce(function (n, e) { return n + (e[key] ? 1 : 0); }, 0);
   }
 
-  function renderTiles(rows) {
-    var box = $("tiles");
-    box.innerHTML = "";
-    var defs = [{ key: "_dials", label: "Total dials" }].concat(METRICS);
-    defs.forEach(function (m) {
-      var v = m.key === "_dials" ? dialsInPeriod() : count(rows, m.key);
-      var t = document.createElement("div");
-      t.className = "tile";
-      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>';
-      t.querySelector(".t-label").textContent = m.label;
-      t.querySelector(".t-value").textContent = v;
-      box.appendChild(t);
-    });
-  }
 
   function rowsInRange(range) {
     return entries.filter(function (e) {
@@ -1031,58 +1029,84 @@
       (up ? "↑" : "↓") + " " + Math.abs(cur - base) + ' pts</span>';
   }
 
-  function renderRates(rows) {
-    var totalDials = dialsInPeriod();
-    var pickups = count(rows, "pickup");
-    var pres = count(rows, "presentation");
-    var sold = count(rows, "sold");
-    var appts = count(rows, "appointment");
 
+  /* ---------------- Funnel ----------------
+     Replaces the separate tiles row and Conversion rates card. Those showed the
+     same facts twice -- a count in one card, its rate in another -- so each step
+     now carries its own count and the rate from the step above it. */
+  function renderFunnel(rows) {
+    var totalDials = dialsInPeriod();
     var base = baselineForCurrent();
     var bRows = base ? base.rows : null;
     var prevDials = base ? base.dials : 0;
-    var pPickups = bRows ? count(bRows, "pickup") : 0;
-    var pPres = bRows ? count(bRows, "presentation") : 0;
-    var pSold = bRows ? count(bRows, "sold") : 0;
-    var pAppts = bRows ? count(bRows, "appointment") : 0;
 
-    function arrow(n, d, bn, bd) { return base ? trendArrow(n, d, bn, bd, base.label) : ""; }
-
-    var defs = [
-      { label: "Pickup rate", val: pct(pickups, totalDials), trend: arrow(pickups, totalDials, pPickups, prevDials) }
-    ];
-
-    // The funnel-step pairs (Pickup -> 2+ min -> 5+ min -> ... -> presentation) are
-    // derived from HubOutcomes so a custom step (e.g. "10+ min") shows up here without
-    // touching this function -- see hub-outcomes.js.
-    var pairs = window.HubOutcomes ? HubOutcomes.ratePairs() : [
-      { label: "Pickup to 2+ min", from: "pickup", to: "conv2" },
-      { label: "2+ min to 5+ min", from: "conv2", to: "conv5" },
-      { label: "5+ min to presentation", from: "conv5", to: "presentation" }
-    ];
-    pairs.forEach(function (p) {
-      var n = count(rows, p.to), d = count(rows, p.from);
-      var bn = bRows ? count(bRows, p.to) : 0, bd = bRows ? count(bRows, p.from) : 0;
-      defs.push({ label: p.label, val: pct(n, d), trend: arrow(n, d, bn, bd) });
+    // Only chain steps form the funnel. Appointments (chain:false) is a branch
+    // off it, not a stage everyone passes through, so it goes in the note.
+    var chain = METRICS.filter(function (m) { return m.chain !== false; });
+    var steps = [{ key: "_dials", label: "Dials", v: totalDials, bv: prevDials }];
+    chain.forEach(function (m) {
+      steps.push({
+        key: m.key, label: m.label, short: m.short || m.label,
+        v: count(rows, m.key),
+        bv: bRows ? count(bRows, m.key) : 0
+      });
     });
 
-    defs.push({ label: "Presentation rate", val: pct(pres, pickups), trend: arrow(pres, pickups, pPres, pPickups) });
-    defs.push({ label: "Close rate",        val: pct(sold, pres),    trend: arrow(sold, pres, pSold, pPres) });
-    defs.push({ label: "Appointment rate",  val: pct(appts, pickups), trend: arrow(appts, pickups, pAppts, pPickups) });
-    defs.push({ label: "Sold per dial",     val: pct(sold, totalDials), trend: arrow(sold, totalDials, pSold, prevDials) });
+    // Scale to the widest step, not to dials -- dials can legitimately be zero
+    // when someone logs calls without entering a dial count.
+    var top = 1;
+    steps.forEach(function (st) { if (st.v > top) top = st.v; });
 
-    var box = $("rates");
+    var box = $("funnel");
     box.innerHTML = "";
-    defs.forEach(function (d) {
-      var t = document.createElement("div");
-      t.className = "tile rate";
-      t.style.border = "none"; t.style.padding = "0"; t.style.background = "transparent";
-      t.innerHTML = '<div class="t-label"></div><div class="t-value"></div>' +
-        (d.trend ? '<div class="trend-row">' + d.trend + "</div>" : "");
-      t.querySelector(".t-label").textContent = d.label;
-      t.querySelector(".t-value").textContent = d.val;
-      box.appendChild(t);
+    steps.forEach(function (st, i) {
+      var prev = i ? steps[i - 1] : null;
+      var row = document.createElement("div");
+      row.className = "fn-row";
+
+      var name = document.createElement("div");
+      name.className = "fn-name";
+      name.textContent = st.label;
+
+      var bar = document.createElement("div");
+      bar.className = "fn-bar";
+
+      var track = document.createElement("div");
+      track.className = "fn-track" + (i === steps.length - 1 ? " end" : "");
+      track.style.width = Math.max(st.v / top * 100, 4) + "%";
+      var b = document.createElement("b");
+      b.textContent = st.v.toLocaleString();
+      track.appendChild(b);
+      bar.appendChild(track);
+
+      if (prev) {
+        var conv = document.createElement("div");
+        conv.className = "fn-conv";
+        // The label, not `short`: short is singular ("Pickup") and reads wrong
+        // as a denominator -- "63% of pickup".
+        conv.innerHTML = "<b>" + pct(st.v, prev.v) + "</b> of " + prev.label.toLowerCase();
+        if (base) {
+          var t = trendArrow(st.v, prev.v, st.bv, prev.bv, base.label);
+          if (t) conv.innerHTML += " " + t;
+        }
+        bar.appendChild(conv);
+      }
+
+      row.appendChild(name);
+      row.appendChild(bar);
+      box.appendChild(row);
     });
+
+    // Everything that isn't a funnel step: the off-chain outcomes, plus the one
+    // number that spans the whole thing.
+    var extras = METRICS.filter(function (m) { return m.chain === false; })
+      .map(function (m) { return m.label + " <b>" + count(rows, m.key) + "</b>"; });
+    var sold = count(rows, "sold");
+    extras.push("<b>" + pct(sold, totalDials) + "</b> of dials became a sale");
+    $("funnelNote").innerHTML = extras.join(" &middot; ");
+
+    var per = $("funnelPeriod");
+    if (per) per.textContent = base ? "vs " + base.label : "";
   }
 
   /* ---------------- Breakdown charts ---------------- */
@@ -1561,8 +1585,7 @@
   function renderAll() {
     var rows = filtered();
     renderTabs();
-    renderTiles(rows);
-    renderRates(rows);
+    renderFunnel(rows);
     renderCharts();
     renderLog(rows);
   }
