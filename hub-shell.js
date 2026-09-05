@@ -72,11 +72,14 @@
     ".rail-who span { display: block; font-size: 11px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }",
 
     ".shell-main { display: flex; flex-direction: column; min-width: 0; }",
-    ".topbar { display: flex; align-items: center; gap: 10px; padding: 11px 22px; border-bottom: 1px solid var(--border); background: var(--surface-1); flex-wrap: wrap; }",
+    ".topbar { border-bottom: 1px solid var(--border); background: var(--surface-1); }",
+    ".tb-inner { display: flex; align-items: center; gap: 10px; flex-wrap: wrap;\n                 width: 100%; max-width: 1560px; margin: 0 auto; padding: 11px 26px; }",
     ".topbar .tb-title h1 { font-size: 17px; font-weight: 650; margin: 0; }",
     ".topbar .tb-title .crumb { font-size: 12px; color: var(--text-muted); }",
     ".topbar .tb-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }",
-    ".shell-main > .wrap { max-width: 1180px; margin: 0; padding: 20px 22px 40px; }",
+    // Wider, and centred rather than pinned left: on a big screen the old cap
+    // left every bit of slack piled up on the right-hand side.
+    ".shell-main > .wrap { width: 100%; max-width: 1560px; margin: 0 auto; padding: 20px 26px 40px; }",
     // hub-branding.js puts the logo and agency name beside the page title. With
     // the rail showing both, that is the same brand twice on one screen -- so
     // inside the shell the header keeps only the page title.
@@ -94,7 +97,7 @@
     "  .rail-scrim { display: block; pointer-events: none; }",
     "  body.rail-open .rail-scrim { opacity: 1; pointer-events: auto; }",
     "  .shell-main > .wrap { padding: 14px 14px 34px; }",
-    "  .topbar { padding: 10px 14px; }",
+    "  .tb-inner { padding: 10px 14px; }",
     "}"
   ].join("\n");
 
@@ -200,16 +203,18 @@
     rail.appendChild(foot);
 
     var topbar = el("div", "topbar");
+    var tbInner = el("div", "tb-inner");
+    topbar.appendChild(tbInner);
     var burger = el("button", "burger");
     burger.type = "button";
     burger.setAttribute("aria-label", "Menu");
     burger.innerHTML = "<i></i><i></i><i></i>";
-    topbar.appendChild(burger);
+    tbInner.appendChild(burger);
 
     var titleBox = el("div", "tb-title");
-    topbar.appendChild(titleBox);
+    tbInner.appendChild(titleBox);
     var actions = el("div", "tb-actions");
-    topbar.appendChild(actions);
+    tbInner.appendChild(actions);
 
     // Adopt the page's own header: title block on the left, its controls right.
     var header = wrap.querySelector("header");
