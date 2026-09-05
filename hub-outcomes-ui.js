@@ -119,14 +119,6 @@
         notifyChanged();
       };
 
-      wrap.appendChild(Object.assign(document.createElement("div"), {
-        className: "hs-note",
-        textContent: "Inserts a step into your funnel -- for example a “10+ min” step between " +
-          "5+ min and Presentation. It shows up in Log a call, the tiles, and Conversion Rates " +
-          "(uncheck “Include in Conversion Rates” to keep tracking it as a chip/tile without adding " +
-          "it to the rates section). Personal to you -- it isn't shared with your agency's roll-up, " +
-          "since your teammates won't have it."
-      }));
     }
   });
 

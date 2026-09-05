@@ -78,10 +78,6 @@
           row.appendChild(sel);
           wrap.appendChild(row);
 
-          var note = document.createElement("div");
-          note.className = "hs-note";
-          note.textContent = "Used to work out commission on every deal. Applies to your account, so it follows you to any page or device.";
-          wrap.appendChild(note);
         }
       };
     }

@@ -130,8 +130,6 @@
     nrow.appendChild(name);
     wrap.appendChild(nrow);
 
-    wrap.appendChild(el("div", "hs-note",
-      "Applies across every tab on this account. Leave the name blank to use the default."));
     body.appendChild(wrap);
   }
 
@@ -270,9 +268,7 @@
       els.body.appendChild(wrap);
     });
     accountSection(els.body);
-    els.sync.textContent = global.HubPrefs.isSynced()
-      ? "Saved to your account — these settings follow you to any device."
-      : "Saved on this device only. Run supabase-prefs-setup.sql to sync them to your account.";
+    els.sync.textContent = "";
   }
 
   function open() { render(); els.backdrop.classList.add("show"); els.panel.classList.add("show"); }
