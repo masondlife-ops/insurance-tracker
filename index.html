@@ -137,19 +137,28 @@
   .logbar .chip { font-size: 12.5px; padding: 6px 10px; white-space: nowrap; }
   .logbar .btn { padding: 7px 14px; font-size: 12.5px; flex: none; }
 
-  /* ---------- Funnel: counts and the rate between steps, in one place ---------- */
-  .funnel { display: flex; flex-direction: column; gap: 2px; }
-  .fn-row { display: grid; grid-template-columns: 128px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 6px 0; }
-  .fn-name { font-size: 13px; color: var(--text-secondary); text-align: right; }
-  .fn-bar { min-width: 0; }
-  .fn-track { height: 30px; border-radius: 7px; background: var(--series-1); display: flex; align-items: center;
-              padding-left: 11px; min-width: 44px; box-sizing: border-box; }
-  .fn-track.end { background: var(--good); }
-  .fn-track b { font-size: 15px; font-weight: 680; font-variant-numeric: tabular-nums; color: #fff; }
-  .fn-conv { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
-  .fn-conv b { color: var(--text-secondary); font-weight: 650; }
-  .fn-period { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
-  .fn-note { font-size: 12.5px; color: var(--text-muted); margin-top: 12px; padding-top: 11px; border-top: 1px solid var(--grid); }
+  /* ---------- Funnel: a card per step, each carrying its own rate ---------- */
+  .funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
+  .fn-step { background: var(--page); border: 1px solid var(--border); border-radius: 10px;
+             padding: 12px 13px; position: relative; min-width: 0; }
+  .fn-step .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em;
+                font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fn-step .n { font-size: 25px; font-weight: 680; letter-spacing: -.02em; margin-top: 6px;
+                font-variant-numeric: tabular-nums; }
+  .fn-step.end .n { color: var(--good); }
+  .fn-step .r { font-size: 12px; color: var(--text-secondary); margin-top: 5px; font-weight: 600;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fn-step .r small { color: var(--text-muted); font-weight: 400; }
+  /* The chevron sits in the gutter between cards. Hidden on the last one, and
+     wherever the grid has wrapped -- an arrow pointing at a card on the next
+     line would be pointing at nothing. */
+  .fn-step .d { position: absolute; top: 50%; right: -8px; transform: translateY(-50%);
+                color: var(--baseline); font-size: 12px; line-height: 1; }
+  /* Once the grid wraps, a chevron on the last card of a line points at empty
+     space, so they come off below the width where six still fit on one row. */
+  @media (max-width: 1120px) { .fn-step .d { display: none; } }
+  .fn-note { font-size: 12.5px; color: var(--text-muted); margin-top: 13px; padding-top: 11px;
+             border-top: 1px solid var(--grid); }
   .fn-note b { color: var(--text-secondary); }
 
   .chip {
@@ -1117,42 +1126,42 @@
     box.innerHTML = "";
     steps.forEach(function (st, i) {
       var prev = i ? steps[i - 1] : null;
-      var row = document.createElement("div");
-      row.className = "fn-row";
+      var card = document.createElement("div");
+      card.className = "fn-step" + (i === steps.length - 1 ? " end" : "");
 
-      var name = document.createElement("div");
-      name.className = "fn-name";
-      name.textContent = st.label;
+      var l = document.createElement("div");
+      l.className = "l";
+      l.textContent = st.label;
+      l.title = st.label;
 
-      var bar = document.createElement("div");
-      bar.className = "fn-bar";
+      var n = document.createElement("div");
+      n.className = "n";
+      n.textContent = st.v.toLocaleString();
 
-      var track = document.createElement("div");
-      track.className = "fn-track" + (i === steps.length - 1 ? " end" : "");
-      track.style.width = Math.max(st.v / top * 100, 4) + "%";
-      var b = document.createElement("b");
-      b.textContent = st.v.toLocaleString();
-      track.appendChild(b);
-      bar.appendChild(track);
-
-      row.appendChild(name);
-      row.appendChild(bar);
-
-      // Its own grid column, not inside the bar: a step at 100% width would
-      // otherwise have nowhere to put this and shove it off the card.
+      var r = document.createElement("div");
+      r.className = "r";
       if (prev) {
-        var conv = document.createElement("div");
-        conv.className = "fn-conv";
         // The label, not `short`: short is singular ("Pickup") and reads wrong
         // as a denominator -- "63% of pickup".
-        conv.innerHTML = "<b>" + pct(st.v, prev.v) + "</b> of " + prev.label.toLowerCase();
+        r.innerHTML = pct(st.v, prev.v) + ' <small>of ' + prev.label.toLowerCase() + "</small>";
         if (base) {
           var t = trendArrow(st.v, prev.v, st.bv, prev.bv, base.label);
-          if (t) conv.innerHTML += " " + t;
+          if (t) r.innerHTML += " " + t;
         }
-        row.appendChild(conv);
+      } else {
+        r.innerHTML = "&nbsp;";
       }
-      box.appendChild(row);
+
+      card.appendChild(l);
+      card.appendChild(n);
+      card.appendChild(r);
+      if (i < steps.length - 1) {
+        var d = document.createElement("div");
+        d.className = "d";
+        d.innerHTML = "&#9656;";
+        card.appendChild(d);
+      }
+      box.appendChild(card);
     });
 
     // Everything that isn't a funnel step: the off-chain outcomes, plus the one
