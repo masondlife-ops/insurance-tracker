@@ -82,8 +82,8 @@
   }
   .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
   header { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
-  header h1 { font-size: 20px; font-weight: 650; }
-  header .sub { color: var(--text-muted); font-size: 13px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header .sub { color: var(--text-muted); font-size: 14px; }
   .card {
     background: var(--surface-1);
     border: 1px solid var(--border);
@@ -91,7 +91,7 @@
     padding: 16px;
     box-shadow: var(--card-shadow, none);
   }
-  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
 
   /* ---------- Log form ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -113,9 +113,9 @@
             background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; }
   /* One row wherever it genuinely fits; wrapping beats clipping below that. */
   @media (max-width: 1220px) { .logbar { flex-wrap: wrap; } }
-  .logbar .lb-lab { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  .logbar .lb-lab { font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
                     color: var(--text-muted); white-space: nowrap; }
-  .logbar input, .logbar select { font: inherit; font-size: 12.5px; color: var(--text-primary); background: var(--page);
+  .logbar input, .logbar select { font: inherit; font-size: 12px; color: var(--text-primary); background: var(--page);
             border: 1px solid var(--baseline); border-radius: 8px; padding: 6px 7px; flex: none; min-width: 0; }
   /* The datetime field is only ever "now" unless someone is back-filling, so it
      collapses to a calendar button. The input itself stays in the DOM -- it holds
@@ -134,16 +134,16 @@
   .logbar #fState { width: 62px; }
   .logbar .lb-notes { flex: 1 1 90px; min-width: 90px; }
   .logbar .chips { display: flex; gap: 5px; flex-wrap: nowrap; margin: 0; flex: none; }
-  .logbar .chip { font-size: 12.5px; padding: 6px 10px; white-space: nowrap; }
-  .logbar .btn { padding: 7px 14px; font-size: 12.5px; flex: none; }
+  .logbar .chip { font-size: 12px; padding: 6px 10px; white-space: nowrap; }
+  .logbar .btn { padding: 7px 14px; font-size: 12px; flex: none; }
 
   /* ---------- Funnel: a card per step, each carrying its own rate ---------- */
   .funnel { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; }
   .fn-step { background: var(--page); border: 1px solid var(--border); border-radius: 10px;
              padding: 12px 13px; position: relative; min-width: 0; }
-  .fn-step .l { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em;
+  .fn-step .l { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em;
                 font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .fn-step .n { font-size: 25px; font-weight: 680; letter-spacing: -.02em; margin-top: 6px;
+  .fn-step .n { font-size: 25px; font-weight: 600; letter-spacing: -.02em; margin-top: 6px;
                 font-variant-numeric: tabular-nums; }
   .fn-step.end .n { color: var(--good); }
   .fn-step .r { font-size: 12px; color: var(--text-secondary); margin-top: 5px; font-weight: 600;
@@ -157,7 +157,7 @@
   /* Once the grid wraps, a chevron on the last card of a line points at empty
      space, so they come off below the width where six still fit on one row. */
   @media (max-width: 1120px) { .fn-step .d { display: none; } }
-  .fn-note { font-size: 12.5px; color: var(--text-muted); margin-top: 13px; padding-top: 11px;
+  .fn-note { font-size: 12px; color: var(--text-muted); margin-top: 13px; padding-top: 11px;
              border-top: 1px solid var(--grid); }
   .fn-note b { color: var(--text-secondary); }
 
@@ -217,11 +217,11 @@
     width: 10px; height: 10px;
     border-radius: 50%;
     background: var(--text-muted);
-    transition: left .15s ease, background .15s ease;
+    transition: transform .15s ease, background .15s ease;
   }
   .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
-  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
-  .saved-note { color: var(--good); font-size: 13px; font-weight: 600; margin-left: 10px; opacity: 0; transition: opacity .3s; }
+  .theme-toggle.dark .knob { transform: translateX(14px); background: var(--text-secondary); }
+  .saved-note { color: var(--good); font-size: 14px; font-weight: 600; margin-left: 10px; opacity: 0; transition: opacity .3s; }
   .saved-note.show { opacity: 1; }
 
   /* ---------- Period tabs ---------- */
@@ -239,7 +239,7 @@
     background: var(--surface-1);
     border-color: var(--border);
     color: var(--text-primary);
-    font-weight: 650;
+    font-weight: 600;
   }
 
   /* ---------- Stat tiles ---------- */
@@ -251,15 +251,15 @@
     padding: 12px 14px;
   }
   .tile .t-label { font-size: 12px; color: var(--text-muted); }
-  .tile .t-value { font-size: 28px; font-weight: 650; margin-top: 2px; }
+  .tile .t-value { font-size: 28px; font-weight: 600; margin-top: 2px; }
   .rates { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
   .rate .t-value { font-size: 22px; }
-  .rate .t-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .rate .t-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   /* Pill sits on its own row under the number: these tiles are narrow, so placing
      it beside the value left the row ragged once the percentages got long. */
   .trend-row { margin-top: 5px; }
   .trend {
-    font-size: 11px; font-weight: 650; letter-spacing: .01em;
+    font-size: 12px; font-weight: 600; letter-spacing: .01em;
     padding: 2px 7px; border-radius: 999px; line-height: 1.5;
     display: inline-flex; align-items: center; gap: 3px;
     font-variant-numeric: tabular-nums; cursor: default; white-space: nowrap;
@@ -267,14 +267,14 @@
   .trend.up { color: var(--good); background: var(--good-soft); }
   .trend.down { color: var(--danger); background: var(--danger-soft); }
 
-  .empty { color: var(--text-muted); font-size: 13px; padding: 12px 0; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 12px 0; }
 
   /* ---------- Log table ---------- */
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
   th { text-align: left; color: var(--text-muted); font-weight: 500; padding: 6px 8px; border-bottom: 1px solid var(--baseline); white-space: nowrap; }
   td { padding: 7px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
   td.num, th.num { text-align: center; }
-  .dot { color: var(--series-1); font-weight: 700; }
+  .dot { color: var(--series-1); font-weight: 600; }
   .del {
     font: inherit; font-size: 12px;
     background: none; border: none;
@@ -305,16 +305,16 @@
   .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
   .auth-gate.show { display: flex; }
   .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
-  .auth-card h2 { font-size: 18px; font-weight: 650; }
-  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card h2 { font-size: 18px; font-weight: 600; }
+  .auth-card .auth-sub { font-size: 14px; color: var(--text-muted); margin-top: -8px; }
   .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
   .auth-card input { width: 100%; }
-  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
-  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-err { color: var(--danger); font-size: 14px; min-height: 16px; }
+  .auth-switch { font-size: 14px; color: var(--text-secondary); text-align: center; }
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
   .dial-entry { display: flex; align-items: center; gap: 6px; }
-  .dial-entry .dial-tap { padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+  .dial-entry .dial-tap { padding: 6px 12px; font-size: 14px; white-space: nowrap; }
   .dial-entry input[type="date"] { width: 128px; }
   .dial-entry input[type="number"] { width: 68px; }
   .mini:hover { color: var(--text-primary); }
@@ -322,7 +322,7 @@
   #acctEmail { display: none; }
   #morePop { position: fixed; z-index: 200; min-width: 170px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 8px; display: none; }
   #morePop.show { display: block; }
-  #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 13.5px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
+  #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
   #morePop button:hover { background: var(--page); }
   /* The popover is MOVED into the settings panel rather than rebuilt, so the
      handlers already bound to its buttons keep working. */
@@ -330,12 +330,55 @@
     min-width: 0; background: none; border: none; box-shadow: none; padding: 0; z-index: auto; }
   #moreBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
   #moreBackdrop.show { display: block; }
-  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
   .sync-pill { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap; }
   .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
   .sync-pill.saved { color: var(--good); border-color: var(--good); }
   .sync-pill.err { color: var(--danger); border-color: var(--danger); }
+/* --- Viewport, hit-target, focus and motion baseline --- */
+  .hub-tabs { flex-wrap: wrap; max-width: 100%; }
+  .hub-tab { padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center; }
+
+  .btn, .mini, select,
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+  input[type="date"], input[type="datetime-local"], input[type="search"], input[type="tel"] {
+    min-height: 44px;
+  }
+  .btn, .mini, .theme-toggle { min-width: 44px; }
+  .chip, .sheet-x, .tab, .pill, .more-toggle, .month-nav .btn.icon { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .btn.icon { min-width: 44px; padding-left: 12px; padding-right: 12px; }
+
+  /* Dense contexts keep their own rhythm; rows stay tappable without growing. */
+  td .btn, td .mini, td input, td select,
+  th .btn, th .mini { min-height: 36px; min-width: 36px; }
+
+  :focus-visible {
+    outline: 2px solid var(--series-1);
+    outline-offset: 2px;
+  }
+  .hub-tab:focus-visible, .btn:focus-visible { outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+/* Narrow: let dense rows wrap and tables scroll inside their own region. */
+  .dial-entry, .code-row, .goal-set, .month-nav, .logbar, .toolbar, .filters { flex-wrap: wrap; }
+  .table-scroll { overflow-x: auto; }
+
+  @media (max-width: 767.98px) {
+    table {
+      display: block;
+      width: max-content;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+  }
 </style>
 <script>
   // ===== Cloud sync config (shared across the hub) =====
@@ -390,12 +433,12 @@
       <span class="saved-note" id="importNote"></span>
       <div class="dial-entry">
         <button class="btn dial-tap" id="dialBtn" type="button" title="Adds 1 to today's dials">&#65291; Dial</button>
-        <input type="date" id="dDate" title="Day">
-        <input type="number" id="dCount" min="0" step="1" placeholder="Dials">
+        <input type="date" id="dDate" title="Day" aria-label="Dial day">
+        <input type="number" id="dCount" min="0" step="1" placeholder="Dials" aria-label="Number of dials">
         <button class="mini" id="dialsSaveBtn">Save</button>
         <span class="saved-note" id="dialsSavedNote">Saved &#10003;</span>
       </div>
-      <input type="file" id="importFile" accept=".csv,text/csv" hidden>
+      <input type="file" id="importFile" accept=".csv,text/csv" hidden aria-label="Choose a CSV file to import">
       <div class="side-controls">
         <button class="theme-toggle" id="themeBtn" role="switch" aria-checked="false" title="Switch between light and dark mode"><span class="knob"></span></button>
         <span class="sync-pill" id="syncPill" style="display:none"></span>
@@ -416,11 +459,11 @@
   <section class="logbar">
     <span class="lb-lab">Log</span>
     <button type="button" class="lb-date" id="fTimeBtn" title="Date and time of the call"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4.5" width="18" height="17" rx="2.5"/><line x1="8" y1="2.5" x2="8" y2="7"/><line x1="16" y1="2.5" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
-    <input type="datetime-local" id="fTime" title="Date and time">
-    <select id="fLead" title="Lead type"></select>
-    <select id="fState" title="State"></select>
+    <input type="datetime-local" id="fTime" title="Date and time" aria-label="Call date and time">
+    <select id="fLead" title="Lead type" aria-label="Lead type"></select>
+    <select id="fState" title="State" aria-label="State"></select>
     <div class="chips" id="chips"></div>
-    <input type="text" id="fNotes" placeholder="Notes" class="lb-notes">
+    <input type="text" id="fNotes" placeholder="Notes" class="lb-notes" aria-label="Call notes">
     <button class="btn" id="saveBtn">Save call</button>
     <span class="saved-note" id="savedNote">Saved ✓</span>
   </section>
@@ -832,7 +875,7 @@
     dayInput = document.createElement("input");
     dayInput.type = "date";
     dayInput.max = dateKey(new Date());
-    dayInput.style.cssText = "font:inherit; font-size:13px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
+    dayInput.style.cssText = "font:inherit; font-size: 14px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
     dayInput.onchange = function () {
       if (!dayInput.value) {
         if (customDay) { customDay = null; renderAll(); }
@@ -884,7 +927,7 @@
     monthInput = document.createElement("input");
     monthInput.type = "month";
     monthInput.max = dateKey(new Date()).slice(0, 7);
-    monthInput.style.cssText = "font:inherit; font-size:13px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
+    monthInput.style.cssText = "font:inherit; font-size: 14px; color:var(--text-primary); background:var(--page); border:1px solid var(--baseline); border-radius:6px; padding:3px 6px;";
     monthInput.onchange = function () {
       if (!monthInput.value) {
         if (customMonth) { customMonth = null; renderAll(); }

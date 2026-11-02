@@ -20,7 +20,7 @@
   var CSS = [
     ".brandhead { display: flex; align-items: center; gap: 12px; min-width: 0; }",
     ".brand-logo { height: 30px; width: auto; display: block; flex: none; }",
-    ".brand-eyebrow { font-size: 11.5px; letter-spacing: .04em; color: var(--text-muted); line-height: 1.2; }",
+    ".brand-eyebrow { font-size: 12px; letter-spacing: .04em; color: var(--text-muted); line-height: 1.2; }",
     ".brandhead h1 { line-height: 1.15; }"
   ].join("\n");
 

@@ -54,16 +54,16 @@
   body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background: var(--page); color: var(--text-primary); line-height: 1.45; padding: 20px; }
   .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
   header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
-  header h1 { font-size: 20px; font-weight: 650; }
-  header .sub { color: var(--text-muted); font-size: 13px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header .sub { color: var(--text-muted); font-size: 14px; }
   .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
   .month-nav { display: flex; align-items: center; gap: 2px; padding: 2px;
                border: 1px solid var(--border); background: var(--surface-1); border-radius: 9px; }
   .month-nav .btn.icon { border-color: transparent; background: transparent; padding: 4px 9px; }
   .month-nav .btn.icon:hover:not(:disabled) { background: var(--page); }
-  .month-nav .label { font-size: 15px; font-weight: 650; min-width: 132px; text-align: center; }
+  .month-nav .label { font-size: 16px; font-weight: 600; min-width: 132px; text-align: center; }
   .card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: var(--card-shadow, none); }
-  .card h2 { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
   .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
   .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
   .card-head h2 { margin-bottom: 0; }
@@ -71,7 +71,7 @@
   .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
   .tile { background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
   .tile .t-label { font-size: 12px; color: var(--text-muted); }
-  .tile .t-value { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; margin-top: 2px; }
+  .tile .t-value { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; margin-top: 2px; }
   .tile .t-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .tile.hero { border-color: var(--good); background: var(--good-soft); }
   .tile.hero .t-value { color: var(--good); }
@@ -84,7 +84,7 @@
   }
   .btn { font: inherit; font-size: 14px; font-weight: 600; padding: 9px 18px; border-radius: 8px; border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
   .btn.secondary { background: transparent; color: var(--text-secondary); border-color: var(--baseline); }
-  .btn.small { padding: 6px 12px; font-size: 13px; }
+  .btn.small { padding: 6px 12px; font-size: 14px; }
   .btn.icon { background: transparent; border-color: var(--baseline); color: var(--text-secondary); padding: 5px 10px; font-size: 14px; line-height: 1; }
   .mini { font: inherit; font-size: 12px; font-weight: 600; padding: 3px 9px; border-radius: 6px; border: 1px solid var(--baseline); background: transparent; color: var(--text-secondary); cursor: pointer; }
   .mini.copied { color: var(--good); border-color: var(--good); }
@@ -96,9 +96,9 @@
   .theme-toggle { display: none !important; }
   .theme-toggle { position: relative; width: 30px; height: 16px; flex: none; align-self: center; margin-left: 4px; border-radius: 999px; border: 1px solid var(--grid); background: transparent; cursor: pointer; padding: 0; opacity: 0.7; }
   .theme-toggle:hover { opacity: 1; }
-  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); transition: left .15s ease, background .15s ease; }
+  .theme-toggle .knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: var(--text-muted); transition: transform .15s ease, background .15s ease; }
   .theme-toggle.dark { background: var(--grid); border-color: var(--grid); }
-  .theme-toggle.dark .knob { left: 16px; background: var(--text-secondary); }
+  .theme-toggle.dark .knob { transform: translateX(14px); background: var(--text-secondary); }
 
   .hub-tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 10px; align-self: flex-start; }
   .hub-tab { font: inherit; font-size: 14px; font-weight: 600; text-decoration: none; padding: 6px 15px; border-radius: 7px; color: var(--text-secondary); white-space: nowrap; }
@@ -108,40 +108,40 @@
   .auth-gate { position: fixed; inset: 0; z-index: 100; display: none; align-items: center; justify-content: center; background: var(--page); padding: 20px; }
   .auth-gate.show { display: flex; }
   .auth-card { width: 100%; max-width: 360px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
-  .auth-card h2 { font-size: 18px; font-weight: 650; }
-  .auth-card .auth-sub { font-size: 13px; color: var(--text-muted); margin-top: -8px; }
+  .auth-card h2 { font-size: 18px; font-weight: 600; }
+  .auth-card .auth-sub { font-size: 14px; color: var(--text-muted); margin-top: -8px; }
   .auth-card label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px; }
   .auth-card input { width: 100%; }
-  .auth-err { color: var(--danger); font-size: 13px; min-height: 16px; }
-  .auth-switch { font-size: 13px; color: var(--text-secondary); text-align: center; }
+  .auth-err { color: var(--danger); font-size: 14px; min-height: 16px; }
+  .auth-switch { font-size: 14px; color: var(--text-secondary); text-align: center; }
   .auth-switch a { color: var(--series-1); cursor: pointer; text-decoration: underline; }
-  .acct-box { display: none; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); }
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
   #acctEmail { display: none; }
 
-  .agency-name { color: var(--text-muted); font-size: 12.5px; }
-  .issued-sub { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .agency-name { color: var(--text-muted); font-size: 12px; }
+  .issued-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
   .table-scroll { overflow-x: auto; }
-  table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
   th, td { padding: 8px 10px; text-align: left; white-space: nowrap; }
   th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
   td { border-bottom: 1px solid var(--grid); }
   td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
-  tfoot td { font-weight: 650; border-bottom: none; border-top: 1px solid var(--baseline); }
-  td.ovr { color: var(--good); font-weight: 650; }
+  tfoot td { font-weight: 600; border-bottom: none; border-top: 1px solid var(--baseline); }
+  td.ovr { color: var(--good); font-weight: 600; }
   .agent-name { font-weight: 600; }
-  .empty { color: var(--text-muted); font-size: 13.5px; padding: 10px 0; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 10px 0; }
   .warn { font-size: 12px; color: #c2790a; margin-top: 10px; }
   @media (prefers-color-scheme: dark) { .warn { color: #f5b451; } }
   :root[data-theme="dark"] .warn { color: #f5b451; }
 
-  .goal-set { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text-muted); }
+  .goal-set { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); }
   .goal-set input { width: 120px; }
   .goal-track { height: 14px; background: var(--page); border: 1px solid var(--grid); border-radius: 999px; overflow: hidden; }
-  .goal-fill { height: 100%; width: 0; background: var(--series-1); border-radius: 999px; transition: width .3s ease; }
+  .goal-fill { height: 100%; width: 100%; transform: scaleX(0); transform-origin: left center; background: var(--series-1); transition: transform .3s ease; }
   .goal-fill.reached { background: var(--good); }
-  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px; }
-  .goal-meta .hit { color: var(--good); font-weight: 650; }
+  .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+  .goal-meta .hit { color: var(--good); font-weight: 600; }
   td.struck { text-decoration: line-through; color: var(--text-muted); }
   .status-chip { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: var(--series-1-soft); color: var(--series-1); }
   .status-chip.issued { background: var(--good-soft); color: var(--good); }
@@ -151,8 +151,51 @@
   .setup .field { margin-bottom: 12px; }
   .setup input { width: 100%; }
   .code-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-  .code-pill { font-size: 18px; font-weight: 700; letter-spacing: .12em; padding: 6px 14px; border-radius: 8px; background: var(--series-1-soft); color: var(--series-1); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-  .note { font-size: 12.5px; color: var(--text-muted); }
+  .code-pill { font-size: 18px; font-weight: 600; letter-spacing: .12em; padding: 6px 14px; border-radius: 8px; background: var(--series-1-soft); color: var(--series-1); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .note { font-size: 12px; color: var(--text-muted); }
+/* --- Viewport, hit-target, focus and motion baseline --- */
+  .hub-tabs { flex-wrap: wrap; max-width: 100%; }
+  .hub-tab { padding: 10px 16px; min-height: 44px; display: inline-flex; align-items: center; }
+
+  .btn, .mini, select,
+  input[type="text"], input[type="email"], input[type="password"], input[type="number"],
+  input[type="date"], input[type="datetime-local"], input[type="search"], input[type="tel"] {
+    min-height: 44px;
+  }
+  .btn, .mini, .theme-toggle { min-width: 44px; }
+  .chip, .sheet-x, .tab, .pill, .more-toggle, .month-nav .btn.icon { min-height: 44px; min-width: 44px; display: inline-flex; align-items: center; justify-content: center; }
+  .btn.icon { min-width: 44px; padding-left: 12px; padding-right: 12px; }
+
+  /* Dense contexts keep their own rhythm; rows stay tappable without growing. */
+  td .btn, td .mini, td input, td select,
+  th .btn, th .mini { min-height: 36px; min-width: 36px; }
+
+  :focus-visible {
+    outline: 2px solid var(--series-1);
+    outline-offset: 2px;
+  }
+  .hub-tab:focus-visible, .btn:focus-visible { outline-offset: 3px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+/* Narrow: let dense rows wrap and tables scroll inside their own region. */
+  .dial-entry, .code-row, .goal-set, .month-nav, .logbar, .toolbar, .filters { flex-wrap: wrap; }
+  .table-scroll { overflow-x: auto; }
+
+  @media (max-width: 767.98px) {
+    table {
+      display: block;
+      width: max-content;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+  }
 </style>
 </head>
 <body>
@@ -224,7 +267,7 @@
     <div class="card" style="margin-bottom:16px">
       <div class="card-head">
         <h2>Agency goal <span class="hint">issued AP &middot; your agents see this too</span></h2>
-        <div class="goal-set"><span>Goal:</span> $<input type="number" id="agencyGoalInput" min="0" step="1000" placeholder="0"></div>
+        <div class="goal-set"><span>Goal:</span> $<input type="number" id="agencyGoalInput" min="0" step="1000" placeholder="0" aria-label="Monthly agency goal in dollars"></div>
       </div>
       <div class="goal-track"><div class="goal-fill" id="agencyGoalFill"></div></div>
       <div class="goal-meta"><span id="agencyGoalNow"></span><span id="agencyGoalRemain"></span></div>
@@ -235,9 +278,9 @@
         <h2>Your agency <span class="hint" id="agencyName"></span></h2>
         <div class="code-row">
           <span class="note">Your name on the leaderboard:</span>
-          <input type="text" id="ownerBoardName" placeholder="Your name" style="width:140px">
+          <input type="text" id="ownerBoardName" placeholder="Your name" style="width:140px" aria-label="Your name on the leaderboard">
           <span class="note">Your contract level:</span>
-          <select id="ownerLevel" style="width:auto"><option value="">Set level…</option></select>
+          <select id="ownerLevel" style="width:auto" aria-label="Your contract level"><option value="">Set level…</option></select>
           <span class="note">Join code:</span>
           <span class="code-pill" id="joinCode"></span>
           <button class="mini" id="copyCode">Copy</button>
@@ -539,14 +582,14 @@
     var fill = $("agencyGoalFill"), now = $("agencyGoalNow"), rem = $("agencyGoalRemain");
     if (goal && goal > 0) {
       var pv = issuedTotal / goal * 100;
-      fill.style.width = Math.min(100, pv).toFixed(1) + "%";
+      fill.style.transform = "scaleX(" + (Math.min(100, pv) / 100).toFixed(4) + ")";
       fill.className = "goal-fill" + (issuedTotal >= goal ? " reached" : "");
       now.textContent = money(issuedTotal) + " of " + money(goal);
       rem.innerHTML = issuedTotal >= goal
         ? '<span class="hit">Goal hit — ' + Math.round(pv) + "%</span>"
         : (Math.round(pv) + "% · " + money(goal - issuedTotal) + " to go");
     } else {
-      fill.style.width = "0"; fill.className = "goal-fill";
+      fill.style.transform = "scaleX(0)"; fill.className = "goal-fill";
       now.textContent = money(issuedTotal) + " issued this month";
       rem.textContent = "Set a monthly goal →";
     }

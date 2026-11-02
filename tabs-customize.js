@@ -25,7 +25,7 @@
   var st = document.createElement("style");
   st.textContent =
     ".hub-tab.user-hidden{display:none !important;}" +
-    "#hubGear{font:inherit;font-size:15px;line-height:1;cursor:pointer;background:transparent;border:1px solid var(--baseline);color:var(--text-secondary);border-radius:7px;padding:6px 11px;align-self:center;}" +
+    "#hubGear{font:inherit;font-size: 16px;line-height:1;cursor:pointer;background:transparent;border:1px solid var(--baseline);color:var(--text-secondary);border-radius:7px;padding:6px 11px;align-self:center;}" +
     "#hubGear:hover{color:var(--text-primary);}" +
     "#hubBackdrop{position:fixed;inset:0;z-index:199;display:none;}#hubBackdrop.show{display:block;}" +
     "#hubCust{position:fixed;z-index:200;min-width:236px;max-width:280px;background:var(--surface-1);border:1px solid var(--border);border-radius:12px;box-shadow:0 12px 34px rgba(0,0,0,.28);padding:14px;display:none;}" +
@@ -35,9 +35,9 @@
     "#hubCust label.locked{opacity:.55;cursor:default;}" +
     "#hubCust input[type=checkbox]{width:16px;height:16px;flex:none;cursor:pointer;}" +
     "#hubCust label.locked input{cursor:default;}" +
-    "#hubCust .home-row{margin-top:10px;padding-top:11px;border-top:1px solid var(--grid);font-size:13px;color:var(--text-secondary);}" +
+    "#hubCust .home-row{margin-top:10px;padding-top:11px;border-top:1px solid var(--grid);font-size: 14px;color:var(--text-secondary);}" +
     "#hubCust select{width:100%;margin-top:6px;font:inherit;font-size:14px;color:var(--text-primary);background:var(--page);border:1px solid var(--baseline);border-radius:7px;padding:7px 9px;}" +
-    "#hubCust .hint{font-size:11.5px;color:var(--text-muted);margin-top:11px;line-height:1.4;}";
+    "#hubCust .hint{font-size: 12px;color:var(--text-muted);margin-top:11px;line-height:1.4;}";
   document.head.appendChild(st);
 
   /* ---- apply hidden tabs (CSS class beats the reveal logic's inline display) ---- */
@@ -80,7 +80,7 @@
         '<input type="checkbox" data-k="' + k.replace(/"/g, "&quot;") + '"' +
         (hidden ? "" : " checked") + (active ? " disabled" : "") + ">" +
         "<span>" + t.innerHTML + "</span>" +
-        (active ? ' <span style="color:var(--text-muted);font-size:11px">(here now)</span>' : "") +
+        (active ? ' <span style="color:var(--text-muted);font-size: 12px">(here now)</span>' : "") +
         "</label>";
     });
     html += '<div class="home-row">Open the hub to:<select id="hubHome"></select></div>';
