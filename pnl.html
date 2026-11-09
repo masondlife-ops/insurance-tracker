@@ -519,6 +519,10 @@
         <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
         <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
         <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
+        <!-- IUL pays on the target premium from the illustration, not the whole
+             premium, so this field appears only for an IUL product and is what
+             the commission is calculated from when it's filled in. -->
+        <div class="field" id="targetField" hidden><label for="d-target">Target premium ($)</label><input type="number" id="d-target" class="narrow" min="0" step="0.01" placeholder="from illustration"></div>
         <div class="field"><label for="d-status">Status</label>
           <select id="d-status">
             <option>Submitted</option>
@@ -801,6 +805,9 @@
     var issued = deals.filter(function (d) { return d.status === "Issued"; });   // still used for the "N issued" sub-label below
     var issuedAP = sum(issuedDeals, function (d) { return d.ap; });
     var commission = sum(issuedDeals, earnedCom);
+    var toCome = sum(issuedDeals, function (d) {
+      return d.status === "Issued" ? (num(d.comBalance) || 0) : 0;
+    });
     var expenses = sum(exps, function (e) { return e.price; });
     var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
     var profit = commission - expenses;
@@ -821,7 +828,8 @@
       { key: "sub",     label: "Submitted AP",   value: money(submittedAP), sub: "", cls: "" },
       { key: "avg",     label: "Avg AP / sale",  value: avgAP === null ? "—" : money(avgAP), sub: "", cls: "" },
       { key: "issued",  label: "Issued AP",      value: money(issuedAP), sub: "", cls: "" },
-      { key: "comm",    label: "Commission",     value: money(commission), sub: "", cls: "" },
+      { key: "comm",    label: "Commission",     value: money(commission),
+        sub: toCome > 0 ? "+" + money(toCome) + " to come" : "", cls: "" },
       { key: "exp",     label: "Expenses",       value: money(expenses), sub: expSub, cls: "" },
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "commission − expenses", cls: profitClass },
       { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
@@ -916,6 +924,8 @@
       var detailBits = [
         ["Face", money(d.face)],
         ["Monthly", money(d.monthly)],
+        ["Target", d.target != null ? money(d.target) : "&mdash;"],
+        ["Balance", d.comBalance != null ? money(d.comBalance) + " to come" : "&mdash;"],
         ["Lead type", esc(d.lead) || "&mdash;"],
         ["Issued", d.issuedDate ? fmtDay(d.issuedDate) : "&mdash;"],
         ["Notes", esc(d.notes) || "&mdash;"]
@@ -1235,6 +1245,26 @@
   // auto-fill commission from the comp guide (upfront = AP × comp% × 9/12);
   // never clobbers a commission the user typed (comAutoFilled tracks that)
   var comAutoFilled = false;
+  /* Every carrier caps the advance at this much per policy, so a big case pays
+     the cap rather than the full 9-month figure. */
+  var ADVANCE_CAP = 2500;
+  var pendingFull = null;   // last auto-calculated uncapped commission
+
+  /* Every IUL in the comp guide has "IUL" in its name (IULe, FFIUL, Max
+     Accumulator IUL, "IUL (All) Fully Underwritten"), so the product name is
+     enough -- no second list to keep in step with the guide. */
+  function looksLikeIul(product) {
+    return /\biul\b|iule|ffiul/i.test(String(product || ""));
+  }
+
+  function syncTargetField() {
+    var f = $("targetField");
+    if (!f) return;
+    var show = looksLikeIul($("d-policy").value);
+    f.hidden = !show;
+    if (!show) $("d-target").value = "";
+  }
+
   function recalcCommission() {
     var note = $("comNote");
     var info = compLookup($("d-carrier").value, $("d-policy").value, getSetting("contractLevel"));
@@ -1251,17 +1281,38 @@
       }
       return;
     }
-    var ap = num($("d-ap").value);
+    // An IUL pays on target premium only -- premium above target earns nothing,
+    // so paying on AP would overstate the commission, often by a lot.
+    var isIul = looksLikeIul($("d-policy").value);
+    var target = isIul ? num($("d-target").value) : null;
+    // No target yet on an IUL: leave the box empty rather than filling in an
+    // AP-based figure that is wrong and one keystroke from being saved.
+    var basis = isIul ? target : num($("d-ap").value);
     var comEl = $("d-com");
-    if (ap != null && (comEl.value === "" || comAutoFilled)) {
-      comEl.value = (ap * info.rate / 100 * 9 / 12).toFixed(2);
+    if (isIul && target == null && comAutoFilled) { comEl.value = ""; }
+    var full = basis == null ? null : basis * info.rate / 100 * 9 / 12;
+    var capped = full != null && full > ADVANCE_CAP;
+    if (full != null && (comEl.value === "" || comAutoFilled)) {
+      comEl.value = (capped ? ADVANCE_CAP : full).toFixed(2);
       comAutoFilled = true;
     }
+    // Remember what the advance was cut from. The balance is still owed, just
+    // paid as the client pays rather than up front, so it belongs on the deal.
+    pendingFull = full;
     if (note) {
-      note.textContent = "auto · " + info.rate + "% × 9 mo"
+      var msg = "auto · " + info.rate + "% × 9 mo"
         + (info.bonus ? " (incl +5%)" : "")
         + (info.verify ? "  ⚠ verify AHL" : "");
-      note.className = "com-note" + (info.verify ? " warn" : "");
+      // Say what it's paying on, so a number far below AP never looks like a bug.
+      if (isIul) {
+        msg += target != null
+          ? " on " + money(target) + " target"
+          : "  ⚠ enter the target premium — IUL pays on target, not AP";
+      }
+      // Say so when the cap bites: otherwise the number looks like a bad rate.
+      if (capped) msg += " · capped at " + money(ADVANCE_CAP) + " (was " + money(full) + ")";
+      note.textContent = msg;
+      note.className = "com-note" + (info.verify || (isIul && target == null) ? " warn" : "");
     }
   }
 
@@ -1329,6 +1380,7 @@
     $("dealSubmit").textContent = "Add deal";
     $("dealCancel").style.display = "none";
     updateProductList();
+    syncTargetField();
     recalcCommission();
   }
 
@@ -1345,6 +1397,8 @@
     $("d-face").value = d.face != null ? d.face : "";
     $("d-monthly").value = d.monthly != null ? d.monthly : "";
     $("d-ap").value = d.ap != null ? d.ap : "";
+    $("d-target").value = d.target != null ? d.target : "";
+    pendingFull = (num(d.com) || 0) + (num(d.comBalance) || 0) || null;
     $("d-com").value = d.com != null ? d.com : "";
     $("d-lead").value = d.lead || "";
     $("d-status").value = d.status || "Submitted";
@@ -1360,6 +1414,7 @@
     if (d.face != null || d.monthly != null || d.com != null || d.lead ||
         d.issuedDate || d.paid || d.notes || d.reqs) setDealMoreOpen(true, false);
     updateProductList();
+    syncTargetField();
     recalcCommission();
     openDealSheet();
   }
@@ -1375,7 +1430,16 @@
       face: num($("d-face").value),
       monthly: num($("d-monthly").value),
       ap: num($("d-ap").value),
+      target: num($("d-target").value),
       com: num($("d-com").value),
+      // What the cap held back. Paid later as earned, so it is tracked but is
+      // deliberately not counted as cash in hand.
+      comBalance: (function () {
+        var adv = num($("d-com").value);
+        if (adv == null || pendingFull == null) return null;
+        var bal = pendingFull - adv;
+        return bal > 0.004 ? Math.round(bal * 100) / 100 : null;
+      })(),
       lead: $("d-lead").value.trim(),
       status: $("d-status").value,
       issuedDate: $("d-issued-date").value,
@@ -1417,7 +1481,8 @@
   $("d-ap").addEventListener("input", function () { apAutoFilled = false; recalcCommission(); });
   $("d-com").addEventListener("input", function () { comAutoFilled = false; });
   $("d-carrier").addEventListener("input", function () { updateProductList(); recalcCommission(); });
-  $("d-policy").addEventListener("input", recalcCommission);
+  $("d-policy").addEventListener("input", function () { syncTargetField(); recalcCommission(); });
+  $("d-target").addEventListener("input", recalcCommission);
 
   /* ---------- expense form ---------- */
 
@@ -1541,9 +1606,9 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Commission","Lead type","Status","Issued date","Paid","Requirements","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Target","Commission","Balance to come","Lead type","Status","Issued date","Paid","Requirements","Notes"]);
     deals.forEach(function (d) {
-      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.com, d.lead, d.status, d.issuedDate, d.paid ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
+      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.target, d.com, d.comBalance, d.lead, d.status, d.issuedDate, d.paid ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
     });
     rows.push([]);
     rows.push(["EXPENSES"]);
