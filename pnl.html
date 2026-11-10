@@ -807,7 +807,7 @@
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "", cls: profitClass },
       { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
       { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" },
-      { key: "revPerDial",  label: "Revenue per dial", value: revPerDial == null ? "—" : money(revPerDial), sub: commission > 0 ? money(commission) + " commission" : "", cls: "" }
+      { key: "revPerDial",  label: "Revenue per dial", value: revPerDial == null ? "—" : money(revPerDial), sub: "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
     var hidden = tileHiddenSet();
