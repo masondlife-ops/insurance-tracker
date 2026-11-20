@@ -384,28 +384,6 @@
   .deal-sheet .field .wide, .deal-sheet .field .narrow { width: 100%; }
   .sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
-  /* -- book of business -- */
-  .book-search { margin: 4px 0 14px; }
-  .book-search input { width: 100%; max-width: 420px; }
-  #bookTable tbody tr { cursor: pointer; }
-  #bookTable tbody tr:hover { background: var(--page); }
-  .ben-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
-             padding: 10px 0; border-bottom: 1px dashed var(--grid); }
-  .ben-row:last-child { border-bottom: none; }
-  .ben-row .field { flex: 1 1 120px; }
-  .ben-row .pct { width: 76px; }
-  .ben-row .x { background: transparent; border: none; color: var(--text-muted);
-                font-size: 20px; cursor: pointer; padding: 0 6px; line-height: 1; }
-  .ben-total { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
-  .ben-total.over { color: #d9534f; }
-  .client-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; }
-  .client-head h2 { margin: 0; }
-  .client-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 10px 0 16px;
-                  font-size: 13px; color: var(--text-muted); }
-  .client-facts b { color: var(--text); font-weight: 600; }
-  .client-sec { margin-top: 18px; }
-  .client-sec h3 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em;
-                   color: var(--text-muted); margin: 0 0 8px; }
   .sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted);
              font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
   .sheet-x:hover { color: var(--text-primary); }
@@ -491,7 +469,7 @@
     <a href="dashboard.html" style="display:none" class="hub-tab">Dashboard</a>
     <a href="index.html" class="hub-tab">Activity</a>
     <a href="pnl.html" class="hub-tab is-active" id="dealsTab">Deals &amp; PNL</a>
-    <a href="pnl.html#book" class="hub-tab" id="bookTab">Clients</a>
+    <a href="clients.html" class="hub-tab" id="bookTab">Clients</a>
     <a href="carriers.html" class="hub-tab">Carrier links</a>
     <a href="leaderboard.html" class="hub-tab" id="boardTab" style="display:none">Leaderboard</a>
         <a href="owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
@@ -662,70 +640,7 @@
          the expenses rather than competing with them as its own section. -->
   </div>
   </div><!-- /pnlView -->
-
-  <!-- Book of business. Every client you have ever written, independent of the
-       month being viewed -- which is why the month nav hides while it is open. -->
-  <div id="bookView" hidden>
-    <div class="card">
-      <div class="card-head">
-        <h2>Book of business <span class="hint" id="bookCount"></span></h2>
-        <button type="button" class="btn secondary small" id="clientAddBtn">Add client</button>
-      </div>
-      <div class="book-search">
-        <input type="search" id="bookSearch" placeholder="Search name, phone, email, carrier or product" aria-label="Search your clients">
-      </div>
-      <div class="table-scroll">
-        <table id="bookTable">
-          <thead>
-            <tr>
-              <th>Client</th><th>Phone</th><th class="num">Policies</th>
-              <th class="num">AP</th><th>Carriers</th><th>Last deal</th><th></th>
-            </tr>
-          </thead>
-          <tbody id="bookBody"></tbody>
-        </table>
-      </div>
-      <div class="empty" id="bookEmpty" style="display:none"></div>
-    </div>
-
-    <div class="card" id="clientDetail" hidden></div>
-  </div>
 </div>
-
-<div class="deal-scrim" id="clientScrim"></div>
-<aside class="deal-sheet" id="clientSheet">
-  <div class="card">
-    <div class="sheet-head">
-      <h2 id="clientFormTitle">Client</h2>
-      <button type="button" class="sheet-x" id="clientSheetClose" aria-label="Close">&times;</button>
-    </div>
-    <form id="clientForm">
-      <div class="form-grid">
-        <div class="field"><label for="c-name">Name</label><input type="text" id="c-name" class="wide" required placeholder="Client name"></div>
-        <div class="field"><label for="c-dob">Date of birth</label><input type="date" id="c-dob"></div>
-        <div class="field"><label for="c-phone">Phone</label><input type="tel" id="c-phone" class="wide" placeholder="(480) 555-0100"></div>
-        <div class="field"><label for="c-email">Email</label><input type="email" id="c-email" class="wide" placeholder="name@example.com"></div>
-        <div class="field"><label for="c-address">Address</label><input type="text" id="c-address" class="wide" placeholder="Street, city, state"></div>
-        <div class="field"><label for="c-notes">Notes</label><input type="text" id="c-notes" class="wide" placeholder=""></div>
-      </div>
-
-      <div class="more-panel" style="display:block">
-        <div class="card-head">
-          <h2 style="font-size:15px">Beneficiaries</h2>
-          <button type="button" class="btn secondary small" id="benAdd">Add beneficiary</button>
-        </div>
-        <div id="benRows"></div>
-        <div class="empty" id="benEmpty">No beneficiaries recorded.</div>
-        <div class="ben-total" id="benTotal"></div>
-      </div>
-
-      <div class="deal-actions">
-        <button type="submit" class="btn" id="clientSubmit">Save client</button>
-        <button type="button" class="btn secondary" id="clientDelete" style="display:none">Delete</button>
-      </div>
-    </form>
-  </div>
-</aside>
 
 <div id="tilesBackdrop"></div>
 <div id="tilesPop"></div>
@@ -1135,8 +1050,6 @@
     safeRender("datalists", renderDatalists);
     safeRender("contractLevel", refreshContractLevel);
     safeRender("goal", renderGoal);
-    // A deal added or edited while the book is open should show there too.
-    if (bookOpen()) safeRender("book", renderBook);
   }
 
   /* ---------- clients / book of business ----------
@@ -1145,8 +1058,6 @@
      deal keeps its own `client` string as the display name so nothing that
      reads deals -- tables, CSV, the agency roll-up -- has to know about any of
      this, and deleting a client never blanks out a deal's history. */
-
-  var viewingClientId = null;
 
   function clientById(id) {
     return state.clients.find(function (c) { return c.id === id; }) || null;
@@ -1169,333 +1080,6 @@
     state.clients.push(c);
     return c;
   }
-  function dealsForClient(id) {
-    return state.deals
-      .filter(function (d) { return d.clientId === id; })
-      .sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
-  }
-  function todayStr() { return new Date().toISOString().slice(0, 10); }
-
-  /* -- view switching -- */
-
-  function bookOpen() { return location.hash === "#book"; }
-
-  function applyView() {
-    var book = bookOpen();
-    $("pnlView").hidden = book;
-    $("bookView").hidden = !book;
-    // The month nav means nothing against a list that spans every month.
-    var nav = document.querySelector(".month-nav");
-    if (nav) nav.style.display = book ? "none" : "";
-    var dealsTab = $("dealsTab"), bookTab = $("bookTab");
-    if (dealsTab) dealsTab.classList.toggle("is-active", !book);
-    if (bookTab) bookTab.classList.toggle("is-active", book);
-    if (book) renderBook();
-  }
-
-  /* -- the list -- */
-
-  function clientRow(c) {
-    var ds = dealsForClient(c.id);
-    var carriers = [];
-    ds.forEach(function (d) {
-      var x = (d.carrier || "").trim();
-      if (x && carriers.indexOf(x) === -1) carriers.push(x);
-    });
-    return {
-      client: c,
-      deals: ds,
-      ap: sum(ds, function (d) { return d.ap; }),
-      carriers: carriers,
-      last: ds.length ? ds[0].date : ""
-    };
-  }
-
-  /* One search box over everything a person might remember about a client --
-     their name, the number they called from, or just the carrier. */
-  function matchesQuery(row, q) {
-    if (!q) return true;
-    var c = row.client;
-    var hay = [c.name, c.phone, c.email, c.address, c.notes]
-      .concat(row.carriers)
-      .concat(row.deals.map(function (d) { return d.policy || ""; }))
-      .concat((c.beneficiaries || []).map(function (b) { return b.name || ""; }))
-      .join(" ").toLowerCase();
-    // Every word has to appear somewhere, so "smith aetna" narrows instead of widening.
-    return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) {
-      return hay.indexOf(w) !== -1;
-    });
-  }
-
-  function renderBook() {
-    var q = ($("bookSearch").value || "").trim();
-    var rows = state.clients.map(clientRow).filter(function (r) { return matchesQuery(r, q); });
-    rows.sort(function (a, b) { return String(b.last || "").localeCompare(String(a.last || "")) || a.client.name.localeCompare(b.client.name); });
-
-    $("bookCount").textContent = state.clients.length
-      ? (q ? rows.length + " of " + state.clients.length : String(state.clients.length))
-      : "";
-
-    var body = $("bookBody");
-    body.innerHTML = rows.map(function (r) {
-      return '<tr data-client="' + esc(r.client.id) + '">' +
-        "<td><b>" + esc(r.client.name) + "</b></td>" +
-        "<td>" + esc(r.client.phone || "—") + "</td>" +
-        '<td class="num">' + r.deals.length + "</td>" +
-        '<td class="num">' + money(r.ap) + "</td>" +
-        "<td>" + esc(r.carriers.join(", ") || "—") + "</td>" +
-        "<td>" + (r.last ? fmtDay(r.last) : "—") + "</td>" +
-        '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button></td>' +
-      "</tr>";
-    }).join("");
-
-    var empty = $("bookEmpty");
-    empty.style.display = rows.length ? "none" : "";
-    empty.textContent = state.clients.length
-      ? "No client matches “" + q + "”."
-      : "No clients yet. Add a deal with a client name, or use Add client.";
-
-    // A client who no longer matches the search shouldn't stay open beneath it.
-    if (viewingClientId && !rows.some(function (r) { return r.client.id === viewingClientId; })) {
-      viewingClientId = null;
-    }
-    renderClientDetail();
-  }
-
-  /* -- one client -- */
-
-  function renderClientDetail() {
-    var box = $("clientDetail");
-    var c = viewingClientId ? clientById(viewingClientId) : null;
-    if (!c) { box.hidden = true; box.innerHTML = ""; return; }
-    box.hidden = false;
-
-    var ds = dealsForClient(c.id);
-    var ap = sum(ds, function (d) { return d.ap; });
-    var fact = function (label, val) {
-      return val ? "<span>" + label + " <b>" + esc(val) + "</b></span>" : "";
-    };
-    var bens = (c.beneficiaries || []).filter(function (b) { return (b.name || "").trim(); });
-
-    box.innerHTML =
-      '<div class="client-head">' +
-        "<h2>" + esc(c.name) + "</h2>" +
-        '<button type="button" class="btn secondary small" data-edit-client="' + esc(c.id) + '">Edit client</button>' +
-        '<button type="button" class="btn secondary small" id="clientClose">Close</button>' +
-      "</div>" +
-      '<div class="client-facts">' +
-        fact("Born", c.dob ? fmtDay(c.dob) + (ageFrom(c.dob) == null ? "" : " · " + ageFrom(c.dob)) : "") +
-        fact("Phone", c.phone) + fact("Email", c.email) + fact("Address", c.address) +
-        "<span>Policies <b>" + ds.length + "</b></span>" +
-        "<span>Total AP <b>" + money(ap) + "</b></span>" +
-      "</div>" +
-      (c.notes ? '<div class="client-sec"><h3>Notes</h3><div>' + esc(c.notes) + "</div></div>" : "") +
-      '<div class="client-sec"><h3>Policies</h3>' +
-        (ds.length
-          ? '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Carrier / product</th>' +
-            '<th class="num">AP</th><th>Status</th><th>Notes</th></tr></thead><tbody>' +
-            ds.map(function (d) {
-              return "<tr><td>" + fmtDay(d.date) + "</td>" +
-                "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
-                '<td class="num">' + money(d.ap) + "</td>" +
-                "<td>" + esc(d.status || "—") + "</td>" +
-                "<td>" + esc(d.notes || "") + "</td></tr>";
-            }).join("") + "</tbody></table></div>"
-          : '<div class="empty">No policies recorded for this client.</div>') +
-      "</div>" +
-      '<div class="client-sec"><h3>Beneficiaries</h3>' +
-        (bens.length
-          ? '<div class="table-scroll"><table><thead><tr><th>Name</th><th>Relationship</th>' +
-            '<th>Date of birth</th><th class="num">Share</th><th>Type</th></tr></thead><tbody>' +
-            bens.map(function (b) {
-              return "<tr><td>" + esc(b.name) + "</td><td>" + esc(b.rel || "—") + "</td>" +
-                "<td>" + (b.dob ? fmtDay(b.dob) : "—") + "</td>" +
-                '<td class="num">' + (b.pct == null || b.pct === "" ? "—" : b.pct + "%") + "</td>" +
-                "<td>" + esc(b.type || "Primary") + "</td></tr>";
-            }).join("") + "</tbody></table></div>"
-          : '<div class="empty">No beneficiaries recorded.</div>') +
-      "</div>";
-  }
-
-  function ageFrom(dob) {
-    var d = new Date(String(dob) + "T12:00:00");
-    if (isNaN(d.getTime())) return null;
-    var now = new Date(), age = now.getFullYear() - d.getFullYear();
-    var m = now.getMonth() - d.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
-    return age >= 0 && age < 130 ? age + " yrs" : null;
-  }
-
-  /* -- the client sheet -- */
-
-  var editingClientId = null;
-
-  function openClientSheet() {
-    $("clientScrim").classList.add("show");
-    $("clientSheet").classList.add("show");
-    setTimeout(function () { var n = $("c-name"); if (n) n.focus(); }, 180);
-  }
-  function closeClientSheet() {
-    $("clientSheet").classList.remove("show");
-    $("clientScrim").classList.remove("show");
-    editingClientId = null;
-  }
-
-  function benRow(b) {
-    b = b || {};
-    var row = document.createElement("div");
-    row.className = "ben-row";
-    row.innerHTML =
-      '<div class="field"><label>Name</label><input type="text" class="wide b-name" placeholder="Full name"></div>' +
-      '<div class="field"><label>Relationship</label><input type="text" class="wide b-rel" placeholder="Spouse"></div>' +
-      '<div class="field"><label>Date of birth</label><input type="date" class="b-dob"></div>' +
-      '<div class="field"><label>Share %</label><input type="number" class="pct b-pct" min="0" max="100" step="1" placeholder="100"></div>' +
-      '<div class="field"><label>Type</label><select class="b-type"><option>Primary</option><option>Contingent</option></select></div>' +
-      '<button type="button" class="x" aria-label="Remove beneficiary">&times;</button>';
-    row.querySelector(".b-name").value = b.name || "";
-    row.querySelector(".b-rel").value = b.rel || "";
-    row.querySelector(".b-dob").value = b.dob || "";
-    row.querySelector(".b-pct").value = b.pct == null ? "" : b.pct;
-    row.querySelector(".b-type").value = b.type || "Primary";
-    row.querySelector(".x").addEventListener("click", function () {
-      row.remove();
-      refreshBenMeta();
-    });
-    row.addEventListener("input", refreshBenMeta);
-    return row;
-  }
-
-  /* Shares are shown, never enforced: contingent beneficiaries legitimately add
-     to another 100, and a half-filled form shouldn't block saving. */
-  function refreshBenMeta() {
-    var rows = Array.prototype.slice.call($("benRows").children);
-    $("benEmpty").style.display = rows.length ? "none" : "";
-    var tally = { Primary: 0, Contingent: 0 };
-    rows.forEach(function (r) {
-      var t = r.querySelector(".b-type").value || "Primary";
-      var v = parseFloat(r.querySelector(".b-pct").value);
-      if (!isNaN(v)) tally[t] += v;
-    });
-    var parts = [];
-    ["Primary", "Contingent"].forEach(function (t) {
-      var has = rows.some(function (r) { return (r.querySelector(".b-type").value || "Primary") === t; });
-      if (has) parts.push(t.toLowerCase() + " " + tally[t] + "%");
-    });
-    var el = $("benTotal");
-    el.textContent = parts.length ? "Shares: " + parts.join(" · ") : "";
-    el.classList.toggle("over", tally.Primary > 100 || tally.Contingent > 100);
-  }
-
-  function fillClientForm(c) {
-    $("c-name").value = c ? c.name || "" : "";
-    $("c-dob").value = c ? c.dob || "" : "";
-    $("c-phone").value = c ? c.phone || "" : "";
-    $("c-email").value = c ? c.email || "" : "";
-    $("c-address").value = c ? c.address || "" : "";
-    $("c-notes").value = c ? c.notes || "" : "";
-    $("benRows").innerHTML = "";
-    ((c && c.beneficiaries) || []).forEach(function (b) { $("benRows").appendChild(benRow(b)); });
-    refreshBenMeta();
-    $("clientFormTitle").textContent = c ? "Edit client" : "Add client";
-    $("clientSubmit").textContent = c ? "Save client" : "Add client";
-    $("clientDelete").style.display = c ? "" : "none";
-  }
-
-  function editClient(id) {
-    var c = id ? clientById(id) : null;
-    editingClientId = c ? c.id : null;
-    fillClientForm(c);
-    openClientSheet();
-  }
-
-  function readBeneficiaries() {
-    return Array.prototype.slice.call($("benRows").children).map(function (r) {
-      var pct = r.querySelector(".b-pct").value;
-      return {
-        name: r.querySelector(".b-name").value.trim(),
-        rel: r.querySelector(".b-rel").value.trim(),
-        dob: r.querySelector(".b-dob").value,
-        pct: pct === "" ? null : Number(pct),
-        type: r.querySelector(".b-type").value
-      };
-    }).filter(function (b) { return b.name || b.rel || b.dob || b.pct != null; });
-  }
-
-  function wireClients() {
-    $("bookSearch").addEventListener("input", renderBook);
-
-    $("clientAddBtn").addEventListener("click", function () { editClient(null); });
-    $("clientSheetClose").addEventListener("click", closeClientSheet);
-    $("clientScrim").addEventListener("click", closeClientSheet);
-    $("benAdd").addEventListener("click", function () {
-      $("benRows").appendChild(benRow(null));
-      refreshBenMeta();
-    });
-
-    $("bookBody").addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-edit-client]");
-      if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
-      var tr = ev.target.closest("tr[data-client]");
-      if (!tr) return;
-      var id = tr.getAttribute("data-client");
-      viewingClientId = viewingClientId === id ? null : id;
-      renderClientDetail();
-      if (viewingClientId) $("clientDetail").scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-
-    $("clientDetail").addEventListener("click", function (ev) {
-      var btn = ev.target.closest("[data-edit-client]");
-      if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
-      if (ev.target.id === "clientClose") { viewingClientId = null; renderClientDetail(); }
-    });
-
-    $("clientForm").addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      var name = $("c-name").value.trim();
-      if (!name) return;
-      // Two records with the same name would split one person's policies in
-      // half, which is the one thing a book of business must never do.
-      var clash = clientByName(name);
-      if (clash && clash.id !== editingClientId) {
-        alert("You already have a client called " + clash.name + ". Open that record instead.");
-        return;
-      }
-      var c = editingClientId ? clientById(editingClientId) : null;
-      if (!c) { c = { id: uid(), createdAt: todayStr() }; state.clients.push(c); }
-      c.name = name;
-      c.dob = $("c-dob").value;
-      c.phone = $("c-phone").value.trim();
-      c.email = $("c-email").value.trim();
-      c.address = $("c-address").value.trim();
-      c.notes = $("c-notes").value.trim();
-      c.beneficiaries = readBeneficiaries();
-      // The name on past deals follows the record, so fixing a spelling fixes
-      // it everywhere rather than leaving the old one in the deals table.
-      state.deals.forEach(function (d) { if (d.clientId === c.id) d.client = c.name; });
-      save();
-      closeClientSheet();
-      render();
-      if (bookOpen()) renderBook();
-    });
-
-    $("clientDelete").addEventListener("click", function () {
-      var c = editingClientId ? clientById(editingClientId) : null;
-      if (!c) return;
-      var n = dealsForClient(c.id).length;
-      if (!confirm("Delete " + c.name + "? Their contact details and beneficiaries are removed." +
-                   (n ? " Their " + n + " deal" + (n === 1 ? "" : "s") + " stay on the board with the name intact." : ""))) return;
-      state.deals.forEach(function (d) { if (d.clientId === c.id) d.clientId = null; });
-      state.clients = state.clients.filter(function (x) { return x.id !== c.id; });
-      if (viewingClientId === c.id) viewingClientId = null;
-      save();
-      closeClientSheet();
-      render();
-      if (bookOpen()) renderBook();
-    });
-
-    window.addEventListener("hashchange", applyView);
-  }
-
   /* ---------- month analytics: goal, funnel, trend ---------- */
 
   var activityBlob = null; // {entries, dials} pulled from the Activity tracker's cloud row
@@ -2710,9 +2294,7 @@
     $("e-date").value = defaultDateForMonth();
     syncLeadField();
     applyExpCollapse();
-    wireClients();
     render();
-    applyView();
   }
 
   if (cloudOn) {

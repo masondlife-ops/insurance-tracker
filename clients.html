@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clients</title>
+<link rel="icon" href="favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Agent Hub">
+</head>
+<body>
+<script>
+  window.HUB_CLOUD = {
+    url: "https://bdydjbfuocxoaodeesgw.supabase.co",
+    anonKey: "sb_publishable_azBoNPTEiiW0YvgWCakh3A_VzZjCdIT",
+    inviteOnly: false
+  };
+  // Match the theme before first paint, the same way the other pages do.
+  (function () {
+    try {
+      var t = localStorage.getItem("agentHub.theme.v1");
+      if (t) document.documentElement.setAttribute("data-theme", t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+  :root {
+    --surface-1: #ffffff; --page: #eceef1; --text-primary: #10131a; --text-secondary: #52565f; --text-muted: #888d97; --grid: #dfe2e7; --baseline: #c2c6cd; --border: rgba(16,19,26,0.08); --card-shadow: 0 1px 3px rgba(16,19,26,0.06), 0 1px 2px rgba(16,19,26,0.08);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #0e9e46; --good-soft: rgba(14,158,70,0.14);
+    --danger: #e0231e; --danger-soft: rgba(224,35,30,0.12);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --surface-1: #1a1a19;
+      --page: #0d0d0d;
+      --text-primary: #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted: #898781;
+      --grid: #2c2c2a;
+      --baseline: #383835;
+      --border: rgba(255,255,255,0.10);
+      --series-1: #3987e5;
+      --series-1-soft: rgba(57,135,229,0.20);
+      --good: #0ca30c;
+      --good-soft: rgba(12,163,12,0.16);
+      --danger: #e66767;
+      --danger-soft: rgba(230,103,103,0.16);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface-1: #1a1a19;
+    --page: #0d0d0d;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --grid: #2c2c2a;
+    --baseline: #383835;
+    --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5;
+    --series-1-soft: rgba(57,135,229,0.20);
+    --good: #0ca30c;
+    --good-soft: rgba(12,163,12,0.16);
+    --danger: #e66767;
+    --danger-soft: rgba(230,103,103,0.16);
+  }
+  :root[data-theme="light"] {
+    --surface-1: #ffffff; --page: #eceef1; --text-primary: #10131a; --text-secondary: #52565f; --text-muted: #888d97; --grid: #dfe2e7; --baseline: #c2c6cd; --border: rgba(16,19,26,0.08); --card-shadow: 0 1px 3px rgba(16,19,26,0.06), 0 1px 2px rgba(16,19,26,0.08);
+    --series-1: #2a78d6;
+    --series-1-soft: rgba(42,120,214,0.12);
+    --good: #0e9e46; --good-soft: rgba(14,158,70,0.14);
+    --danger: #e0231e; --danger-soft: rgba(224,35,30,0.12);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    background: var(--page);
+    color: var(--text-primary);
+    line-height: 1.45;
+    padding: 20px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header .sub { color: var(--text-muted); font-size: 14px; }
+  .toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+  .month-nav { display: flex; align-items: center; gap: 2px; padding: 2px;
+               border: 1px solid var(--border); background: var(--surface-1); border-radius: 9px; }
+  .month-nav .btn.icon { border-color: transparent; background: transparent; padding: 4px 9px; }
+  .month-nav .btn.icon:hover:not(:disabled) { background: var(--page); }
+  .month-nav .label { font-size: 16px; font-weight: 600; min-width: 132px; text-align: center; }
+  .card {
+    background: var(--surface-1);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: var(--card-shadow, none);
+  }
+  .card h2 { font-size: 14px; font-weight: 600; color: var(--text-secondary); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .card h2 .hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: var(--text-muted); }
+
+  /* ---------- PNL tiles ---------- */
+  .tiles-head { display: flex; justify-content: flex-end; margin-bottom: -6px; }
+  #tilesPop { position: fixed; z-index: 200; min-width: 220px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 14px; display: none; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--text-muted); }
+  select, input[type="date"], input[type="text"], input[type="number"],
+  input[type="email"], input[type="password"] {
+    font: inherit; font-size: 14px;
+    color: var(--text-primary);
+    background: var(--page);
+    border: 1px solid var(--baseline);
+    border-radius: 7px;
+    padding: 7px 9px;
+  }
+  input.narrow { width: 108px; }
+  input.wide { width: 170px; }
+  .check { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: 14px; color: var(--text-secondary); }
+  .check input { width: 16px; height: 16px; accent-color: var(--series-1); }
+  .btn {
+    font: inherit; font-size: 14px; font-weight: 600;
+    padding: 9px 18px;
+    border-radius: 8px;
+    border: 1px solid var(--series-1);
+    background: var(--series-1);
+    color: #fff;
+    cursor: pointer;
+  }
+  .btn.secondary {
+    background: transparent;
+    color: var(--text-secondary);
+    border-color: var(--baseline);
+  }
+  .btn.small { padding: 6px 12px; font-size: 14px; }
+  .btn.icon {
+    background: transparent; border-color: var(--baseline); color: var(--text-secondary);
+    padding: 5px 10px; font-size: 14px; line-height: 1;
+  .table-scroll { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { padding: 7px 10px; text-align: left; white-space: nowrap; }
+  th { font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--baseline); }
+  td { border-bottom: 1px solid var(--grid); }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.notes { max-width: 210px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+             color: var(--text-secondary); font-size: 12px; }
+  .card-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+  .card-head h2 { margin-bottom: 0; }
+  .empty { color: var(--text-muted); font-size: 14px; padding: 10px 0; }
+  .row-actions { display: flex; gap: 6px; }
+
+  .acct-box { display: none; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
+  .acct-box.show { display: flex; }
+  .toolbar { justify-content: space-between; }
+  .side-controls { display: flex; align-items: center; gap: 6px; margin-left: auto;
+                   padding-left: 10px; border-left: 1px solid var(--border); }
+  #acctEmail { display: none; }
+  #morePop { position: fixed; z-index: 200; min-width: 170px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 8px; display: none; }
+  #morePop.show { display: block; }
+  #morePop button { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; padding: 8px 10px; border-radius: 7px; border: none; background: transparent; color: var(--text-primary); cursor: pointer; }
+  #morePop button:hover { background: var(--page); }
+  #moreBackdrop { position: fixed; inset: 0; z-index: 199; display: none; }
+  #moreBackdrop.show { display: block; }
+  .sync-pill {
+    font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+    border: 1px solid var(--grid); color: var(--text-muted); white-space: nowrap;
+  }
+  .sync-pill.saving { color: var(--series-1); border-color: var(--series-1); }
+  .sync-pill.saved { color: var(--good); border-color: var(--good); }
+  .sync-pill.err { color: var(--danger); border-color: var(--danger); }
+
+  .paid-yes { color: var(--good); font-weight: 600; }
+  /* -- book of business -- */
+  .sheet-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted);
+             font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
+  .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .deal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 90; display: none; }
+  .deal-scrim.show { display: block; }
+  .deal-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); z-index: 91;
+                background: var(--surface-1); border-left: 1px solid var(--border);
+                padding: 20px; overflow-y: auto; transform: translateX(102%);
+                transition: transform .18s ease; }
+  .deal-sheet.show { transform: none; }
+  .deal-sheet > .card { border: none; box-shadow: none; padding: 4px; }
+  .deal-sheet .field .wide { width: 100%; }
+  .deal-sheet .field { flex: 1 1 180px; }
+  .deal-actions { display: flex; gap: 8px; margin-top: 18px; }
+  .book-search { margin: 4px 0 14px; }
+  .book-search input { width: 100%; max-width: 420px; }
+  #bookTable tbody tr { cursor: pointer; }
+  #bookTable tbody tr:hover { background: var(--page); }
+  .ben-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
+             padding: 10px 0; border-bottom: 1px dashed var(--grid); }
+  .ben-row:last-child { border-bottom: none; }
+  .ben-row .field { flex: 1 1 120px; }
+  .ben-row .pct { width: 76px; }
+  .ben-row .x { background: transparent; border: none; color: var(--text-muted);
+                font-size: 20px; cursor: pointer; padding: 0 6px; line-height: 1; }
+  .ben-sec { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--grid); }
+  .ben-total { font-size: 12px; color: var(--text-muted); margin-top: 10px; }
+  .ben-total.over { color: var(--danger); }
+  .client-head { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: baseline; }
+  .client-head h2 { margin: 0; font-size: 18px; text-transform: none; letter-spacing: 0;
+                    color: var(--text-primary); }
+  .client-facts { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 12px 0 4px;
+                  font-size: 13px; color: var(--text-muted); }
+  .client-facts b { color: var(--text-primary); font-weight: 600; }
+  .client-sec { margin-top: 18px; }
+  .client-sec h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .05em;
+                   color: var(--text-muted); margin: 0 0 8px; }
+  header { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  header h1 { font-size: 20px; margin: 0; }
+  .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  @media (max-width: 760px) {
+    .book-search input { max-width: none; }
+    th, td { padding: 8px 8px; }
+  }
+
+</style>
+
+<div class="wrap">
+  <nav class="hub-tabs">
+    <a href="dashboard.html" style="display:none" class="hub-tab">Dashboard</a>
+    <a href="index.html" class="hub-tab">Activity</a>
+    <a href="pnl.html" class="hub-tab">Deals &amp; PNL</a>
+    <a href="clients.html" class="hub-tab is-active" id="bookTab">Clients</a>
+    <a href="carriers.html" class="hub-tab">Carrier links</a>
+    <a href="leaderboard.html" class="hub-tab" id="boardTab" style="display:none">Leaderboard</a>
+    <a href="owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
+  </nav>
+
+  <header>
+    <div>
+      <h1>Clients</h1>
+      <div class="sub"></div>
+    </div>
+    <div class="toolbar">
+      <div class="side-controls">
+        <span class="sync-pill" id="syncPill" style="display:none"></span>
+        <div class="acct-box" id="acctBox"><span id="acctEmail"></span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Book of business <span class="hint" id="bookCount"></span></h2>
+      <button type="button" class="btn secondary small" id="clientAddBtn">Add client</button>
+    </div>
+    <div class="book-search">
+      <input type="search" id="bookSearch" placeholder="Search name, phone, email, carrier or product" aria-label="Search your clients">
+    </div>
+    <div class="table-scroll">
+      <table id="bookTable">
+        <thead>
+          <tr>
+            <th>Client</th><th>Phone</th><th class="num">Policies</th>
+            <th class="num">AP</th><th>Carriers</th><th>Last deal</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="bookBody"></tbody>
+      </table>
+    </div>
+    <div class="empty" id="bookEmpty" style="display:none"></div>
+  </div>
+
+  <div class="card" id="clientDetail" hidden></div>
+</div>
+
+<div class="deal-scrim" id="clientScrim"></div>
+<aside class="deal-sheet" id="clientSheet">
+  <div class="card">
+    <div class="sheet-head">
+      <h2 id="clientFormTitle">Client</h2>
+      <button type="button" class="sheet-x" id="clientSheetClose" aria-label="Close">&times;</button>
+    </div>
+    <form id="clientForm">
+      <div class="form-grid">
+        <div class="field"><label for="c-name">Name</label><input type="text" id="c-name" class="wide" required placeholder="Client name"></div>
+        <div class="field"><label for="c-dob">Date of birth</label><input type="date" id="c-dob"></div>
+        <div class="field"><label for="c-phone">Phone</label><input type="tel" id="c-phone" class="wide" placeholder="(480) 555-0100"></div>
+        <div class="field"><label for="c-email">Email</label><input type="email" id="c-email" class="wide" placeholder="name@example.com"></div>
+        <div class="field"><label for="c-address">Address</label><input type="text" id="c-address" class="wide" placeholder="Street, city, state"></div>
+        <div class="field"><label for="c-notes">Notes</label><input type="text" id="c-notes" class="wide" placeholder=""></div>
+      </div>
+
+      <div class="ben-sec">
+        <div class="card-head">
+          <h2 style="font-size:13px">Beneficiaries</h2>
+          <button type="button" class="btn secondary small" id="benAdd">Add beneficiary</button>
+        </div>
+        <div id="benRows"></div>
+        <div class="empty" id="benEmpty">No beneficiaries recorded.</div>
+        <div class="ben-total" id="benTotal"></div>
+      </div>
+
+      <div class="deal-actions">
+        <button type="submit" class="btn" id="clientSubmit">Save client</button>
+        <button type="button" class="btn secondary" id="clientDelete" style="display:none">Delete</button>
+      </div>
+    </form>
+  </div>
+</aside>
+
+<script src="hub-store.js?v=1"></script>
+<script src="clients.js?v=1"></script>
+<script src="hub-branding.js"></script>
+<script src="tabs-customize.js"></script>
+<script src="hub-shell.js"></script>
+</body>
+</html>
