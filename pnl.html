@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Deals &amp; PNL Tracker</title>
+<title>PNL</title>
 <link rel="icon" href="favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="64x64" href="favicon.png">
@@ -473,15 +473,16 @@
   <nav class="hub-tabs">
     <a href="dashboard.html" style="display:none" class="hub-tab">Dashboard</a>
     <a href="index.html" class="hub-tab">Activity</a>
-    <a href="pnl.html" class="hub-tab is-active" id="dealsTab">Deals &amp; PNL</a>
+    <a href="pnl.html" class="hub-tab is-active" id="dealsTab">PNL</a>
     <a href="clients.html" class="hub-tab" id="bookTab">Clients</a>
+    <a href="expenses.html" class="hub-tab" id="expTab">Expenses</a>
     <a href="carriers.html" class="hub-tab">Carrier links</a>
     <a href="leaderboard.html" class="hub-tab" id="boardTab" style="display:none">Leaderboard</a>
         <a href="owner/" class="hub-tab" id="ownerTab" style="display:none">Agency</a>
   </nav>
   <header>
     <div>
-      <h1 data-brand-name>Deals &amp; PNL</h1>
+      <h1 data-brand-name>PNL</h1>
     <div class="sub"></div>
     </div>
     <div class="toolbar">
@@ -512,66 +513,10 @@
     <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
   </div>
 
-  <div class="deal-scrim" id="dealScrim"></div>
-  <aside class="deal-sheet" id="dealSheet">
-  <div class="card">
-    <div class="sheet-head">
-      <h2 id="dealFormTitle">Add a deal</h2>
-      <button type="button" class="sheet-x" id="dealSheetClose" aria-label="Close">&times;</button>
-    </div>
-    <form id="dealForm">
-      <div class="form-grid">
-        <div class="field"><label for="d-date">Date</label><input type="date" id="d-date" required></div>
-        <div class="field"><label for="d-client">Client name</label><input type="text" id="d-client" class="wide" list="clientList" required placeholder="Client"></div>
-        <div class="field"><label for="d-carrier">Carrier</label><input type="text" id="d-carrier" class="wide" list="carrierList" placeholder="Carrier"></div>
-        <div class="field"><label for="d-policy">Product</label><input type="text" id="d-policy" class="wide" list="productList" placeholder="Carrier product"></div>
-        <div class="field"><label for="d-ap">AP ($)</label><input type="number" id="d-ap" class="narrow" min="0" step="0.01" placeholder="auto"></div>
-        <!-- IUL pays on the target premium from the illustration, not the whole
-             premium, so this field appears only for an IUL product and is what
-             the commission is calculated from when it's filled in. -->
-        <div class="field" id="targetField" hidden><label for="d-target">Target premium ($)</label><input type="number" id="d-target" class="narrow" min="0" step="0.01" placeholder="from illustration"></div>
-        <div class="field"><label for="d-status">Status</label>
-          <select id="d-status">
-            <option>Submitted</option>
-            <option>Pending</option>
-            <option>Issued</option>
-            <option>Declined</option>
-            <option>Cancelled</option>
-            <option>Chargeback</option>
-          </select>
-        </div>
-      </div>
-
-      <button type="button" class="more-toggle" id="dealMoreToggle" aria-expanded="false" aria-controls="dealMorePanel"><span class="chev" id="dealMoreChev">&#9654;</span> More details</button>
-
-      <!-- Collapsed by default. Nothing in here is `required`, so hiding it can never
-           block submit with an unfocusable invalid control. -->
-      <div class="more-panel" id="dealMorePanel" hidden>
-        <div class="form-grid">
-          <div class="field"><label for="d-face">Face ($)</label><input type="number" id="d-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
-          <div class="field"><label for="d-monthly">Monthly ($)</label><input type="number" id="d-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
-          <div class="field"><label for="d-com">Commission ($)</label><div class="com-row"><input type="number" id="d-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="comNote"></span></div></div>
-          <div class="field"><label for="d-lead">Lead type</label><input type="text" id="d-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
-          <div class="field"><label for="d-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="d-issued-date"></div>
-          <div class="field"><label for="d-notes">Notes</label><input type="text" id="d-notes" class="wide" placeholder=""></div>
-          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-paid"> Paid</label></div>
-          <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="d-reqs"> Requirements</label></div>
-        </div>
-      </div>
-
-      <div class="deal-actions">
-        <button type="submit" class="btn" id="dealSubmit">Add deal</button>
-        <button type="button" class="btn secondary" id="dealCancel" style="display:none">Cancel</button>
-      </div>
-    </form>
-    <datalist id="productList"></datalist>
-    <datalist id="carrierList"></datalist>
-    <datalist id="leadList"></datalist>
-    <datalist id="clientList"></datalist>
-    <!-- Contract level and agency membership are account settings, not deal fields.
-         They stay in the document (lots of code looks them up by id) but live here
-         hidden until the Settings panel adopts the real nodes -- moving rather than
-         cloning keeps every existing handler attached. -->
+  <!-- Contract level and agency membership are account settings. They used to
+       live inside the add-a-deal panel because that panel was always present;
+       now that deals are added from a client record, they sit here instead --
+       still hidden, still the same nodes the Settings panel adopts. -->
     <div id="pnlSettingsHolder" hidden>
     <div class="settings-row" id="contractRow">
       <span>Your contract level:</span>
@@ -589,61 +534,9 @@
       <span id="agencyNote" style="display:none"></span>
     </div>
     </div>
-  </div>
-  </aside>
 
-  <div class="card">
-    <h2>Deals <span class="hint" id="dealCount"></span></h2>
-    <div class="table-scroll">
-      <table id="dealsTable">
-        <thead>
-          <tr>
-            <th></th><th>Date</th><th>Client</th><th>Carrier / product</th>
-            <th class="num">AP</th><th class="num">Com</th>
-            <th>Status</th><th>Paid</th><th>Notes</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="dealsBody"></tbody>
-        <tfoot id="dealsFoot"></tfoot>
-      </table>
-    </div>
-    <div class="empty" id="dealsEmpty" style="display:none">No deals this month yet.</div>
-  </div>
 
-  <div class="card">
-    <div class="card-head">
-      <h2>Expenses <span class="hint" id="expCount"></span></h2>
-      <button type="button" class="btn secondary small" id="expToggle">Hide list</button>
-    </div>
-    <form id="expForm" class="quick-add">
-      <div class="field"><label for="e-date">Date</label><input type="date" id="e-date" required></div>
-      <div class="field"><label for="e-item">Item</label><input type="text" id="e-item" class="wide" list="itemList" required placeholder="Goat leads"></div>
-      <div class="field"><label for="e-kind">Type</label>
-        <select id="e-kind">
-          <option value="lead">Lead purchase</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div class="field" id="e-lead-field"><label for="e-lead">Lead type</label><input type="text" id="e-lead" class="wide" list="leadList" placeholder="Goat aged $3"></div>
-      <div class="field"><label for="e-price">Price ($)</label><input type="number" id="e-price" class="narrow" min="0" step="0.01" required placeholder="0"></div>
-      <button type="submit" class="btn" id="expSubmit">Add expense</button>
-      <button type="button" class="btn secondary" id="expCancel" style="display:none">Cancel</button>
-    </form>
-    <datalist id="itemList"></datalist>
-    <div id="expListWrap">
-    <div class="table-scroll">
-      <table id="expTable">
-        <thead><tr><th>Date</th><th>Item</th><th>Type</th><th class="num">Price</th><th></th></tr></thead>
-        <tbody id="expBody"></tbody>
-        <tfoot id="expFoot"></tfoot>
-      </table>
-    </div>
-    <div class="empty" id="expEmpty" style="display:none">No expenses this month yet.</div>
-    </div>
 
-    <!-- A summary of the list directly above it, so it reads as a footnote to
-         the expenses rather than competing with them as its own section. -->
-  </div>
   </div><!-- /pnlView -->
 </div>
 
@@ -740,9 +633,12 @@
     return seedState();
   }
 
-  function save() {
+  /* save(true) means "this whole document wins" -- a CSV import or a restore
+     from backup, where merging the cloud's deals and expenses back in would
+     undo the very thing just imported. Every other save merges. */
+  function save(full) {
     localStorage.setItem(STORE_KEY, JSON.stringify(state));
-    cloudScheduleSave();
+    cloudScheduleSave(full);
     teamSchedulePublish();
   }
 
@@ -915,133 +811,9 @@
     return mo + "/" + da;
   }
 
-  function renderDeals() {
-    var deals = monthDeals();
-    // Deals submitted in an earlier month that converted THIS month don't live
-    // here (they stay listed under the month they were submitted) -- but their
-    // commission/issued AP DOES count in this month's tiles above. Show them as
-    // a clearly-marked extra row so that money is never invisible in the table.
-    var crossIn = state.deals.filter(function (d) {
-      return effectiveIssuedYm(d) === currentMonth && String(d.date || "").slice(0, 7) !== currentMonth;
-    });
-    var body = $("dealsBody");
-
-    function row(d, isCrossIn) {
-      var chipCls = (d.status || "").toLowerCase();
-      var actions = isCrossIn
-        ? '<button class="btn secondary small" data-goto-month="' + String(d.date || "").slice(0, 7) + '">View in ' + shortMonth(String(d.date || "").slice(0, 7)) + "</button>"
-        : '<div class="row-actions">' +
-            '<button class="btn icon" data-edit="' + d.id + '" title="Edit">&#9998;</button>' +
-            '<button class="btn icon" data-del-deal="' + d.id + '" title="Delete">&#10005;</button>' +
-          "</div>";
-      // Face, monthly, lead type and notes moved into a detail row that opens on
-      // click. Thirteen columns never fit, and sideways scrolling to read your
-      // own deals is worse than one click to see the secondary numbers.
-      var detailBits = [
-        ["Face", money(d.face)],
-        ["Monthly", money(d.monthly)],
-        ["Target", d.target != null ? money(d.target) : "&mdash;"],
-        ["Balance", d.comBalance != null ? money(d.comBalance) + " to come" : "&mdash;"],
-        ["Lead type", esc(d.lead) || "&mdash;"],
-        ["Issued", d.issuedDate ? fmtDay(d.issuedDate) : "&mdash;"],
-        ["Notes", esc(d.notes) || "&mdash;"]
-      ];
-      var detail = isCrossIn ? "" :
-        '<tr class="deal-detail" hidden><td></td><td colspan="9"><div class="dd-grid">' +
-        detailBits.map(function (b) {
-          return '<div><span class="dd-k">' + b[0] + '</span><span class="dd-v">' + b[1] + "</span></div>";
-        }).join("") + "</div></td></tr>";
-
-      return "<tr" + (isCrossIn ? ' class="cross-in"' : ' class="deal-row"') + ">" +
-        "<td>" + (isCrossIn ? "" : '<span class="dd-chev" title="Show details">&#9656;</span>') + "</td>" +
-        "<td>" + fmtDay(isCrossIn ? d.issuedDate : d.date) + "</td>" +
-        "<td>" + esc(d.client) + "</td>" +
-        "<td>" + esc(d.carrier) +
-          (d.policy ? '<div class="cp-sub">' + esc(d.policy) + "</div>" : "") + "</td>" +
-        '<td class="num">' + (isCrossIn ? "—" : money(d.ap)) + "</td>" +
-        '<td class="num' + (d.status === "Chargeback" ? " struck" : "") + '">' + money(d.com) + "</td>" +
-        '<td><span class="status-chip ' + chipCls + '">' + esc(d.status) + "</span>" +
-          (!isCrossIn && d.reqs ? ' <span class="reqs-chip" title="Requirements outstanding">REQS</span>' : "") +
-          (isCrossIn
-            ? '<div class="issued-sub">Submitted ' + shortMonth(String(d.date || "").slice(0, 7)) + "</div>"
-            : (d.issuedDate ? '<div class="issued-sub">Issued ' + fmtDay(d.issuedDate) +
-                (effectiveIssuedYm(d) !== currentMonth ? " \u2192 counted in " + shortMonth(String(effectiveIssuedYm(d) || "")) : "") + "</div>" : "")) + "</td>" +
-        "<td>" + (isCrossIn ? "—" : (d.paid ? '<span class="paid-yes" title="Commission received">&#10003;</span>' : '<span class="paid-no" title="Not paid yet">&mdash;</span>')) + "</td>" +
-        '<td class="notes"' + (!isCrossIn && d.notes ? ' title="' + esc(d.notes) + '"' : "") + ">" +
-          (isCrossIn ? "" : esc(d.notes)) + "</td>" +
-        "<td>" + actions + "</td></tr>" + detail;
-    }
-
-    body.innerHTML = deals.map(function (d) { return row(d, false); }).join("") +
-      crossIn.map(function (d) { return row(d, true); }).join("");
-
-    // Row click opens the detail row. Buttons inside the row keep their own
-    // behaviour -- editing or deleting must not also toggle the drawer.
-    if (!body._ddBound) {
-      body._ddBound = true;
-      body.addEventListener("click", function (ev) {
-        if (ev.target.closest("button, a, input")) return;
-        var tr = ev.target.closest("tr.deal-row");
-        if (!tr) return;
-        var det = tr.nextElementSibling;
-        if (!det || !det.classList.contains("deal-detail")) return;
-        det.hidden = !det.hidden;
-        tr.classList.toggle("open", !det.hidden);
-      });
-    }
-
-    var foot = $("dealsFoot");
-    var totalRows = deals.length + crossIn.length;
-    if (totalRows) {
-      foot.innerHTML = "<tr><td colspan=\"4\">Total</td>" +
-        '<td class="num">' + money(sum(deals, function (d) { return d.ap; })) + "</td>" +
-        '<td class="num">' + money(sum(deals.concat(crossIn).filter(function (d) { return effectiveIssuedYm(d) === currentMonth; }), earnedCom)) + "</td>" +
-        '<td colspan="4"></td></tr>';
-    } else foot.innerHTML = "";
-
-    $("dealsEmpty").style.display = totalRows ? "none" : "";
-    $("dealCount").textContent = deals.length ? "(" + deals.length + ")" : "";
-  }
-
-  function renderExpenses() {
-    var exps = monthExpenses();
-    $("expBody").innerHTML = exps.map(function (e) {
-      var typeCell = e.kind === "lead"
-        ? '<span class="status-chip">Lead' + (e.lead ? " · " + esc(e.lead) : "") + "</span>"
-        : '<span class="muted">Other</span>';
-      return "<tr><td>" + fmtDay(e.date) + "</td><td>" + esc(e.item) + "</td>" +
-        "<td>" + typeCell + "</td>" +
-        '<td class="num">' + money(e.price) + "</td>" +
-        '<td><div class="row-actions">' +
-          '<button class="btn icon" data-edit-exp="' + e.id + '" title="Edit">&#9998;</button>' +
-          '<button class="btn icon" data-del-exp="' + e.id + '" title="Delete">&#10005;</button>' +
-        "</div></td></tr>";
-    }).join("");
-    $("expFoot").innerHTML = exps.length
-      ? '<tr><td colspan="3">Total</td><td class="num">' + money(sum(exps, function (e) { return e.price; })) + "</td><td></td></tr>"
-      : "";
-    $("expEmpty").style.display = exps.length ? "none" : "";
-    $("expCount").textContent = exps.length ? "(" + exps.length + " · " + money(sum(exps, function (e) { return e.price; })) + ")" : "";
-  }
-
-
-  function renderDatalists() {
-    updateProductList();
-    fillList("carrierList", [], Object.keys(COMP_CARRIERS));
-    fillList("leadList", state.deals.map(function (d) { return d.lead; }).concat(state.expenses.map(function (e) { return e.lead; })), ["Goat aged $3", "Unknown", "Referral"]);
-    fillList("itemList", state.expenses.map(function (e) { return e.item; }), ["Goat leads", "Ringy"]);
-    // Picking an existing client off the list is what keeps repeat policies
-    // under one record instead of spawning a near-duplicate on a typo.
-    fillList("clientList", state.clients.map(function (c) { return c.name; }), []);
-  }
-  function fillList(id, values, seeds) {
-    var seen = {};
-    var all = seeds.concat(values).filter(function (v) {
-      if (!v || seen[v]) return false;
-      seen[v] = true; return true;
-    });
-    $(id).innerHTML = all.map(function (v) { return '<option value="' + esc(v) + '">'; }).join("");
-  }
+  /* renderDeals and renderExpenses used to live here. The deals table moved to
+     a client's record and the expenses table to the Expenses page; this page
+     keeps the numbers those rows add up to. */
 
   function safeRender(name, fn) {
     try { fn(); } catch (e) {
@@ -1051,9 +823,6 @@
   function render() {
     $("monthLabel").textContent = monthLabel(currentMonth);
     safeRender("tiles", renderTiles);
-    safeRender("deals", renderDeals);
-    safeRender("expenses", renderExpenses);
-    safeRender("datalists", renderDatalists);
     safeRender("contractLevel", refreshContractLevel);
     safeRender("goal", renderGoal);
   }
@@ -1162,14 +931,9 @@
              hasData: (dials > 0 || ents.length > 0) };
   }
 
-  /* Comp guide data lives in comp-guide.js (shared with the agency owner hub). */
-
-  /* Pricing lives in comp-calc.js now, shared with the Clients page's deal
-     form. Two copies would drift the first time the guide changed, and the
-     symptom would be two pages quoting different commission on the same
-     policy. These thin aliases keep the call sites below unchanged. */
-  function findCarrierKey(carrier) { return CompCalc.findCarrierKey(carrier); }
-  function compLookup(carrier, product, level) { return CompCalc.lookup(carrier, product, level); }
+  /* Comp guide data lives in comp-guide.js (shared with the agency owner hub);
+     pricing a deal is comp-calc.js, used by the Clients page's deal form. This
+     page only reports the commission already stored on each deal. */
 
   // settings (lazy; persists via save() and cloud sync)
   function getSetting(k) {
@@ -1182,88 +946,6 @@
     return (state.settings || {})[k];
   }
   function setSetting(k, v) { state.settings = state.settings || {}; state.settings[k] = v; save(); }
-
-  function updateProductList() {
-    var ckey = findCarrierKey($("d-carrier").value);
-    if (ckey) {
-      fillList("productList", Object.keys(COMP_CARRIERS[ckey].products), []);
-    } else {
-      fillList("productList", state.deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE"]);
-    }
-  }
-
-  // auto-fill commission from the comp guide (upfront = AP × comp% × 9/12);
-  // never clobbers a commission the user typed (comAutoFilled tracks that)
-  var comAutoFilled = false;
-  /* Every carrier caps the advance at this much per policy, so a big case pays
-     the cap rather than the full 9-month figure. */
-  var ADVANCE_CAP = CompCalc.ADVANCE_CAP;
-  var pendingFull = null;   // last auto-calculated uncapped commission
-
-  /* Every IUL in the comp guide has "IUL" in its name (IULe, FFIUL, Max
-     Accumulator IUL, "IUL (All) Fully Underwritten"), so the product name is
-     enough -- no second list to keep in step with the guide. */
-  /* Universal life of any flavour pays on the target premium from the
-     illustration, not the whole premium. Catches IUL, IULE, FFIUL, XUL, a bare
-     "UL", and the spelled-out "Universal Life" that Ethos and NLG use. */
-  function looksLikeIul(product) { return CompCalc.looksLikeIul(product); }
-
-  function syncTargetField() {
-    var f = $("targetField");
-    if (!f) return;
-    var show = looksLikeIul($("d-policy").value);
-    f.hidden = !show;
-    if (!show) $("d-target").value = "";
-  }
-
-  function recalcCommission() {
-    var note = $("comNote");
-    var info = compLookup($("d-carrier").value, $("d-policy").value, getSetting("contractLevel"));
-    if (!info || info.miss) {
-      // Say why there's no rate instead of leaving the field blank and hoping the
-      // person notices. "incomplete" just means they haven't finished typing yet.
-      if (note) {
-        var msg = "";
-        if (info && info.miss === "carrier") msg = "\u26a0 carrier not in comp guide \u2014 enter commission manually";
-        else if (info && info.miss === "product") msg = "\u26a0 product not in comp guide \u2014 check spelling or enter manually";
-        else if (info && info.miss === "level") msg = "\u26a0 set your contract level in Settings to auto-calculate";
-        else if (info && info.miss === "unavailable") msg = "\u26a0 not available at your contract level \u2014 enter commission manually";
-        note.textContent = msg;
-        note.className = "com-note" + (msg ? " warn" : "");
-      }
-      return;
-    }
-    // An IUL pays on target premium only -- premium above target earns nothing,
-    // so paying on AP would overstate the commission, often by a lot.
-    var isIul = looksLikeIul($("d-policy").value);
-    var target = isIul ? num($("d-target").value) : null;
-    // No target yet on an IUL: leave the box empty rather than filling in an
-    // AP-based figure that is wrong and one keystroke from being saved.
-    var basis = isIul ? target : num($("d-ap").value);
-    var comEl = $("d-com");
-    if (isIul && target == null && comAutoFilled) { comEl.value = ""; }
-    var full = basis == null ? null : basis * info.rate / 100 * 9 / 12;
-    var capped = full != null && full > ADVANCE_CAP;
-    if (full != null && (comEl.value === "" || comAutoFilled)) {
-      comEl.value = (capped ? ADVANCE_CAP : full).toFixed(2);
-      comAutoFilled = true;
-    }
-    // Remember what the advance was cut from. The balance is still owed, just
-    // paid as the client pays rather than up front, so it belongs on the deal.
-    pendingFull = full;
-    if (note) {
-      // Facts first, warnings last, so the sentence reads in one pass.
-      var msg = "auto · " + info.rate + "% × 9 mo";
-      // Say what it's paying on, so a number far below AP never looks like a bug.
-      if (isIul && target != null) msg += " on " + money(target) + " target";
-      // Say so when the cap bites: otherwise the number looks like a bad rate.
-      if (capped) msg += " · capped at " + money(ADVANCE_CAP) + " (was " + money(full) + ")";
-      if (isIul && target == null) msg += "  ⚠ enter the target premium — this pays on target, not AP";
-      if (info.verify) msg += "  ⚠ check this rate against the comp guide";
-      note.textContent = msg;
-      note.className = "com-note" + (info.verify || (isIul && target == null) ? " warn" : "");
-    }
-  }
 
   function refreshContractLevel() {
     var sel = $("contractLevel");
@@ -1278,7 +960,7 @@
     // user never has to set it again.
     if (window.HubContract) {
       HubContract.adoptLegacy((state.settings || {}).contractLevel);
-      HubContract.onChange(function () { recalcCommission(); refreshContractLevel(); });
+      HubContract.onChange(function () { refreshContractLevel(); });
     }
     var sel = $("contractLevel");
     if (!sel) return;
@@ -1288,7 +970,6 @@
     sel.addEventListener("change", function () {
       if (window.HubContract) HubContract.set(this.value);
       else setSetting("contractLevel", this.value);
-      recalcCommission();
     });
   })();
 
@@ -1299,239 +980,28 @@
     return t.slice(0, 7) === currentMonth ? t : currentMonth + "-01";
   }
 
-  /* ---------- add-a-deal slide-over ----------
-     The form is the same live node it always was, just parked in a panel. That
-     keeps every handler, datalist and auto-calc wired exactly as before -- only
-     where it sits on screen changed. */
-  function openDealSheet() {
-    $("dealScrim").classList.add("show");
-    $("dealSheet").classList.add("show");
-    setTimeout(function () { var c = $("d-client"); if (c) c.focus(); }, 180);
-  }
-  function closeDealSheet() {
-    $("dealSheet").classList.remove("show");
-    $("dealScrim").classList.remove("show");
-    // Leaving a half-finished edit open would silently keep editingId set, so a
-    // later "Add deal" would overwrite that deal instead of creating one.
-    if (editingId) resetDealForm();
-  }
+  /* Deals are added and edited on a client's record now, so the slide-over,
+     its form and the commission auto-calc that fed it all live in clients.js.
+     Pricing itself is in comp-calc.js, shared by whoever needs it. */
 
-  function resetDealForm() {
-    editingId = null;
-    apAutoFilled = false;
-    comAutoFilled = false;
-    $("dealForm").reset();
-    // An edit may have force-opened the panel; going back to a blank form should
-    // return to whatever the person actually chose.
-    setDealMoreOpen(!!(window.HubPrefs && HubPrefs.get("dealMoreOpen", false)), false);
-    $("d-date").value = defaultDateForMonth();
-    $("dealFormTitle").textContent = "Add a deal";
-    $("dealSubmit").textContent = "Add deal";
-    $("dealCancel").style.display = "none";
-    updateProductList();
-    syncTargetField();
-    recalcCommission();
-  }
-
-  function startEdit(id) {
-    var d = state.deals.find(function (x) { return x.id === id; });
-    if (!d) return;
-    editingId = id;
-    apAutoFilled = false;
-    comAutoFilled = false;
-    $("d-date").value = d.date;
-    $("d-client").value = d.client || "";
-    $("d-policy").value = d.policy || "";
-    $("d-carrier").value = d.carrier || "";
-    $("d-face").value = d.face != null ? d.face : "";
-    $("d-monthly").value = d.monthly != null ? d.monthly : "";
-    $("d-ap").value = d.ap != null ? d.ap : "";
-    $("d-target").value = d.target != null ? d.target : "";
-    pendingFull = (num(d.com) || 0) + (num(d.comBalance) || 0) || null;
-    $("d-com").value = d.com != null ? d.com : "";
-    $("d-lead").value = d.lead || "";
-    $("d-status").value = d.status || "Submitted";
-    $("d-issued-date").value = d.issuedDate || "";
-    $("d-paid").checked = !!d.paid;
-    $("d-reqs").checked = !!d.reqs;
-    $("d-notes").value = d.notes || "";
-    $("dealFormTitle").textContent = "Edit deal — " + (d.client || "");
-    $("dealSubmit").textContent = "Save changes";
-    $("dealCancel").style.display = "";
-    // Never hide populated fields mid-edit -- if this deal has anything in the
-    // secondary set, show it rather than making them hunt for it.
-    if (d.face != null || d.monthly != null || d.com != null || d.lead ||
-        d.issuedDate || d.paid || d.notes || d.reqs) setDealMoreOpen(true, false);
-    updateProductList();
-    syncTargetField();
-    recalcCommission();
-    openDealSheet();
-  }
-
-  $("dealForm").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var rec = {
-      id: editingId || uid(),
-      date: $("d-date").value,
-      client: $("d-client").value.trim(),
-      policy: $("d-policy").value.trim(),
-      carrier: $("d-carrier").value.trim(),
-      face: num($("d-face").value),
-      monthly: num($("d-monthly").value),
-      ap: num($("d-ap").value),
-      target: num($("d-target").value),
-      com: num($("d-com").value),
-      // What the cap held back. Paid later as earned, so it is tracked but is
-      // deliberately not counted as cash in hand.
-      comBalance: (function () {
-        var adv = num($("d-com").value);
-        if (adv == null || pendingFull == null) return null;
-        var bal = pendingFull - adv;
-        return bal > 0.004 ? Math.round(bal * 100) / 100 : null;
-      })(),
-      lead: $("d-lead").value.trim(),
-      status: $("d-status").value,
-      issuedDate: $("d-issued-date").value,
-      paid: $("d-paid").checked,
-      reqs: $("d-reqs").checked,
-      notes: $("d-notes").value.trim()
-    };
-    // A deal always points at a client record -- an unfamiliar name creates one,
-    // so the book stays complete without anyone maintaining it separately.
-    var linked = findOrCreateClient(rec.client);
-    rec.clientId = linked ? linked.id : null;
-    if (linked) rec.client = linked.name;
-
-    if (editingId) {
-      var i = state.deals.findIndex(function (x) { return x.id === editingId; });
-      if (i >= 0) state.deals[i] = rec;
-    } else {
-      state.deals.push(rec);
-    }
-    save();
-    currentMonth = rec.date.slice(0, 7);
-    resetDealForm();
-    closeDealSheet();
-    render();
-  });
-
-  $("d-status").addEventListener("change", function () {
-    if (this.value === "Issued" && !$("d-issued-date").value) $("d-issued-date").value = todayStr();
-  });
-
-    $("dealCancel").addEventListener("click", function () { resetDealForm(); closeDealSheet(); });
-
-  // auto-fill AP from monthly premium (AP = monthly × 12), then auto-calc commission
-  // from the comp guide; neither ever overwrites a value the user typed themselves
-  var apAutoFilled = false;
-  $("d-monthly").addEventListener("input", function () {
-    var m = num(this.value);
-    var apEl = $("d-ap");
-    if (m != null && (apEl.value === "" || apAutoFilled)) {
-      apEl.value = (m * 12).toFixed(2);
-      apAutoFilled = true;
-    }
-    recalcCommission();
-  });
-  $("d-ap").addEventListener("input", function () { apAutoFilled = false; recalcCommission(); });
-  $("d-com").addEventListener("input", function () { comAutoFilled = false; });
-  $("d-carrier").addEventListener("input", function () { updateProductList(); recalcCommission(); });
-  $("d-policy").addEventListener("input", function () { syncTargetField(); recalcCommission(); });
-  $("d-target").addEventListener("input", recalcCommission);
-
-  /* ---------- expense form ---------- */
-
-  var editingExpId = null;
-
-  function syncLeadField() {
-    $("e-lead-field").style.display = $("e-kind").value === "lead" ? "" : "none";
-  }
-  $("e-kind").addEventListener("change", syncLeadField);
-
-  function resetExpForm() {
-    editingExpId = null;
-    $("expForm").reset();
-    $("e-date").value = defaultDateForMonth();
-    syncLeadField();
-    $("expSubmit").textContent = "Add expense";
-    $("expCancel").style.display = "none";
-  }
-
-  function startEditExp(id) {
-    var e = state.expenses.find(function (x) { return x.id === id; });
-    if (!e) return;
-    editingExpId = id;
-    $("e-date").value = e.date;
-    $("e-item").value = e.item || "";
-    $("e-kind").value = e.kind === "lead" ? "lead" : "other";
-    $("e-lead").value = e.lead || "";
-    $("e-price").value = e.price != null ? e.price : "";
-    syncLeadField();
-    $("expSubmit").textContent = "Save changes";
-    $("expCancel").style.display = "";
-    $("expForm").scrollIntoView({ behavior: "smooth", block: "center" });
-  }
-
-  $("expCancel").addEventListener("click", function () { resetExpForm(); });
-
-  $("expForm").addEventListener("submit", function (ev) {
-    ev.preventDefault();
-    var kind = $("e-kind").value;
-    var rec = {
-      id: editingExpId || uid(),
-      date: $("e-date").value,
-      item: $("e-item").value.trim(),
-      kind: kind,
-      lead: kind === "lead" ? $("e-lead").value.trim() : "",
-      price: num($("e-price").value)
-    };
-    if (editingExpId) {
-      var i = state.expenses.findIndex(function (x) { return x.id === editingExpId; });
-      if (i >= 0) state.expenses[i] = rec;
-    } else {
-      state.expenses.push(rec);
-    }
-    save();
-    currentMonth = rec.date.slice(0, 7);
-    resetExpForm();
-    render();
-  });
+  /* The expense form lives on the Expenses page now. */
 
   /* ---------- table actions (event delegation) ---------- */
 
   document.addEventListener("click", function (ev) {
     var btn = ev.target.closest("button");
     if (!btn) return;
-    if (btn.dataset.gotoMonth) { currentMonth = btn.dataset.gotoMonth; render(); return; }
-    if (btn.dataset.edit) startEdit(btn.dataset.edit);
-    if (btn.dataset.delDeal) {
-      var d = state.deals.find(function (x) { return x.id === btn.dataset.delDeal; });
-      if (d && confirm("Delete deal for " + (d.client || "this client") + "?")) {
-        state.deals = state.deals.filter(function (x) { return x.id !== btn.dataset.delDeal; });
-        if (editingId === btn.dataset.delDeal) resetDealForm();
-        save(); render();
-      }
-    }
-    if (btn.dataset.editExp) startEditExp(btn.dataset.editExp);
-    if (btn.dataset.delExp) {
-      state.expenses = state.expenses.filter(function (x) { return x.id !== btn.dataset.delExp; });
-      if (editingExpId === btn.dataset.delExp) resetExpForm();
-      save(); render();
-    }
+    if (btn.dataset.gotoMonth) { currentMonth = btn.dataset.gotoMonth; render(); }
   });
 
   /* ---------- month nav ---------- */
 
   $("prevMonth").addEventListener("click", function () {
     currentMonth = shiftMonth(currentMonth, -1);
-    $("d-date").value = defaultDateForMonth();
-    $("e-date").value = defaultDateForMonth();
     render();
   });
   $("nextMonth").addEventListener("click", function () {
     currentMonth = shiftMonth(currentMonth, 1);
-    $("d-date").value = defaultDateForMonth();
-    $("e-date").value = defaultDateForMonth();
     render();
   });
 
@@ -1727,7 +1197,7 @@
           : "Couldn't find deals or expenses in that file.\n\nIt needs a header row like:\nDate, Client, Policy, Carrier, Face, Monthly, AP, Commission, Lead type, Status, In force, Notes\n\nor for expenses:\nDate, Item, Type, Lead type, Price");
         return;
       }
-      save();
+      save(true);                      // the import is the document now
       if (lastDate) currentMonth = lastDate.slice(0, 7);
       render();
       alert("Imported " + addedDeals + (addedDeals === 1 ? " deal" : " deals") + " and " +
@@ -1752,7 +1222,7 @@
         if (!data || !Array.isArray(data.deals) || !Array.isArray(data.expenses)) throw new Error("bad file");
         if (confirm("Replace all current data with this backup?")) {
           state = migrate(data);
-          save(); render();
+          save(true); render();        // a restore replaces everything on purpose
         }
       } catch (e) {
         alert("That file doesn't look like a valid backup.");
@@ -1762,22 +1232,6 @@
     this.value = "";
   });
 
-
-  /* ---------- collapsible expense list ---------- */
-  var EXP_KEY = "agentHub.expensesCollapsed.v1";
-  // collapsed by default; only an explicit "0" (user clicked Show list) keeps it open
-  function expCollapsed() { try { return localStorage.getItem(EXP_KEY) !== "0"; } catch (e) { return true; } }
-  function applyExpCollapse() {
-    var c = expCollapsed();
-    var w = $("expListWrap");
-    if (w) w.style.display = c ? "none" : "";
-    var b = $("expToggle");
-    if (b) b.textContent = c ? "Show list" : "Hide list";
-  }
-  $("expToggle").addEventListener("click", function () {
-    try { localStorage.setItem(EXP_KEY, expCollapsed() ? "0" : "1"); } catch (e) {}
-    applyExpCollapse();
-  });
 
   /* ---------- theme toggle ---------- */
 
@@ -1802,11 +1256,6 @@
 
   if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
 
-  $("dealSheetClose").addEventListener("click", closeDealSheet);
-  $("dealScrim").addEventListener("click", closeDealSheet);
-  document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && $("dealSheet").classList.contains("show")) closeDealSheet();
-  });
   /* New deals are created on the Clients page now, against a client record
      that already exists -- that is what stops a policy being logged under a
      name matching nobody, and it is where the policy number, banking details
@@ -1822,7 +1271,7 @@
     b.setAttribute("href", "clients.html");
     b.title = "Deals are added from a client's record";
     if (window.HubShell && HubShell.actions) HubShell.actions.insertBefore(b, HubShell.actions.firstChild);
-    else document.querySelector(".wrap").insertBefore(b, document.getElementById("dealScrim"));
+    else document.querySelector(".wrap").appendChild(b);
   }
   // DOMContentLoaded, not setTimeout(0): hub-shell.js is a body script parsed
   // after this one, and a zero timer can fire before the parser reaches it.
@@ -1997,20 +1446,6 @@
     });
   });
 
-  /* ---------- deal form: "More details" ---------- */
-  function setDealMoreOpen(open, persist) {
-    $("dealMorePanel").hidden = !open;
-    $("dealMoreChev").innerHTML = open ? "&#9660;" : "&#9654;";
-    $("dealMoreToggle").setAttribute("aria-expanded", open ? "true" : "false");
-    // Remember the choice: someone who fills in Notes or Lead type on every deal
-    // shouldn't have to re-open the panel each time.
-    if (persist && window.HubPrefs) HubPrefs.set("dealMoreOpen", open ? true : undefined);
-  }
-  $("dealMoreToggle").addEventListener("click", function () {
-    setDealMoreOpen($("dealMorePanel").hidden, true);
-  });
-  setDealMoreOpen(!!(window.HubPrefs && HubPrefs.get("dealMoreOpen", false)), false);
-
   /* ---------- contract level + agency belong in Settings ---------- */
   if (window.HubSettings) {
     // These sections MOVE live nodes into the panel so the handlers already bound
@@ -2068,7 +1503,7 @@
   }
 
   // called from save(); no-op unless we're signed in to the cloud
-  function cloudScheduleSave() {
+  function cloudScheduleSave(full) {
     // The pending flag means "this device has work the cloud hasn't confirmed".
     // It must only be set while actually signed in. Setting it first meant a
     // signed-out edit on a fresh browser (e.g. setting a monthly goal) flagged an
@@ -2078,22 +1513,58 @@
     try { localStorage.setItem(PENDING_KEY, "1"); } catch (e) {}
     setSyncPill("Saving…", "saving");
     clearTimeout(cloudSaveTimer);
-    cloudSaveTimer = setTimeout(cloudPush, 700);
+    cloudSaveTimer = setTimeout(function () { cloudPush(full); }, 700);
   }
 
-  function cloudPush() {
+  /* Read-modify-write, not a blind upsert.
+
+     This page used to own deals and expenses, so pushing the whole document
+     was safe: nothing else wrote to the row. Now the Clients page adds deals
+     and the Expenses page adds expenses, and a stale copy here would put them
+     both back the way they were the moment you nudged a goal. So a normal save
+     reads the live row first and keeps the cloud's deals, expenses and clients,
+     writing only what this page still owns.
+
+     cloudPush(true) skips that merge, for the cases that genuinely mean "my
+     whole document wins": a CSV import, a restore from backup, and the first
+     device seeding an empty cloud. */
+  function cloudPush(full) {
     if (!cloudOn || !cloudUser) return;
     clearTimeout(cloudRetryTimer);
-    sb.from(CLOUD_TABLE).upsert(
-      { user_id: cloudUser.id, data: state, updated_at: new Date().toISOString() },
-      { onConflict: "user_id" }
-    ).then(function (res) {
+
+    var read = full
+      ? Promise.resolve(null)
+      : sb.from(CLOUD_TABLE).select("data").eq("user_id", cloudUser.id).maybeSingle()
+          .then(function (r) { return (!r.error && r.data && r.data.data) || null; },
+                function () { return null; });
+
+    read.then(function (cloudData) {
+      var payload = state;
+      if (cloudData) {
+        payload = {};
+        Object.keys(state).forEach(function (k) { payload[k] = state[k]; });
+        // Owned elsewhere -- take whatever the cloud has.
+        ["deals", "expenses", "clients"].forEach(function (k) {
+          if (cloudData[k]) payload[k] = cloudData[k];
+        });
+        // Keep the local copy honest, so the next render and the next merge
+        // both work from what the row actually holds.
+        state = migrate(payload);
+        payload = state;
+        try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
+        safeRender("tiles", renderTiles);
+      }
+      return sb.from(CLOUD_TABLE).upsert(
+        { user_id: cloudUser.id, data: payload, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
+    }).then(function (res) {
       if (res.error) {
         setSyncPill("Sync error", "err");
         // don't rely on the user happening to make another edit soon --
         // keep trying quietly so a dropped connection doesn't strand this
         // save as "local only" indefinitely
-        cloudRetryTimer = setTimeout(cloudPush, 8000);
+        cloudRetryTimer = setTimeout(function () { cloudPush(full); }, 8000);
         return;
       }
       try { localStorage.setItem(PENDING_KEY, "0"); } catch (e) {}
@@ -2143,7 +1614,7 @@
           localStorage.setItem(STORE_KEY, JSON.stringify(state));
           setSyncPill("Saved", "saved");
         } else if (localHas) {
-          cloudPush(); // first device to sign in — seed the cloud from this device
+          cloudPush(true); // first device to sign in — seed the cloud from this device
         } else {
           setSyncPill("Saved", "saved");
         }
@@ -2269,10 +1740,6 @@
 
   function afterBoot() {
     updateThemeBtn();
-    $("d-date").value = defaultDateForMonth();
-    $("e-date").value = defaultDateForMonth();
-    syncLeadField();
-    applyExpCollapse();
     render();
   }
 
@@ -2289,6 +1756,6 @@
 </script>
 <!-- APP-END -->
 <script src="tabs-customize.js"></script>
-<script src="hub-shell.js"></script>
+<script src="hub-shell.js?v=2"></script>
 </body>
 </html>
