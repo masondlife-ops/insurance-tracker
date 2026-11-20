@@ -251,6 +251,18 @@
     padding: 13px 26px; background: var(--surface-1);
     border-bottom: 1px solid var(--border);
   }
+  .cs-back {
+    display: inline-flex; align-items: center; gap: 4px;
+    font: inherit; font-size: 14px; font-weight: 600; cursor: pointer;
+    background: transparent; border: 1px solid var(--baseline);
+    color: var(--text-secondary); border-radius: 8px;
+    padding: 7px 13px 7px 9px; margin-right: 4px; flex: none;
+  }
+  .cs-back:hover { color: var(--text-primary); border-color: var(--text-muted); }
+  .cs-back svg {
+    width: 16px; height: 16px; stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+  }
   .cs-bar h2 { font-size: 18px; font-weight: 600; margin: 0; }
   .cs-sub { font-size: 13px; color: var(--text-muted); }
   .cs-bar .spacer { margin-left: auto; }
@@ -445,7 +457,7 @@
 <script src="comp-calc.js"></script>
 <script src="hub-contract.js"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=3"></script>
+<script src="clients.js?v=4"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>

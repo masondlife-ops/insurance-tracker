@@ -235,6 +235,9 @@
 
     box.innerHTML =
       '<div class="cs-bar">' +
+        '<button type="button" class="cs-back" id="clientClose">' +
+          '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>' +
+          "<span>Clients</span></button>" +
         "<div><h2>" + esc(c.name) + "</h2>" +
         '<div class="cs-sub">' +
           (c.dob ? fmtDay(c.dob) + (age ? " · " + age : "") : "No date of birth on file") +
@@ -242,7 +245,6 @@
         '<div class="spacer"></div>' +
         '<button type="button" class="btn" id="csAddDeal">Add policy</button>' +
         '<button type="button" class="btn secondary" data-edit-client="' + esc(c.id) + '">Edit client</button>' +
-        '<button type="button" class="btn secondary" id="clientClose">Close</button>' +
       "</div>" +
 
       '<div class="cs-body">' +
@@ -278,17 +280,40 @@
       "</div>";
   }
 
+  /* Opening a record pushes a history entry, so the phone's back gesture and
+     the browser's back button mean "back to the list" rather than "leave the
+     Clients page". Without it, a full-screen record is a trap on mobile: it
+     looks like a page you navigated to, so back is the obvious way out, and it
+     would have thrown you off the hub entirely. */
+  var pushedState = false;
+
   function openRecord(id) {
     clearReveals();
     viewingId = id;
     renderDetail();
     $("clientDetail").scrollTop = 0;
+    if (!pushedState) {
+      try { history.pushState({ clientRecord: true }, ""); pushedState = true; } catch (e) {}
+    }
   }
+
+  /* Closing by hand walks history back, so the entry is consumed rather than
+     left behind -- otherwise the next back press would silently reopen it. */
   function closeRecord() {
+    if (pushedState) { history.back(); return; }   // popstate finishes the job
+    dropRecord();
+  }
+
+  function dropRecord() {
     clearReveals();
     viewingId = null;
     renderDetail();
   }
+
+  window.addEventListener("popstate", function () {
+    pushedState = false;
+    if (!$("clientDetail").hidden) dropRecord();
+  });
 
   /* ---------- the sheet ---------- */
 
