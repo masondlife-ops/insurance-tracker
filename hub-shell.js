@@ -454,6 +454,15 @@
       // agency, so it still applies when there is no branding at all.
       applyGreeting(mail);
 
+      // Who is signed in is settled BEFORE branding, and never inside the
+      // no-branding branch below. Being in an agency and being logged in are
+      // two different facts: an agent with no logo set is still signed in, and
+      // reading the footer as "Signed out" is simply wrong.
+      if (mail !== lastUser) {
+        lastUser = mail || null;
+        global.HubShell.setUser(mail || null, "");
+      }
+
       // Branding gone means signed out, or no longer in an agency. Put the rail
       // back to the default -- leaving the old logo up would show the next
       // person on this browser which agency the last one belonged to.
@@ -463,12 +472,10 @@
           var slot = document.getElementById("shellMarkSlot");
           if (slot) slot.innerHTML = '<div class="rail-mark" id="shellMark">&bull;</div>';
         }
-        if (!mail && lastUser) { lastUser = null; global.HubShell.setUser(null, ""); }
         return;
       }
       if (name && name !== lastName) { lastName = name; global.HubShell.setBrand(name, null); }
       if (src && src !== lastLogo) { lastLogo = src; global.HubShell.setBrand(null, src); }
-      if (mail && mail !== lastUser) { lastUser = mail; global.HubShell.setUser(mail, ""); }
     }
 
     // "Welcome / <name>" beside the mark. The name comes from prefs, which

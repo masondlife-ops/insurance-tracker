@@ -359,6 +359,14 @@
     onAuth: function (user) {
       $("acctBox").classList.add("show");
       $("acctEmail").textContent = user.email || "";
+      // Same hook every other page uses. Without it this page read prefs from
+      // localStorage only, so the theme, accent and agency name you set
+      // anywhere else simply were not here.
+      if (window.HubPrefs && S.client) {
+        HubPrefs.attachCloud(S.client, user.id).then(function () {
+          if (window.HubSettings) HubSettings.refresh();
+        }, function () {});
+      }
       revealTabs(user);
     },
     // There is one session across the hub, so no sign-in form here: the Deals
