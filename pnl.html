@@ -143,6 +143,8 @@
   .tile.profit-pos .t-value { color: var(--good); }
   .tile.profit-neg { border-color: var(--danger); background: var(--danger-soft); }
   .tile.profit-neg .t-value { color: var(--danger); }
+  .profit-pos-txt { color: var(--good); font-weight: 600; }
+  .profit-neg-txt { color: var(--danger); font-weight: 600; }
 
   /* ---------- Forms ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -251,6 +253,32 @@
   .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
   .goal-meta .hit { color: var(--good); font-weight: 600; }
 
+  /* ---------- PNL layout ---------- */
+  /* Two columns where there is room, one where there isn't. minmax(0,...) on
+     both tracks, or a wide table inside a card refuses to shrink and pushes
+     the grid past the viewport. */
+  .pnl-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: stretch; }
+  .pnl-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; align-items: start; }
+  #pnlView { display: flex; flex-direction: column; gap: 14px; }
+  .pnl-top > .card, .pnl-grid > .card { margin: 0; }
+
+  /* The headline. A gradient tinted from the accent, so it picks up agency
+     branding instead of hard-coding a colour. */
+  .hero {
+    display: flex; flex-direction: column; justify-content: center;
+    background: linear-gradient(135deg, var(--series-1-soft), transparent 70%), var(--surface-1);
+    border-color: var(--series-1);
+  }
+  .hero-label { font-size: 12px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); font-weight: 600; }
+  .hero-value { font-size: 44px; line-height: 1.05; font-weight: 700; font-variant-numeric: tabular-nums;
+                letter-spacing: -0.02em; margin: 6px 0 14px; }
+  .hero-value.pos { color: var(--good); }
+  .hero-value.neg { color: var(--danger); }
+  .hero-split { display: flex; flex-wrap: wrap; gap: 10px 26px; }
+  .hero-split > div { display: flex; flex-direction: column; }
+  .hs-label { font-size: 12px; color: var(--text-muted); }
+  .hs-value { font-size: 16px; font-weight: 650; font-variant-numeric: tabular-nums; }
+
   /* ---------- Activity funnel ---------- */
   .funnel { display: flex; align-items: stretch; gap: 2px; flex-wrap: wrap; }
   .f-stage { flex: 1; min-width: 58px; text-align: center; padding: 4px 2px; }
@@ -262,7 +290,7 @@
   .funnel-note { font-size: 12px; color: var(--text-muted); margin-top: 12px; }
 
   /* ---------- Monthly trend ---------- */
-  .trend { display: flex; align-items: stretch; gap: 12px; height: 150px; }
+  .trend { display: flex; align-items: stretch; gap: 6px; height: 190px; }
   .tc { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
   .tc-val { font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; }
   .tc-plot { flex: 1; display: flex; flex-direction: column; width: 100%; max-width: 46px; }
@@ -272,11 +300,19 @@
   .tc-bar.pos { background: var(--series-1); border-radius: 4px 4px 0 0; }
   .tc-bar.neg { background: var(--danger); border-radius: 0 0 4px 4px; }
   .tc:not(.tc-cur) .tc-bar { opacity: .5; }
-  .tc-mo { font-size: 12px; color: var(--text-muted); margin-top: 6px; white-space: nowrap; }
+  .tc-mo { font-size: 11px; color: var(--text-muted); margin-top: 6px; white-space: nowrap; }
+  .tc-val { font-size: 11px; visibility: hidden; }
+  .tc-cur .tc-val, .tc:hover .tc-val { visibility: visible; }
+  .tc:hover .tc-bar { opacity: 1; }
   .tc-cur .tc-mo { color: var(--series-1); font-weight: 600; }
   @media (prefers-color-scheme: dark) { .com-note.warn { color: #f5b451; } }
   :root[data-theme="dark"] .com-note.warn { color: #f5b451; }
   :root[data-theme="light"] .com-note.warn { color: #c2790a; }
+
+  @media (max-width: 1000px) {
+    .pnl-top, .pnl-grid { grid-template-columns: minmax(0, 1fr); }
+    .hero-value { font-size: 36px; }
+  }
 
   /* ---------- Tables ---------- */
   .issued-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
@@ -502,15 +538,61 @@
   </header>
 
   <div id="pnlView">
+
+  <!-- The month's answer first, at a size you can read across a desk, with the
+       two numbers it is made of underneath. Everything below is detail. -->
+  <div class="pnl-top">
+    <div class="card hero" id="heroCard">
+      <div class="hero-label">Profit <span id="heroMonth"></span></div>
+      <div class="hero-value" id="heroValue">—</div>
+      <div class="hero-split">
+        <div><span class="hs-label">Commission</span><span class="hs-value" id="heroCom">—</span></div>
+        <div><span class="hs-label">Expenses</span><span class="hs-value" id="heroExp">—</span></div>
+        <div><span class="hs-label">Margin</span><span class="hs-value" id="heroMargin">—</span></div>
+      </div>
+    </div>
+
+    <div class="card" id="goalCard">
+      <div class="card-head">
+        <h2>Monthly goal <span class="hint">issued AP</span></h2>
+        <div class="goal-set"><span>Goal:</span> $<input type="number" id="goalInput" min="0" step="100" placeholder="0" aria-label="Monthly goal in dollars"></div>
+      </div>
+      <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+      <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
+    </div>
+  </div>
+
   <div class="tiles" id="tiles"></div>
 
-  <div class="card" id="goalCard">
-    <div class="card-head">
-      <h2>Monthly goal <span class="hint">issued AP</span></h2>
-      <div class="goal-set"><span>Goal:</span> $<input type="number" id="goalInput" min="0" step="100" placeholder="0" aria-label="Monthly goal in dollars"></div>
+  <div class="card">
+    <div class="card-head"><h2>Profit by month <span class="hint">last 12</span></h2></div>
+    <div class="trend" id="trend"></div>
+    <div class="empty" id="trendEmpty" style="display:none">Nothing to chart yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Activity funnel <span class="hint" id="funnelMonth"></span></h2></div>
+    <div class="funnel" id="funnel"></div>
+    <div class="funnel-note" id="funnelNote"></div>
+  </div>
+
+  <div class="pnl-grid">
+    <div class="card">
+      <div class="card-head"><h2>By carrier <span class="hint">this month</span></h2></div>
+      <div class="table-scroll">
+        <table><thead><tr><th>Carrier</th><th class="num">Deals</th><th class="num">AP</th><th class="num">Commission</th></tr></thead>
+        <tbody id="byCarrier"></tbody></table>
+      </div>
+      <div class="empty" id="carrierEmpty" style="display:none">No deals this month.</div>
     </div>
-    <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
-    <div class="goal-meta"><span id="goalNow"></span><span id="goalRemain"></span></div>
+    <div class="card">
+      <div class="card-head"><h2>By lead source <span class="hint">this month</span></h2></div>
+      <div class="table-scroll">
+        <table><thead><tr><th>Source</th><th class="num">Deals</th><th class="num">Spend</th><th class="num">Commission</th><th class="num">ROI</th></tr></thead>
+        <tbody id="byLead"></tbody></table>
+      </div>
+      <div class="empty" id="leadEmpty" style="display:none">Nothing to compare yet.</div>
+    </div>
   </div>
 
   <!-- Contract level and agency membership are account settings. They used to
@@ -822,9 +904,165 @@
   }
   function render() {
     $("monthLabel").textContent = monthLabel(currentMonth);
+    safeRender("hero", renderHero);
     safeRender("tiles", renderTiles);
     safeRender("contractLevel", refreshContractLevel);
     safeRender("goal", renderGoal);
+    safeRender("trend", renderTrend);
+    safeRender("funnel", renderFunnel);
+    safeRender("byCarrier", renderByCarrier);
+    safeRender("byLead", renderByLead);
+  }
+
+  /* ---------- the headline ---------- */
+
+  function renderHero() {
+    var issuedDeals = issuedInMonth(currentMonth);
+    var com = sum(issuedDeals, earnedCom);
+    var exp = sum(monthExpenses(), function (e) { return e.price; });
+    var profit = com - exp;
+    var v = $("heroValue");
+    v.textContent = (profit < 0 ? "−" : "") + money(Math.abs(profit));
+    v.className = "hero-value" + (profit > 0 ? " pos" : profit < 0 ? " neg" : "");
+    $("heroMonth").textContent = monthLabel(currentMonth);
+    $("heroCom").textContent = money(com);
+    $("heroExp").textContent = money(exp);
+    // Margin against what came in, not what went out: "I keep 62c of every
+    // dollar earned" is the sentence an agent actually wants.
+    $("heroMargin").textContent = com > 0 ? Math.round(profit / com * 100) + "%" : "—";
+  }
+
+  /* ---------- profit by month ---------- */
+
+  function renderTrend() {
+    var months = [];
+    for (var i = 11; i >= 0; i--) months.push(shiftMonth(currentMonth, -i));
+    var vals = months.map(monthProfit);
+    var peak = Math.max.apply(null, vals.map(Math.abs).concat([1]));
+    var any = vals.some(function (v) { return v !== 0; });
+
+    $("trendEmpty").style.display = any ? "none" : "";
+    $("trend").style.display = any ? "" : "none";
+    if (!any) { $("trend").innerHTML = ""; return; }
+
+    // Each column splits into an up half and a down half around a shared
+    // baseline, so a losing month reads as below the line rather than as a
+    // short bar that looks like a small win.
+    $("trend").innerHTML = months.map(function (ym, i) {
+      var v = vals[i];
+      var h = Math.round(Math.abs(v) / peak * 100);
+      var cur = ym === currentMonth ? " tc-cur" : "";
+      return '<div class="tc' + cur + '" title="' + esc(monthLabel(ym)) + ": " + esc(money(v)) + '">' +
+        '<div class="tc-val">' + (v === 0 ? "" : moneyK(v)) + "</div>" +
+        '<div class="tc-plot">' +
+          '<div class="tc-up">' + (v > 0 ? '<div class="tc-bar pos" style="height:' + h + '%"></div>' : "") + "</div>" +
+          '<div class="tc-down">' + (v < 0 ? '<div class="tc-bar neg" style="height:' + h + '%"></div>' : "") + "</div>" +
+        "</div>" +
+        '<div class="tc-mo">' + esc(shortMonth(ym)) + "</div>" +
+      "</div>";
+    }).join("");
+  }
+
+  /* ---------- activity funnel ---------- */
+
+  function renderFunnel() {
+    var a = activityMonth(currentMonth);
+    var deals = monthDeals().length;
+    $("funnelMonth").textContent = shortMonth(currentMonth);
+
+    if (!a.hasData) {
+      $("funnel").innerHTML = "";
+      $("funnelNote").textContent =
+        "No calls logged for this month on the Activity page, so there is nothing to tie these deals back to.";
+      return;
+    }
+
+    var stages = [
+      { n: a.dials, label: "Dials" },
+      { n: a.pickups, label: "Pickups" },
+      { n: a.convos, label: "Convos" },
+      { n: a.presentations, label: "Presented" },
+      { n: deals, label: "Sold" }
+    ];
+    var html = "";
+    stages.forEach(function (st, i) {
+      if (i) {
+        var prev = stages[i - 1].n;
+        var rate = prev > 0 ? Math.round(st.n / prev * 100) + "%" : "—";
+        html += '<div class="f-conv">' + rate + "</div>";
+      }
+      html += '<div class="f-stage"><div class="f-count">' + st.n + "</div>" +
+              '<div class="f-name">' + st.label + "</div></div>";
+    });
+    $("funnel").innerHTML = html;
+
+    var com = sum(issuedInMonth(currentMonth), earnedCom);
+    $("funnelNote").textContent = a.dials > 0
+      ? money(com / a.dials) + " earned per dial · " + (deals > 0 ? Math.round(a.dials / deals) + " dials per sale" : "no sales yet")
+      : "";
+  }
+
+  /* ---------- breakdowns ---------- */
+
+  function groupRows(list, keyOf) {
+    var map = {};
+    list.forEach(function (x) {
+      var k = (keyOf(x) || "").trim() || "—";
+      (map[k] = map[k] || []).push(x);
+    });
+    return Object.keys(map).map(function (k) { return { key: k, items: map[k] }; });
+  }
+
+  function renderByCarrier() {
+    var rows = groupRows(monthDeals(), function (d) { return d.carrier; }).map(function (g) {
+      return {
+        key: g.key,
+        n: g.items.length,
+        ap: sum(g.items, function (d) { return d.ap; }),
+        com: sum(g.items, earnedCom)
+      };
+    }).sort(function (a, b) { return b.ap - a.ap; });
+
+    $("carrierEmpty").style.display = rows.length ? "none" : "";
+    $("byCarrier").innerHTML = rows.map(function (r) {
+      return "<tr><td>" + esc(r.key) + "</td>" +
+        '<td class="num">' + r.n + "</td>" +
+        '<td class="num">' + money(r.ap) + "</td>" +
+        '<td class="num">' + money(r.com) + "</td></tr>";
+    }).join("");
+  }
+
+  function renderByLead() {
+    // Spend and sales are keyed the same way, so a source with spend but no
+    // deals still shows up -- that row is the whole point of the table.
+    var spend = {};
+    monthExpenses().filter(function (e) { return e.kind === "lead"; }).forEach(function (e) {
+      var k = (e.lead || "").trim() || "—";
+      spend[k] = (spend[k] || 0) + (Number(e.price) || 0);
+    });
+    var sold = {};
+    monthDeals().forEach(function (d) {
+      var k = (d.lead || "").trim() || "—";
+      sold[k] = sold[k] || { n: 0, com: 0 };
+      sold[k].n += 1;
+      sold[k].com += earnedCom(d);
+    });
+
+    var keys = Object.keys(spend).concat(Object.keys(sold)).filter(function (k, i, a) { return a.indexOf(k) === i; });
+    var rows = keys.map(function (k) {
+      var sp = spend[k] || 0, s = sold[k] || { n: 0, com: 0 };
+      return { key: k, n: s.n, spend: sp, com: s.com, roi: sp > 0 ? (s.com - sp) / sp * 100 : null };
+    }).sort(function (a, b) { return b.com - a.com || b.spend - a.spend; });
+
+    $("leadEmpty").style.display = rows.length ? "none" : "";
+    $("byLead").innerHTML = rows.map(function (r) {
+      var cls = r.roi == null ? "" : r.roi > 0 ? "profit-pos-txt" : r.roi < 0 ? "profit-neg-txt" : "";
+      return "<tr><td>" + esc(r.key) + "</td>" +
+        '<td class="num">' + r.n + "</td>" +
+        '<td class="num">' + money(r.spend) + "</td>" +
+        '<td class="num">' + money(r.com) + "</td>" +
+        '<td class="num ' + cls + '">' + pct(r.roi) + "</td></tr>";
+    }).join("");
   }
 
   /* ---------- clients / book of business ----------
