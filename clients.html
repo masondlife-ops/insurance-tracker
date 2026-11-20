@@ -113,7 +113,7 @@
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--text-muted); }
   select, input[type="date"], input[type="text"], input[type="number"],
-  input[type="email"], input[type="password"] {
+  input[type="email"], input[type="password"], input[type="search"], input[type="tel"] {
     font: inherit; font-size: 14px;
     color: var(--text-primary);
     background: var(--page);
@@ -143,6 +143,7 @@
   .btn.icon {
     background: transparent; border-color: var(--baseline); color: var(--text-secondary);
     padding: 5px 10px; font-size: 14px; line-height: 1;
+  }
   .table-scroll { overflow-x: auto; }
   table { border-collapse: collapse; width: 100%; font-size: 14px; }
   th, td { padding: 7px 10px; text-align: left; white-space: nowrap; }
@@ -194,7 +195,7 @@
   .deal-sheet .field { flex: 1 1 180px; }
   .deal-actions { display: flex; gap: 8px; margin-top: 18px; }
   .book-search { margin: 4px 0 14px; }
-  .book-search input { width: 100%; max-width: 420px; }
+  .book-search input { width: 100%; max-width: 420px; -webkit-appearance: none; appearance: none; }
   #bookTable tbody tr { cursor: pointer; }
   #bookTable tbody tr:hover { background: var(--page); }
   .ben-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end;
