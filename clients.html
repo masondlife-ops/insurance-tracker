@@ -110,6 +110,10 @@
   /* ---------- PNL tiles ---------- */
   .tiles-head { display: flex; justify-content: flex-end; margin-bottom: -6px; }
   #tilesPop { position: fixed; z-index: 200; min-width: 220px; background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 12px 34px rgba(0,0,0,.20); padding: 14px; display: none; }
+  /* Must come before .field: an author display rule beats the UA stylesheet's
+     [hidden] { display: none }, so a .field marked hidden stayed on screen.
+     That is why the UL-only "Target premium" box showed on every product. */
+  [hidden] { display: none !important; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--text-muted); }
   select, input[type="date"], input[type="text"], input[type="number"],
@@ -183,9 +187,9 @@
   .sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted);
              font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
-  .deal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 90; display: none; }
+  .deal-scrim { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 110; display: none; }
   .deal-scrim.show { display: block; }
-  .deal-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(480px, 100%); z-index: 91;
+  .deal-sheet { position: fixed; top: 0; right: 0; bottom: 0; width: min(560px, 100%); z-index: 111;
                 background: var(--surface-1); border-left: 1px solid var(--border);
                 padding: 20px; overflow-y: auto; transform: translateX(102%);
                 transition: transform .18s ease; }
@@ -220,6 +224,62 @@
   header { display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
   header h1 { font-size: 20px; margin: 0; }
   .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-left: auto; }
+  textarea {
+    font: inherit; font-size: 14px; color: var(--text-primary);
+    background: var(--page); border: 1px solid var(--baseline);
+    border-radius: 7px; padding: 8px 9px; width: 100%; resize: vertical;
+  }
+  .field.grow { flex: 1 1 100%; }
+  .note-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .sec-note { font-size: 12px; color: var(--text-muted); margin: -4px 0 10px; line-height: 1.45; }
+  .sensitive-sec .form-grid .field { flex: 1 1 180px; }
+  .com-row { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+  .com-note { font-size: 12px; color: var(--text-muted); }
+  .com-note.warn { color: var(--danger); }
+  .for-client { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; }
+  .for-client b { color: var(--text-primary); }
+
+  /* ---------- the client record, full screen ---------- */
+  .client-screen {
+    position: fixed; inset: 0; z-index: 95; background: var(--page);
+    overflow-y: auto; padding: 0;
+  }
+  .client-screen[hidden] { display: none; }
+  .cs-bar {
+    position: sticky; top: 0; z-index: 2;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 13px 26px; background: var(--surface-1);
+    border-bottom: 1px solid var(--border);
+  }
+  .cs-bar h2 { font-size: 18px; font-weight: 600; margin: 0; }
+  .cs-sub { font-size: 13px; color: var(--text-muted); }
+  .cs-bar .spacer { margin-left: auto; }
+  .cs-body { max-width: 1180px; margin: 0 auto; padding: 20px 26px 48px;
+             display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 16px; align-items: start; }
+  .cs-col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+  .cs-stat { display: flex; gap: 26px; flex-wrap: wrap; }
+  .cs-stat .s-label { font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; }
+  .cs-stat .s-value { font-size: 20px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 14px; }
+  .kv dt { color: var(--text-muted); white-space: nowrap; }
+  .kv dd { margin: 0; overflow-wrap: anywhere; }
+  .note-body { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; color: var(--text-secondary); }
+
+  /* A masked value is the resting state. Revealing is a deliberate act, and it
+     times out on its own so a record left open on a desk stops showing an SSN. */
+  .secret { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .secret code { font: inherit; font-variant-numeric: tabular-nums; letter-spacing: .04em; }
+  .reveal {
+    font: inherit; font-size: 12px; font-weight: 600; cursor: pointer;
+    background: transparent; border: 1px solid var(--baseline);
+    color: var(--text-secondary); border-radius: 999px; padding: 2px 10px;
+  }
+  .reveal:hover { color: var(--text-primary); }
+
+  @media (max-width: 900px) {
+    .cs-body { grid-template-columns: 1fr; padding: 14px 14px 40px; }
+    .cs-bar { padding: 11px 14px; }
+  }
   @media (max-width: 760px) {
     .book-search input { max-width: none; }
     th, td { padding: 8px 8px; }
@@ -273,8 +333,12 @@
     <div class="empty" id="bookEmpty" style="display:none"></div>
   </div>
 
-  <div class="card" id="clientDetail" hidden></div>
 </div>
+
+<!-- The client record is a screen of its own, not a card under the table: it
+     carries contact details, policies, beneficiaries and notes, and reading
+     that by scrolling past the book of business was the wrong way round. -->
+<div class="client-screen" id="clientDetail" hidden></div>
 
 <div class="deal-scrim" id="clientScrim"></div>
 <aside class="deal-sheet" id="clientSheet">
@@ -289,8 +353,32 @@
         <div class="field"><label for="c-dob">Date of birth</label><input type="date" id="c-dob"></div>
         <div class="field"><label for="c-phone">Phone</label><input type="tel" id="c-phone" class="wide" placeholder="(480) 555-0100"></div>
         <div class="field"><label for="c-email">Email</label><input type="email" id="c-email" class="wide" placeholder="name@example.com"></div>
-        <div class="field"><label for="c-address">Address</label><input type="text" id="c-address" class="wide" placeholder="Street, city, state"></div>
-        <div class="field"><label for="c-notes">Notes</label><input type="text" id="c-notes" class="wide" placeholder=""></div>
+        <div class="field grow"><label for="c-address">Address</label><input type="text" id="c-address" class="wide" placeholder="Street, city, state" autocomplete="off"></div>
+      </div>
+
+      <!-- Kept apart from the contact block on purpose. These are the fields
+           that turn a lost laptop into a reportable event, so they are visible
+           as a group, masked until asked for, and never searched. -->
+      <div class="ben-sec sensitive-sec">
+        <div class="card-head">
+          <h2 style="font-size:13px">Sensitive details</h2>
+        </div>
+        <p class="sec-note">Stored in your own account only — your upline cannot read it. Masked on the record until you choose to show it.</p>
+        <div class="form-grid">
+          <div class="field"><label for="c-ssn">SSN</label><input type="text" id="c-ssn" class="wide" placeholder="000-00-0000" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="c-bank-name">Bank</label><input type="text" id="c-bank-name" class="wide" placeholder="Bank name" autocomplete="off"></div>
+          <div class="field"><label for="c-bank-routing">Routing number</label><input type="text" id="c-bank-routing" class="wide" placeholder="000000000" autocomplete="off" spellcheck="false"></div>
+          <div class="field"><label for="c-bank-account">Account number</label><input type="text" id="c-bank-account" class="wide" placeholder="Account number" autocomplete="off" spellcheck="false"></div>
+        </div>
+      </div>
+
+      <div class="ben-sec">
+        <div class="card-head"><h2 style="font-size:13px">Notes</h2></div>
+        <div class="note-grid">
+          <div class="field"><label for="c-notes">General notes</label><textarea id="c-notes" rows="3" placeholder="Anything worth remembering about this client"></textarea></div>
+          <div class="field"><label for="c-medical">Medical notes</label><textarea id="c-medical" rows="3" placeholder="Conditions, medications, build, tobacco — what underwriting will ask"></textarea></div>
+          <div class="field"><label for="c-financial">Financial notes</label><textarea id="c-financial" rows="3" placeholder="Income, existing coverage, budget, draft date"></textarea></div>
+        </div>
       </div>
 
       <div class="ben-sec">
@@ -311,8 +399,53 @@
   </div>
 </aside>
 
+<div class="deal-scrim" id="dealScrim"></div>
+<aside class="deal-sheet" id="dealSheet">
+  <div class="card">
+    <div class="sheet-head">
+      <h2 id="dealFormTitle">Add a policy</h2>
+      <button type="button" class="sheet-x" id="dealSheetClose" aria-label="Close">&times;</button>
+    </div>
+    <form id="dealForm">
+      <div class="for-client" id="dealForClient"></div>
+      <div class="form-grid">
+        <div class="field"><label for="x-date">Date</label><input type="date" id="x-date" required></div>
+        <div class="field"><label for="x-carrier">Carrier</label><input type="text" id="x-carrier" class="wide" list="xCarrierList" placeholder="Carrier" autocomplete="off"></div>
+        <div class="field"><label for="x-policy">Product</label><input type="text" id="x-policy" class="wide" list="xProductList" placeholder="Carrier product" autocomplete="off"></div>
+        <div class="field"><label for="x-policynum">Policy number</label><input type="text" id="x-policynum" class="wide" placeholder="From the carrier" autocomplete="off"></div>
+        <div class="field"><label for="x-ap">AP ($)</label><input type="number" id="x-ap" class="narrow" min="0" step="0.01" placeholder="0"></div>
+        <div class="field" id="xTargetField" hidden><label for="x-target">Target premium ($)</label><input type="number" id="x-target" class="narrow" min="0" step="0.01" placeholder="from illustration"></div>
+        <div class="field"><label for="x-face">Face ($)</label><input type="number" id="x-face" class="narrow" min="0" step="0.01" placeholder="0"></div>
+        <div class="field"><label for="x-monthly">Monthly ($)</label><input type="number" id="x-monthly" class="narrow" min="0" step="0.01" placeholder="0"></div>
+        <div class="field grow"><label for="x-com">Commission ($)</label><div class="com-row"><input type="number" id="x-com" class="narrow" min="0" step="0.01" placeholder="auto"><span class="com-note" id="xComNote"></span></div></div>
+        <div class="field"><label for="x-status">Status</label>
+          <select id="x-status">
+            <option>Submitted</option><option>Approved</option><option>Issued</option>
+            <option>Active</option><option>Pending</option><option>Declined</option><option>Cancelled</option>
+          </select>
+        </div>
+        <div class="field"><label for="x-lead">Lead type</label><input type="text" id="x-lead" class="wide" list="xLeadList" placeholder="Goat aged $3" autocomplete="off"></div>
+        <div class="field"><label for="x-issued-date">Issued date <span style="color:var(--text-muted)">(optional)</span></label><input type="date" id="x-issued-date"></div>
+        <div class="field grow"><label for="x-notes">Notes</label><input type="text" id="x-notes" class="wide" placeholder=""></div>
+        <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="x-paid"> Paid</label></div>
+        <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="x-reqs"> Requirements</label></div>
+      </div>
+      <div class="deal-actions">
+        <button type="submit" class="btn" id="dealSubmit">Add policy</button>
+        <button type="button" class="btn secondary" id="dealDelete" style="display:none">Delete</button>
+      </div>
+    </form>
+  </div>
+</aside>
+<datalist id="xCarrierList"></datalist>
+<datalist id="xProductList"></datalist>
+<datalist id="xLeadList"></datalist>
+
+<script src="comp-guide.js"></script>
+<script src="comp-calc.js"></script>
+<script src="hub-contract.js"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=2"></script>
+<script src="clients.js?v=3"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>

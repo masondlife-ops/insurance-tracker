@@ -78,9 +78,13 @@
   function matches(row, q) {
     if (!q) return true;
     var c = row.client;
+    // Deliberately not searched: ssn, bank. A search box is the easiest way to
+    // confirm a number you already half-know, and typing one here would put it
+    // in the browser's input history.
     var hay = [c.name, c.phone, c.email, c.address, c.notes]
       .concat(row.carriers)
       .concat(row.deals.map(function (d) { return d.policy || ""; }))
+      .concat(row.deals.map(function (d) { return d.policyNumber || ""; }))
       .concat((c.beneficiaries || []).map(function (b) { return b.name || ""; }))
       .join(" ").toLowerCase();
     return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) {
@@ -121,58 +125,169 @@
     renderDetail();
   }
 
-  /* ---------- one client ---------- */
+  /* ---------- one client, full screen ---------- */
+
+  /* Masked until asked for, and the reveal lapses on its own. A record left
+     open on a desk should not keep an SSN on screen. */
+  var REVEAL_MS = 30000;
+  var revealed = {};          // field -> timeout id
+  var revealTimers = {};
+
+  function maskTail(v, keep, groups) {
+    var raw = String(v == null ? "" : v).replace(/\s+/g, "");
+    if (!raw) return "";
+    var digits = raw.replace(/\D/g, "");
+    var tail = digits.slice(-keep);
+    if (digits.length <= keep) return tail;
+    return (groups || "") + tail;
+  }
+  function maskSsn(v) {
+    var t = maskTail(v, 4);
+    return t ? "•••-••-" + t : "";
+  }
+  function maskAcct(v) {
+    var t = maskTail(v, 4);
+    return t ? "••••" + t : "";
+  }
+
+  function secret(field, value, masker) {
+    if (!value) return "—";
+    var open = !!revealed[field];
+    return '<span class="secret"><code>' +
+      esc(open ? value : masker(value)) + "</code>" +
+      '<button type="button" class="reveal" data-reveal="' + esc(field) + '">' +
+      (open ? "Hide" : "Show") + "</button></span>";
+  }
+
+  function toggleReveal(field) {
+    if (revealed[field]) {
+      delete revealed[field];
+      clearTimeout(revealTimers[field]);
+    } else {
+      revealed[field] = true;
+      clearTimeout(revealTimers[field]);
+      revealTimers[field] = setTimeout(function () {
+        delete revealed[field];
+        renderDetail();
+      }, REVEAL_MS);
+    }
+    renderDetail();
+  }
+  function clearReveals() {
+    Object.keys(revealTimers).forEach(function (k) { clearTimeout(revealTimers[k]); });
+    revealed = {}; revealTimers = {};
+  }
+
+  function row(label, val) {
+    return val ? "<dt>" + label + "</dt><dd>" + esc(val) + "</dd>" : "";
+  }
+  function rawRow(label, html) {
+    return html ? "<dt>" + label + "</dt><dd>" + html + "</dd>" : "";
+  }
+  function noteCard(title, body) {
+    if (!String(body || "").trim()) return "";
+    return '<div class="card"><h2>' + title + '</h2>' +
+           '<div class="note-body">' + esc(body) + "</div></div>";
+  }
 
   function renderDetail() {
     var box = $("clientDetail");
     var c = viewingId ? clientById(viewingId) : null;
-    if (!c) { box.hidden = true; box.innerHTML = ""; return; }
+    if (!c) {
+      box.hidden = true; box.innerHTML = "";
+      document.body.style.overflow = "";
+      return;
+    }
     box.hidden = false;
+    document.body.style.overflow = "hidden";   // the screen scrolls, not the page
 
     var ds = dealsForClient(c.id);
-    var fact = function (label, val) {
-      return val ? "<span>" + label + " <b>" + esc(val) + "</b></span>" : "";
-    };
     var bens = (c.beneficiaries || []).filter(function (b) { return (b.name || "").trim(); });
+    var bank = c.bank || {};
+    var age = c.dob ? ageFrom(c.dob) : null;
+
+    var policies = ds.length
+      ? '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Carrier / product</th>' +
+        '<th>Policy no.</th><th class="num">AP</th><th>Status</th><th></th></tr></thead><tbody>' +
+        ds.map(function (d) {
+          return '<tr><td>' + fmtDay(d.date) + "</td>" +
+            "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
+            "<td>" + esc(d.policyNumber || "—") + "</td>" +
+            '<td class="num">' + money(d.ap) + "</td>" +
+            "<td>" + esc(d.status || "—") + "</td>" +
+            '<td><button type="button" class="btn secondary small" data-edit-deal="' + esc(d.id) + '">Edit</button></td>' +
+            "</tr>";
+        }).join("") + "</tbody></table></div>"
+      : '<div class="empty">No policies yet. Use Add policy to log one.</div>';
+
+    var beneficiaries = bens.length
+      ? '<div class="table-scroll"><table><thead><tr><th>Name</th><th>Relationship</th>' +
+        '<th>Date of birth</th><th class="num">Share</th><th>Type</th></tr></thead><tbody>' +
+        bens.map(function (b) {
+          return "<tr><td>" + esc(b.name) + "</td><td>" + esc(b.rel || "—") + "</td>" +
+            "<td>" + (b.dob ? fmtDay(b.dob) : "—") + "</td>" +
+            '<td class="num">' + (b.pct == null || b.pct === "" ? "—" : b.pct + "%") + "</td>" +
+            "<td>" + esc(b.type || "Primary") + "</td></tr>";
+        }).join("") + "</tbody></table></div>"
+      : '<div class="empty">No beneficiaries recorded.</div>';
+
+    var hasSensitive = c.ssn || bank.name || bank.routing || bank.account;
 
     box.innerHTML =
-      '<div class="client-head">' +
-        "<h2>" + esc(c.name) + "</h2>" +
-        '<button type="button" class="btn secondary small" data-edit-client="' + esc(c.id) + '">Edit client</button>' +
-        '<button type="button" class="btn secondary small" id="clientClose">Close</button>' +
+      '<div class="cs-bar">' +
+        "<div><h2>" + esc(c.name) + "</h2>" +
+        '<div class="cs-sub">' +
+          (c.dob ? fmtDay(c.dob) + (age ? " · " + age : "") : "No date of birth on file") +
+        "</div></div>" +
+        '<div class="spacer"></div>' +
+        '<button type="button" class="btn" id="csAddDeal">Add policy</button>' +
+        '<button type="button" class="btn secondary" data-edit-client="' + esc(c.id) + '">Edit client</button>' +
+        '<button type="button" class="btn secondary" id="clientClose">Close</button>' +
       "</div>" +
-      '<div class="client-facts">' +
-        fact("Born", c.dob ? fmtDay(c.dob) + (ageFrom(c.dob) ? " · " + ageFrom(c.dob) : "") : "") +
-        fact("Phone", c.phone) + fact("Email", c.email) + fact("Address", c.address) +
-        "<span>Policies <b>" + ds.length + "</b></span>" +
-        "<span>Total AP <b>" + money(sum(ds, function (d) { return d.ap; })) + "</b></span>" +
-      "</div>" +
-      (c.notes ? '<div class="client-sec"><h3>Notes</h3><div>' + esc(c.notes) + "</div></div>" : "") +
-      '<div class="client-sec"><h3>Policies</h3>' +
-        (ds.length
-          ? '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Carrier / product</th>' +
-            '<th class="num">AP</th><th>Status</th><th>Notes</th></tr></thead><tbody>' +
-            ds.map(function (d) {
-              return "<tr><td>" + fmtDay(d.date) + "</td>" +
-                "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
-                '<td class="num">' + money(d.ap) + "</td>" +
-                "<td>" + esc(d.status || "—") + "</td>" +
-                "<td>" + esc(d.notes || "") + "</td></tr>";
-            }).join("") + "</tbody></table></div>"
-          : '<div class="empty">No policies recorded for this client.</div>') +
-      "</div>" +
-      '<div class="client-sec"><h3>Beneficiaries</h3>' +
-        (bens.length
-          ? '<div class="table-scroll"><table><thead><tr><th>Name</th><th>Relationship</th>' +
-            '<th>Date of birth</th><th class="num">Share</th><th>Type</th></tr></thead><tbody>' +
-            bens.map(function (b) {
-              return "<tr><td>" + esc(b.name) + "</td><td>" + esc(b.rel || "—") + "</td>" +
-                "<td>" + (b.dob ? fmtDay(b.dob) : "—") + "</td>" +
-                '<td class="num">' + (b.pct == null || b.pct === "" ? "—" : b.pct + "%") + "</td>" +
-                "<td>" + esc(b.type || "Primary") + "</td></tr>";
-            }).join("") + "</tbody></table></div>"
-          : '<div class="empty">No beneficiaries recorded.</div>') +
+
+      '<div class="cs-body">' +
+        '<div class="cs-col">' +
+          '<div class="card"><div class="cs-stat">' +
+            '<div><div class="s-label">Policies</div><div class="s-value">' + ds.length + "</div></div>" +
+            '<div><div class="s-label">Total AP</div><div class="s-value">' + money(sum(ds, function (d) { return d.ap; })) + "</div></div>" +
+            '<div><div class="s-label">Last deal</div><div class="s-value">' + (ds.length ? fmtDay(ds[0].date) : "—") + "</div></div>" +
+          "</div></div>" +
+          '<div class="card"><h2>Policies</h2>' + policies + "</div>" +
+          '<div class="card"><h2>Beneficiaries</h2>' + beneficiaries + "</div>" +
+          noteCard("General notes", c.notes) +
+          noteCard("Medical notes", c.medicalNotes) +
+          noteCard("Financial notes", c.financialNotes) +
+        "</div>" +
+
+        '<div class="cs-col">' +
+          '<div class="card"><h2>Contact</h2><dl class="kv">' +
+            row("Phone", c.phone) + row("Email", c.email) + row("Address", c.address) +
+            (c.phone || c.email || c.address ? "" : "<dt>—</dt><dd>Nothing on file</dd>") +
+          "</dl></div>" +
+          '<div class="card"><h2>Sensitive details</h2>' +
+            (hasSensitive
+              ? '<dl class="kv">' +
+                  rawRow("SSN", c.ssn ? secret("ssn", c.ssn, maskSsn) : "") +
+                  row("Bank", bank.name) +
+                  rawRow("Routing", bank.routing ? secret("routing", bank.routing, maskAcct) : "") +
+                  rawRow("Account", bank.account ? secret("account", bank.account, maskAcct) : "") +
+                "</dl>"
+              : '<div class="empty">Nothing on file.</div>') +
+          "</div>" +
+        "</div>" +
       "</div>";
+  }
+
+  function openRecord(id) {
+    clearReveals();
+    viewingId = id;
+    renderDetail();
+    $("clientDetail").scrollTop = 0;
+  }
+  function closeRecord() {
+    clearReveals();
+    viewingId = null;
+    renderDetail();
   }
 
   /* ---------- the sheet ---------- */
@@ -236,6 +351,13 @@
     $("c-email").value = c ? c.email || "" : "";
     $("c-address").value = c ? c.address || "" : "";
     $("c-notes").value = c ? c.notes || "" : "";
+    $("c-medical").value = c ? c.medicalNotes || "" : "";
+    $("c-financial").value = c ? c.financialNotes || "" : "";
+    var bank = (c && c.bank) || {};
+    $("c-ssn").value = c ? c.ssn || "" : "";
+    $("c-bank-name").value = bank.name || "";
+    $("c-bank-routing").value = bank.routing || "";
+    $("c-bank-account").value = bank.account || "";
     $("benRows").innerHTML = "";
     ((c && c.beneficiaries) || []).forEach(function (b) { $("benRows").appendChild(benRow(b)); });
     benMeta();
@@ -264,6 +386,197 @@
     }).filter(function (b) { return b.name || b.rel || b.dob || b.pct != null; });
   }
 
+  /* ---------- the deal sheet ----------
+     Adding a policy happens here now, against a client you already have open,
+     so a deal can no longer be logged with a name that matches nobody. Pricing
+     comes from comp-calc.js, the same module the Deals page uses. */
+
+  var dealEditingId = null;
+  var dealClientId = null;
+  var comAutoFilled = false;
+  var pendingFull = null;
+
+  function num(v) {
+    if (v === "" || v == null) return null;
+    var n = Number(v);
+    return isFinite(n) ? n : null;
+  }
+  function contractLevel() {
+    try { return window.HubContract ? HubContract.get() : null; } catch (e) { return null; }
+  }
+
+  function fillList(id, primary, fallback) {
+    var el = $(id);
+    if (!el) return;
+    var seen = {}, out = [];
+    (primary && primary.length ? primary : (fallback || [])).forEach(function (v) {
+      var t = String(v == null ? "" : v).trim();
+      if (!t || seen[t.toLowerCase()]) return;
+      seen[t.toLowerCase()] = 1; out.push(t);
+    });
+    el.innerHTML = out.map(function (v) { return '<option value="' + esc(v) + '">'; }).join("");
+  }
+
+  function refreshDealLists() {
+    fillList("xCarrierList", Object.keys(window.COMP_CARRIERS || {}), []);
+    var ckey = window.CompCalc && CompCalc.findCarrierKey($("x-carrier").value);
+    if (ckey) fillList("xProductList", Object.keys(COMP_CARRIERS[ckey].products), []);
+    else fillList("xProductList", state().deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE"]);
+    fillList("xLeadList", state().deals.map(function (d) { return d.lead; }), []);
+  }
+
+  function syncTargetField() {
+    var f = $("xTargetField");
+    if (!f) return;
+    var show = window.CompCalc && CompCalc.looksLikeIul($("x-policy").value);
+    f.hidden = !show;
+    if (!show) $("x-target").value = "";
+  }
+
+  function recalcCommission() {
+    var noteEl = $("xComNote");
+    if (!window.CompCalc) return;
+    var q = CompCalc.quote({
+      carrier: $("x-carrier").value, product: $("x-policy").value,
+      level: contractLevel(), ap: $("x-ap").value, target: $("x-target").value
+    });
+    var n = CompCalc.note(q, money);
+    if (noteEl) {
+      noteEl.textContent = n.text;
+      noteEl.className = "com-note" + (n.warn ? " warn" : "");
+    }
+    if (q.miss) return;
+    var comEl = $("x-com");
+    if (q.needsTarget && comAutoFilled) comEl.value = "";
+    if (q.amount != null && (comEl.value === "" || comAutoFilled)) {
+      comEl.value = q.amount.toFixed(2);
+      comAutoFilled = true;
+    }
+    pendingFull = q.full;
+  }
+
+  function openDealSheet() {
+    $("dealScrim").classList.add("show");
+    $("dealSheet").classList.add("show");
+    setTimeout(function () { var n = $("x-carrier"); if (n) n.focus(); }, 180);
+  }
+  function closeDealSheet() {
+    $("dealSheet").classList.remove("show");
+    $("dealScrim").classList.remove("show");
+    dealEditingId = null;
+  }
+
+  function fillDealForm(d, clientId) {
+    dealEditingId = d ? d.id : null;
+    dealClientId = clientId || (d && d.clientId) || null;
+    comAutoFilled = false;
+    pendingFull = d ? (num(d.com) || 0) + (num(d.comBalance) || 0) || null : null;
+
+    var c = dealClientId ? clientById(dealClientId) : null;
+    $("dealForClient").innerHTML = c ? "For <b>" + esc(c.name) + "</b>" : "";
+
+    $("x-date").value = d ? d.date || todayStr() : todayStr();
+    $("x-carrier").value = d ? d.carrier || "" : "";
+    $("x-policy").value = d ? d.policy || "" : "";
+    $("x-policynum").value = d ? d.policyNumber || "" : "";
+    $("x-ap").value = d && d.ap != null ? d.ap : "";
+    $("x-target").value = d && d.target != null ? d.target : "";
+    $("x-face").value = d && d.face != null ? d.face : "";
+    $("x-monthly").value = d && d.monthly != null ? d.monthly : "";
+    $("x-com").value = d && d.com != null ? d.com : "";
+    $("x-status").value = d ? d.status || "Submitted" : "Submitted";
+    $("x-lead").value = d ? d.lead || "" : "";
+    $("x-issued-date").value = d ? d.issuedDate || "" : "";
+    $("x-notes").value = d ? d.notes || "" : "";
+    $("x-paid").checked = !!(d && d.paid);
+    $("x-reqs").checked = !!(d && d.reqs);
+
+    $("dealFormTitle").textContent = d ? "Edit policy" : "Add a policy";
+    $("dealSubmit").textContent = d ? "Save policy" : "Add policy";
+    $("dealDelete").style.display = d ? "" : "none";
+    refreshDealLists();
+    syncTargetField();
+    recalcCommission();
+  }
+
+  function addDealFor(clientId) { fillDealForm(null, clientId); openDealSheet(); }
+  function editDeal(id) {
+    var d = state().deals.find(function (x) { return x.id === id; });
+    if (!d) return;
+    fillDealForm(d, d.clientId);
+    openDealSheet();
+  }
+
+  function wireDealSheet() {
+    $("dealSheetClose").addEventListener("click", closeDealSheet);
+    $("dealScrim").addEventListener("click", closeDealSheet);
+    ["x-carrier", "x-policy"].forEach(function (id) {
+      $(id).addEventListener("input", function () {
+        refreshDealLists(); syncTargetField(); recalcCommission();
+      });
+    });
+    ["x-ap", "x-target"].forEach(function (id) {
+      $(id).addEventListener("input", recalcCommission);
+    });
+    // Typing a commission means you meant it; auto-fill stops overwriting it.
+    $("x-com").addEventListener("input", function () { comAutoFilled = false; });
+
+    $("dealForm").addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var c = dealClientId ? clientById(dealClientId) : null;
+      if (!c) { alert("Open a client first, then add the policy to their record."); return; }
+
+      var adv = num($("x-com").value);
+      // The balance above the advance cap is still owed, just paid as the
+      // client pays, so it is kept on the deal rather than thrown away.
+      var balance = (adv != null && pendingFull != null && pendingFull > adv)
+        ? Number((pendingFull - adv).toFixed(2)) : null;
+
+      var fields = {
+        date: $("x-date").value,
+        client: c.name,
+        clientId: c.id,
+        carrier: $("x-carrier").value.trim(),
+        policy: $("x-policy").value.trim(),
+        policyNumber: $("x-policynum").value.trim(),
+        ap: num($("x-ap").value),
+        target: num($("x-target").value),
+        face: num($("x-face").value),
+        monthly: num($("x-monthly").value),
+        com: adv,
+        comBalance: balance,
+        status: $("x-status").value,
+        lead: $("x-lead").value.trim(),
+        issuedDate: $("x-issued-date").value,
+        notes: $("x-notes").value.trim(),
+        paid: $("x-paid").checked,
+        reqs: $("x-reqs").checked
+      };
+      var id = dealEditingId || S.uid();
+
+      S.commit(function (doc) {
+        var d = doc.deals.find(function (x) { return x.id === id; });
+        if (!d) { d = { id: id }; doc.deals.push(d); }
+        Object.keys(fields).forEach(function (k) { d[k] = fields[k]; });
+      });
+      closeDealSheet();
+      renderBook();
+    });
+
+    $("dealDelete").addEventListener("click", function () {
+      var id = dealEditingId;
+      if (!id) return;
+      var d = state().deals.find(function (x) { return x.id === id; });
+      if (!d) return;
+      if (!confirm("Delete this policy for " + (d.client || "this client") + "? It comes off the Deals board and your PNL too.")) return;
+      S.commit(function (doc) {
+        doc.deals = doc.deals.filter(function (x) { return x.id !== id; });
+      });
+      closeDealSheet();
+      renderBook();
+    });
+  }
+
   /* ---------- wiring ---------- */
 
   function wire() {
@@ -281,16 +594,30 @@
       if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
       var tr = ev.target.closest("tr[data-client]");
       if (!tr) return;
-      var id = tr.getAttribute("data-client");
-      viewingId = viewingId === id ? null : id;
-      renderDetail();
+      openRecord(tr.getAttribute("data-client"));
     });
 
     $("clientDetail").addEventListener("click", function (ev) {
+      var rev = ev.target.closest("[data-reveal]");
+      if (rev) { toggleReveal(rev.getAttribute("data-reveal")); return; }
+      var ed = ev.target.closest("[data-edit-deal]");
+      if (ed) { editDeal(ed.getAttribute("data-edit-deal")); return; }
       var btn = ev.target.closest("[data-edit-client]");
       if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
-      if (ev.target.id === "clientClose") { viewingId = null; renderDetail(); }
+      if (ev.target.id === "csAddDeal") { addDealFor(viewingId); return; }
+      if (ev.target.id === "clientClose") { closeRecord(); }
     });
+
+    // Escape closes whatever is on top: the deal sheet, then the client sheet,
+    // then the record itself.
+    document.addEventListener("keydown", function (e) {
+      if (e.key !== "Escape") return;
+      if ($("dealSheet").classList.contains("show")) { closeDealSheet(); return; }
+      if ($("clientSheet").classList.contains("show")) { closeSheet(); return; }
+      if (!$("clientDetail").hidden) closeRecord();
+    });
+
+    wireDealSheet();
 
     $("clientForm").addEventListener("submit", function (ev) {
       ev.preventDefault();
@@ -311,6 +638,14 @@
         email: $("c-email").value.trim(),
         address: $("c-address").value.trim(),
         notes: $("c-notes").value.trim(),
+        medicalNotes: $("c-medical").value.trim(),
+        financialNotes: $("c-financial").value.trim(),
+        ssn: $("c-ssn").value.trim(),
+        bank: {
+          name: $("c-bank-name").value.trim(),
+          routing: $("c-bank-routing").value.trim(),
+          account: $("c-bank-account").value.trim()
+        },
         beneficiaries: readBeneficiaries()
       };
       if (!id) id = S.uid();
@@ -333,7 +668,8 @@
       var c = editingId ? clientById(editingId) : null;
       if (!c) return;
       var id = c.id, n = dealsForClient(id).length;
-      if (!confirm("Delete " + c.name + "? Their contact details and beneficiaries are removed." +
+      if (!confirm("Delete " + c.name + "? Their contact details, notes, "
+                   + "sensitive details and beneficiaries are removed." +
                    (n ? " Their " + n + " deal" + (n === 1 ? "" : "s") + " stay on the board with the name intact." : ""))) return;
       S.commit(function (doc) {
         doc.deals.forEach(function (d) { if (d.clientId === id) d.clientId = null; });

@@ -146,6 +146,10 @@
 
   /* ---------- Forms ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  /* Must come before .field: an author display rule beats the UA stylesheet's
+     [hidden] { display: none }, so a .field marked hidden stayed on screen.
+     That is why the UL-only "Target premium" box showed on every product. */
+  [hidden] { display: none !important; }
   .field { display: flex; flex-direction: column; gap: 4px; }
   .field label { font-size: 12px; color: var(--text-muted); }
   select, input[type="date"], input[type="text"], input[type="number"],
@@ -388,7 +392,8 @@
              font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
   .sheet-x:hover { color: var(--text-primary); }
   .tb-add { font: inherit; font-size: 14px; font-weight: 600; padding: 6px 13px; border-radius: 8px;
-            border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer; }
+            border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer;
+            text-decoration: none; display: inline-block; }
 
   /* ---------- Requirements flag ---------- */
   .reqs-chip { font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
@@ -652,6 +657,7 @@
   <button type="button" id="restoreBtn">Restore</button>
 </div>
 <script src="comp-guide.js"></script>
+<script src="comp-calc.js"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
@@ -1158,44 +1164,12 @@
 
   /* Comp guide data lives in comp-guide.js (shared with the agency owner hub). */
 
-  function normKey(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
-  function findCarrierKey(carrier) {
-    var n = normKey(carrier);
-    if (!n) return null;
-    var keys = Object.keys(COMP_CARRIERS);
-    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
-    return null;
-  }
-  function findProductKey(carrierObj, product) {
-    var n = normKey(product);
-    if (!n) return null;
-    var keys = Object.keys(carrierObj.products);
-    for (var i = 0; i < keys.length; i++) { if (normKey(keys[i]) === n) return keys[i]; }
-    return null;
-  }
-  // returns { rate, base, verify } or { miss: reason }
-  // Returns a rate, or { miss: <reason> } explaining why it couldn't price this.
-  // A silent blank was hiding real money: a deal typed as "Banner"/"Term" instead
-  // of "Banner Life"/"Beyond Term" simply never calculated, and nothing said so.
-  function compLookup(carrier, product, level) {
-    if (!carrier || !product) return { miss: "incomplete" };   // still being typed
-    if (level == null || level === "") return { miss: "level" };
-    var ckey = findCarrierKey(carrier);
-    if (!ckey) return { miss: "carrier" };
-    var c = COMP_CARRIERS[ckey];
-    var pkey = findProductKey(c, product);
-    if (!pkey) return { miss: "product" };
-    var li = COMP_LEVELS.indexOf(parseInt(level, 10));
-    if (li < 0) return { miss: "level" };
-    var pv = c.products[pkey];                       // array of rates, or { r:[...], verify:true }
-    var rates = Array.isArray(pv) ? pv : pv.r;
-    var base = rates[li];
-    // The FFL guide prints "-" where a product isn't sold at that level. That's
-    // not a zero rate, and quietly calculating one would invent money.
-    if (base == null) return { miss: "unavailable" };
-    var verify = (!Array.isArray(pv) && !!pv.verify) || !!c.verify;
-    return { rate: base, base: base, bonus: 0, bonusIncluded: false, verify: verify };
-  }
+  /* Pricing lives in comp-calc.js now, shared with the Clients page's deal
+     form. Two copies would drift the first time the guide changed, and the
+     symptom would be two pages quoting different commission on the same
+     policy. These thin aliases keep the call sites below unchanged. */
+  function findCarrierKey(carrier) { return CompCalc.findCarrierKey(carrier); }
+  function compLookup(carrier, product, level) { return CompCalc.lookup(carrier, product, level); }
 
   // settings (lazy; persists via save() and cloud sync)
   function getSetting(k) {
@@ -1223,7 +1197,7 @@
   var comAutoFilled = false;
   /* Every carrier caps the advance at this much per policy, so a big case pays
      the cap rather than the full 9-month figure. */
-  var ADVANCE_CAP = 2500;
+  var ADVANCE_CAP = CompCalc.ADVANCE_CAP;
   var pendingFull = null;   // last auto-calculated uncapped commission
 
   /* Every IUL in the comp guide has "IUL" in its name (IULe, FFIUL, Max
@@ -1232,9 +1206,7 @@
   /* Universal life of any flavour pays on the target premium from the
      illustration, not the whole premium. Catches IUL, IULE, FFIUL, XUL, a bare
      "UL", and the spelled-out "Universal Life" that Ethos and NLG use. */
-  function looksLikeIul(product) {
-    return /\b[a-z]?ul\b|iule|universal life/i.test(String(product || ""));
-  }
+  function looksLikeIul(product) { return CompCalc.looksLikeIul(product); }
 
   function syncTargetField() {
     var f = $("targetField");
@@ -1582,9 +1554,9 @@
     var deals = monthDeals(), exps = monthExpenses();
     var rows = [];
     rows.push(["DEALS — " + monthLabel(currentMonth)]);
-    rows.push(["Date","Client","Product","Carrier","Face","Monthly","AP","Target","Commission","Balance to come","Lead type","Status","Issued date","Paid","Requirements","Notes"]);
+    rows.push(["Date","Client","Product","Carrier","Policy no.","Face","Monthly","AP","Target","Commission","Balance to come","Lead type","Status","Issued date","Paid","Requirements","Notes"]);
     deals.forEach(function (d) {
-      rows.push([d.date, d.client, d.policy, d.carrier, d.face, d.monthly, d.ap, d.target, d.com, d.comBalance, d.lead, d.status, d.issuedDate, d.paid ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
+      rows.push([d.date, d.client, d.policy, d.carrier, d.policyNumber, d.face, d.monthly, d.ap, d.target, d.com, d.comBalance, d.lead, d.status, d.issuedDate, d.paid ? "Y" : "N", (d.reqs ? "Y" : "N"), d.notes]);
     });
     rows.push([]);
     rows.push(["EXPENSES"]);
@@ -1835,13 +1807,20 @@
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && $("dealSheet").classList.contains("show")) closeDealSheet();
   });
-  // The primary action belongs in the topbar the shell builds. hub-shell.js runs
-  // after this inline script, so placement waits a tick; without the shell there
-  // is no topbar and the button falls back to sitting above the deals table.
+  /* New deals are created on the Clients page now, against a client record
+     that already exists -- that is what stops a policy being logged under a
+     name matching nobody, and it is where the policy number, banking details
+     and notes for that person live. This page keeps the form for EDITING a
+     deal; only the "add" entry point moved.
+
+     The button stays in the topbar and links across rather than vanishing, so
+     the old habit still lands somewhere useful. */
   function placeAddButton() {
-    var b = document.createElement("button");
-    b.type = "button"; b.className = "tb-add"; b.textContent = "+ Add deal";
-    b.addEventListener("click", function () { resetDealForm(); openDealSheet(); });
+    var b = document.createElement("a");
+    b.className = "tb-add";
+    b.textContent = "+ Add deal";
+    b.setAttribute("href", "clients.html");
+    b.title = "Deals are added from a client's record";
     if (window.HubShell && HubShell.actions) HubShell.actions.insertBefore(b, HubShell.actions.firstChild);
     else document.querySelector(".wrap").insertBefore(b, document.getElementById("dealScrim"));
   }
