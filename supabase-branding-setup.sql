@@ -81,21 +81,17 @@ revoke all on function public.my_branding() from public;
 grant execute on function public.my_branding() to authenticated;
 
 
--- 3. Populate Inevitable HQ -------------------------------------------------
--- Matched by id so it can't accidentally hit another agency. 'On Top Next' is
--- a child of this row and inherits automatically via the parent lookup above.
+-- 3. Branding data -----------------------------------------------------------
+-- Nothing seeded here on purpose. This script used to populate the Inevitable
+-- HQ row with a name, tagline and logo; that branding has been removed, and
+-- because the script is re-runnable, seeding it would put it back the next
+-- time anyone set the database up.
 --
--- No logoUrl here, deliberately. The agency logo was removed, and this script
--- is re-runnable -- leaving the key in would quietly put the logo back the
--- next time anyone set the database up from scratch. A logo belongs in
--- Settings > Appearance, or in a one-off update against this row, not in the
--- schema seed.
-update public.agencies
-set branding = jsonb_build_object(
-      'name',    'Inevitable HQ',
-      'tagline', 'Built different. Proven always.'
-    )
-where id = 'afe1f92d-f507-479c-9b1f-fa8f7efa624b';
+-- Branding is per-agency data, not schema. An agency with branding set gets
+-- it from a one-off update against its own row; an agency with branding null
+-- renders the plain hub, which is what my_branding() returns above. Leaving
+-- this section empty also means a re-run never stomps branding someone set
+-- after the fact.
 
 
 -- 4. Check ------------------------------------------------------------------
