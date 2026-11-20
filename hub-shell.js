@@ -28,6 +28,25 @@
   };
   var ORDER = ["Produce", "Team", "Resources"];
 
+  /* Collapsible groups inside a section. A group renders where its first
+     member would have gone, and swallows the rest -- so the rail shows one
+     "Production" row that opens onto the pages underneath it, rather than
+     three siblings competing for the same glance. */
+  var GROUP_PAGES = { "Production": ["pnl.html", "clients.html"] };
+  var GROUP_ICON = {
+    "Production": '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>'
+  };
+  var GROUP_OF = {};
+  Object.keys(GROUP_PAGES).forEach(function (g) {
+    GROUP_PAGES[g].forEach(function (pg) { GROUP_OF[pg] = g; });
+  });
+  var OPEN_KEY = "agentHub.navGroups.v1";
+  function openState() { try { return JSON.parse(localStorage.getItem(OPEN_KEY)) || {}; } catch (e) { return {}; } }
+  function setOpen(g, v) {
+    var o = openState(); o[g] = v;
+    try { localStorage.setItem(OPEN_KEY, JSON.stringify(o)); } catch (e) {}
+  }
+
   var ICON = {
     "dashboard.html": '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>',
     "index.html": '<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 1.9.6 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.5 2.8.6a2 2 0 0 1 1.7 2z"/>',
@@ -65,6 +84,25 @@
     ".rail .nav:hover { background: var(--rail-hover); color: var(--text-primary); }",
     ".rail .nav.on { background: var(--series-1-soft); color: var(--text-primary); box-shadow: inset 2px 0 0 var(--series-1); }",
     ".rail .nav svg { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; opacity: .9; }",
+
+    // A group header is a disclosure, not a destination -- it is a <button>, so
+    // it needs the anchor's layout spelled out, and the chevron pushed right.
+    ".rail .group-toggle { width: 100%; background: transparent; border: 0; cursor: pointer; font: inherit; font-size: 14px; font-weight: 500; text-align: left; }",
+    ".rail .group-toggle .chev { margin-left: auto; width: 15px; height: 15px; opacity: .65; transition: transform .16s ease; }",
+    ".rail-group.open > .group-toggle .chev { transform: rotate(180deg); }",
+    // Collapsed by height so the chevron has something to animate. The rail is
+    // a fixed width, so a max-height ceiling is safe here.
+    // One inner wrapper, deliberately: grid-template-rows sizes only the rows
+    // it names, so putting the links straight in would leave every row after
+    // the first at auto -- i.e. a group that never actually closes.
+    ".rail-kids { display: grid; grid-template-rows: 0fr; overflow: hidden; transition: grid-template-rows .18s ease; }",
+    ".rail-group.open > .rail-kids { grid-template-rows: 1fr; }",
+    ".rail-kids-inner { min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 3px; }",
+    ".rail-group.open > .rail-kids > .rail-kids-inner { padding-top: 3px; }",
+    // The guide line is what makes these read as children rather than peers.
+    ".rail-kids .nav { margin-left: 18px; padding-left: 13px; border-left: 1px solid var(--border); border-radius: 0 8px 8px 0; }",
+    ".rail-kids .nav.on { box-shadow: inset 2px 0 0 var(--series-1); border-left-color: transparent; }",
+    "@media (prefers-reduced-motion: reduce) { .rail-kids, .rail .group-toggle .chev { transition: none; } }",
     ".rail-util { margin-top: auto; padding-top: 6px; }",
     ".rail-sync { padding: 10px 10px 0; }",
     ".rail-sync .sync-pill { display: block; width: 100%; text-align: center; font-size: 12px; }",
@@ -173,7 +211,9 @@
       secEl.textContent = sec;
       rail.appendChild(secEl);
       var built = [];
-      items.forEach(function (src) {
+      var secGroups = [];
+
+      function mkLink(src) {
         var k = key(src);
         var a = el("a", "nav" + (src.classList.contains("is-active") ? " on" : ""));
         a.setAttribute("href", src.getAttribute("href"));
@@ -181,10 +221,59 @@
         a.style.display = src.style.display;
         a.innerHTML = '<svg viewBox="0 0 24 24">' + (ICON[k] || "") + "</svg><span>" +
                       src.textContent.trim() + "</span>";
-        rail.appendChild(a);
         built.push(a);
+        return a;
+      }
+
+      var done = {};
+      items.forEach(function (src) {
+        var g = GROUP_OF[key(src)];
+        if (!g) { rail.appendChild(mkLink(src)); return; }
+        if (done[g]) return;                // a later member folds into the group
+        done[g] = true;
+
+        var box = el("div", "rail-group");
+        var toggle = el("button", "nav group-toggle");
+        toggle.type = "button";
+        toggle.innerHTML = '<svg viewBox="0 0 24 24">' + (GROUP_ICON[g] || "") + "</svg>" +
+          "<span>" + g + "</span>" +
+          '<svg class="chev" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>';
+        box.appendChild(toggle);
+
+        var kids = el("div", "rail-kids");
+        var kidsInner = el("div", "rail-kids-inner");
+        kids.appendChild(kidsInner);
+        var kidLinks = [];
+        GROUP_PAGES[g].forEach(function (pg) {
+          var src2 = items.filter(function (x) { return key(x) === pg; })[0];
+          if (!src2) return;
+          var a = mkLink(src2);
+          kidsInner.appendChild(a);
+          kidLinks.push(a);
+        });
+        box.appendChild(kids);
+        rail.appendChild(box);
+
+        // Open by default, and always open when you are standing on a page
+        // inside it -- a collapsed group hiding the current page reads as a
+        // broken rail.
+        var saved = openState()[g];
+        var hasActive = kidLinks.some(function (a) { return a.classList.contains("on"); });
+        var open = hasActive || saved !== false;
+        box.classList.toggle("open", open);
+        toggle.setAttribute("aria-expanded", open ? "true" : "false");
+
+        toggle.addEventListener("click", function () {
+          var now = !box.classList.contains("open");
+          box.classList.toggle("open", now);
+          toggle.setAttribute("aria-expanded", now ? "true" : "false");
+          setOpen(g, now);
+        });
+
+        secGroups.push({ box: box, kids: kidLinks });
       });
-      made.push({ secEl: secEl, items: built });
+
+      made.push({ secEl: secEl, items: built, groups: secGroups });
     });
     nav.parentNode.removeChild(nav);   // drop the originals so ids resolve to the rail
 
@@ -284,6 +373,12 @@
     function refresh() {
       var visible = 0;
       made.forEach(function (g) {
+        // A group with every page hidden is an empty drawer -- drop the whole
+        // row, header and all.
+        (g.groups || []).forEach(function (grp) {
+          var anyKid = grp.kids.some(function (x) { return x.style.display !== "none"; });
+          grp.box.style.display = anyKid ? "" : "none";
+        });
         var any = g.items.some(function (x) { return x.style.display !== "none"; });
         g.secEl.style.display = any ? "" : "none";
         g.items.forEach(function (x) { if (x.style.display !== "none") visible++; });
