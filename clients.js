@@ -629,8 +629,8 @@
       if (ed) { editDeal(ed.getAttribute("data-edit-deal")); return; }
       var btn = ev.target.closest("[data-edit-client]");
       if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
-      if (ev.target.id === "csAddDeal") { addDealFor(viewingId); return; }
-      if (ev.target.id === "clientClose") { closeRecord(); }
+      if (ev.target.closest("#csAddDeal")) { addDealFor(viewingId); return; }
+      if (ev.target.closest("#clientClose")) { closeRecord(); }
     });
 
     // Escape closes whatever is on top: the deal sheet, then the client sheet,
