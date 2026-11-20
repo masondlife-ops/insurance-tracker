@@ -84,16 +84,25 @@ grant execute on function public.my_branding() to authenticated;
 -- 3. Populate Inevitable HQ -------------------------------------------------
 -- Matched by id so it can't accidentally hit another agency. 'On Top Next' is
 -- a child of this row and inherits automatically via the parent lookup above.
+--
+-- No logoUrl here, deliberately. The agency logo was removed, and this script
+-- is re-runnable -- leaving the key in would quietly put the logo back the
+-- next time anyone set the database up from scratch. A logo belongs in
+-- Settings > Appearance, or in a one-off update against this row, not in the
+-- schema seed.
 update public.agencies
 set branding = jsonb_build_object(
       'name',    'Inevitable HQ',
-      'logoUrl', 'https://masondlife-ops.github.io/insurance-tracker/brand/inevitable.png',
       'tagline', 'Built different. Proven always.'
     )
 where id = 'afe1f92d-f507-479c-9b1f-fa8f7efa624b';
 
 
 -- 4. Check ------------------------------------------------------------------
-select name, branding is not null as has_branding, branding ->> 'name' as brand_name
+-- logoUrl is listed so a stray logo shows up here rather than on the pages.
+select name,
+       branding is not null as has_branding,
+       branding ->> 'name'    as brand_name,
+       branding ->> 'logoUrl' as logo_url
 from public.agencies
 order by created_at;
