@@ -333,10 +333,10 @@
     var row = document.createElement("div");
     row.className = "ben-row";
     row.innerHTML =
-      '<div class="field"><label>Name</label><input type="text" class="wide b-name" placeholder="Full name"></div>' +
-      '<div class="field"><label>Relationship</label><input type="text" class="wide b-rel" placeholder="Spouse"></div>' +
+      '<div class="field"><label>Name</label><input type="text" class="wide b-name"></div>' +
+      '<div class="field"><label>Relationship</label><input type="text" class="wide b-rel"></div>' +
       '<div class="field"><label>Date of birth</label><input type="date" class="b-dob"></div>' +
-      '<div class="field"><label>Share %</label><input type="number" class="pct b-pct" min="0" max="100" step="1" placeholder="100"></div>' +
+      '<div class="field"><label>Share %</label><input type="number" class="pct b-pct" min="0" max="100" step="1"></div>' +
       '<div class="field"><label>Type</label><select class="b-type"><option>Primary</option><option>Contingent</option></select></div>' +
       '<button type="button" class="x" aria-label="Remove beneficiary">&times;</button>';
     row.querySelector(".b-name").value = b.name || "";
