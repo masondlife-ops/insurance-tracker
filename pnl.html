@@ -253,6 +253,24 @@
   .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
   .goal-meta .hit { color: var(--good); font-weight: 600; }
 
+  /* ---------- goal pace ---------- */
+  /* The chart stretches and the figures take the room left over, rather than
+     a 520px chart sitting in a full-width card with dead space beside it. */
+  .pace-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 22px; align-items: center; }
+  .pace-row #c-pace { min-width: 0; }
+  .pace-row #c-pace svg { width: 100%; height: auto; display: block; }
+  .pace-stats { display: flex; flex-direction: column; gap: 12px; }
+  .ps { display: flex; flex-direction: column; }
+  .ps-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+  .ps-value { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .ps-value.good { color: var(--good); }
+  .ps-value.bad { color: var(--danger); }
+  .ps-sub { font-size: 11.5px; color: var(--text-muted); }
+  @media (max-width: 900px) {
+    .pace-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+    .pace-stats { flex-direction: row; flex-wrap: wrap; gap: 14px 26px; }
+  }
+
   /* ---------- policy mix ---------- */
   .mix { display: flex; flex-wrap: wrap; gap: 10px; }
   .mix-item { flex: 1 1 130px; border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px;
@@ -573,8 +591,10 @@
 
   <div class="card">
     <div class="card-head"><h2>Goal pace <span class="hint" id="paceMonth"></span></h2></div>
-    <div id="c-pace"></div>
-    <div class="dash-kpi" id="k-pace"></div>
+    <div class="pace-row">
+      <div id="c-pace"></div>
+      <div class="pace-stats" id="paceStats"></div>
+    </div>
   </div>
 
   <div class="card">
@@ -951,7 +971,8 @@
   function svgEl(n, a) { var x = document.createElementNS(NS, n); for (var k in a) x.setAttribute(k, a[k]); return x; }
   function svgHost(hostId, w, h) {
     var el = $(hostId); el.innerHTML = "";
-    var s = svgEl("svg", { viewBox: "0 0 " + w + " " + h, height: h });
+    var s = svgEl("svg", { viewBox: "0 0 " + w + " " + h,
+      preserveAspectRatio: "none", width: "100%", height: h });
     el.appendChild(s); return s;
   }
   function svgText(s, x, y, t, o) {
@@ -974,7 +995,7 @@
     if (!goal) {
       host.innerHTML = '<div class="empty">No goal set for ' + esc(monthLabel(currentMonth)) +
         ". Set one above to track pace.</div>";
-      $("k-pace").innerHTML = "";
+      $("paceStats").innerHTML = "";
       return;
     }
 
@@ -1029,11 +1050,25 @@
 
     var onPace = goal * (today / daysIn), diff = run - onPace, ahead = diff >= 0;
     var left = daysIn - today;
-    $("k-pace").innerHTML =
-      "<b>" + money(run) + "</b> of " + money(goal) +
-      " &middot; <span style=\"color:var(--" + (ahead ? "good" : "danger") + ")\"><b>" +
-        money(Math.abs(diff)) + (ahead ? " ahead" : " behind") + "</b></span> of pace" +
-      (left > 0 && run < goal ? " &middot; need <b>" + money((goal - run) / left) + "/day</b> to finish" : "");
+
+    /* The same facts as the line underneath, stacked into the room beside the
+       chart -- which is where the eye goes after reading the shape of it. */
+    function stat(label, value, cls, sub) {
+      return '<div class="ps"><div class="ps-label">' + label + "</div>" +
+        '<div class="ps-value' + (cls ? " " + cls : "") + '">' + value + "</div>" +
+        (sub ? '<div class="ps-sub">' + sub + "</div>" : "") + "</div>";
+    }
+    var pctOfGoal = goal ? Math.round(run / goal * 100) : 0;
+    $("paceStats").innerHTML =
+      stat("Issued", money(run), "", pctOfGoal + "% of " + moneyK(goal)) +
+      stat(ahead ? "Ahead of pace" : "Behind pace", money(Math.abs(diff)),
+           ahead ? "good" : "bad", "pace is " + moneyK(onPace)) +
+      (left > 0 && run < goal
+        ? stat("Needed daily", money((goal - run) / left), "",
+               left + (left === 1 ? " day left" : " days left"))
+        : stat(run >= goal ? "Goal hit" : "Month closed",
+               run >= goal ? pctOfGoal + "%" : moneyK(goal - run),
+               run >= goal ? "good" : "", run >= goal ? "" : "short"));
   }
 
   /* ---------- activity funnel ---------- */
