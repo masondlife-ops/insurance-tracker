@@ -844,8 +844,6 @@
     var profitClass = profit > 0 ? "profit-pos" : profit < 0 ? "profit-neg" : "";
     var profitSign = profit > 0 ? "+" : profit < 0 ? "−" : "";
     var avgAP = deals.length ? submittedAP / deals.length : null;
-    var roi = leadSpend > 0 ? (commission - leadSpend) / leadSpend * 100 : null;
-    var roiClass = roi === null ? "" : roi > 0 ? "profit-pos" : roi < 0 ? "profit-neg" : "";
 
     var actv = activityMonth(currentMonth);
     var costPerSale = deals.length > 0 ? leadSpend / deals.length : null;
@@ -859,7 +857,6 @@
         sub: toCome > 0 ? "+" + money(toCome) + " to come" : "", cls: "" },
       { key: "exp",     label: "Lead spend",     value: money(leadSpend), sub: "", cls: "" },
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "", cls: profitClass },
-      { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
       { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
