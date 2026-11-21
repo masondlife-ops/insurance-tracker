@@ -256,14 +256,14 @@
      a 520px chart sitting in a full-width card with dead space beside it. */
   .pace-row { display: grid; grid-template-columns: minmax(0, 1fr) 190px; gap: 22px; align-items: center; }
   .pace-row #c-pace { min-width: 0; }
-  .pace-row #c-pace svg { width: 100%; height: auto; display: block; }
-  .pace-stats { display: flex; flex-direction: column; gap: 12px; }
+  .pace-row #c-pace svg { width: 100%; display: block; }
+  .pace-stats { display: flex; flex-direction: column; gap: 9px; }
   .ps { display: flex; flex-direction: column; }
-  .ps-label { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
-  .ps-value { font-size: 19px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.15; }
+  .ps-label { font-size: 10.5px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); line-height: 1.3; }
+  .ps-value { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.2; }
   .ps-value.good { color: var(--good); }
   .ps-value.bad { color: var(--danger); }
-  .ps-sub { font-size: 11.5px; color: var(--text-muted); }
+  .ps-sub { font-size: 11px; color: var(--text-muted); line-height: 1.3; }
   @media (max-width: 900px) {
     .pace-row { grid-template-columns: minmax(0, 1fr); gap: 14px; }
     .pace-stats { flex-direction: row; flex-wrap: wrap; gap: 14px 26px; }
@@ -957,8 +957,7 @@
   function svgEl(n, a) { var x = document.createElementNS(NS, n); for (var k in a) x.setAttribute(k, a[k]); return x; }
   function svgHost(hostId, w, h) {
     var el = $(hostId); el.innerHTML = "";
-    var s = svgEl("svg", { viewBox: "0 0 " + w + " " + h,
-      preserveAspectRatio: "none", width: "100%", height: h });
+    var s = svgEl("svg", { viewBox: "0 0 " + w + " " + h, width: "100%", height: h });
     el.appendChild(s); return s;
   }
   function svgText(s, x, y, t, o) {
@@ -1007,7 +1006,8 @@
     // fold the gap into today's point so the dot matches the headline figure.
     if (plotted < run) cum[cum.length - 1] = run;
 
-    var W = 520, H = 205, PL = 54, PR = 16, PTop = 12, PB = 26;
+    var W = Math.max(360, Math.round(host.clientWidth || 520));
+    var H = 136, PL = 52, PR = 14, PTop = 10, PB = 22;
     var iw = W - PL - PR, ih = H - PTop - PB;
     var top = Math.max(goal, run) * 1.02;
     var s = svgHost("c-pace", W, H);
@@ -1331,6 +1331,26 @@
     return (state.settings || {})[k];
   }
   function setSetting(k, v) { state.settings = state.settings || {}; state.settings[k] = v; save(); }
+
+  /* The chart is drawn at the host's pixel width, so it has to be redrawn
+     whenever that width changes. A window resize listener is not enough: the
+     first render happens before hub-shell.js wraps the page in the sidebar,
+     so the chart was measured at full width and then squeezed into a column
+     244px narrower -- stretching the drawing and the axis labels with it.
+     Watching the element itself catches that, the window, and the rail
+     opening or closing. */
+  var paceWidth = 0, paceTimer = null;
+  function watchPaceWidth() {
+    var host = $("c-pace");
+    if (!host || typeof ResizeObserver === "undefined") return;
+    new ResizeObserver(function () {
+      var w = Math.round(host.clientWidth);
+      if (!w || w === paceWidth) return;     // height changes are our own doing
+      paceWidth = w;
+      clearTimeout(paceTimer);
+      paceTimer = setTimeout(function () { safeRender("pace", renderPace); }, 60);
+    }).observe(host);
+  }
 
   function refreshContractLevel() {
     var sel = $("contractLevel");
@@ -2107,6 +2127,7 @@
   function afterBoot() {
     updateThemeBtn();
     render();
+    watchPaceWidth();
   }
 
   if (cloudOn) {
