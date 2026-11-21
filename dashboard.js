@@ -83,7 +83,29 @@
   /* Everything the page works from: what was saved, plus the automatic items
      that have not been acted on. A saved record always beats its automatic
      twin, which is how Done and Delete stick. */
+  /* A yearly review is a year out by definition, so listing one the day the
+     policy is written would leave the diary carrying every review you will
+     ever do. They stay out of sight until the month they fall in -- which is
+     when you can actually act on one. Anything touched by hand is exempt: if
+     you scheduled or edited it yourself, you meant to see it. */
+  function hiddenUntilItsMonth(e) {
+    if (!e.auto || e.type !== "Yearly review") return false;
+    return String(e.date || "").slice(0, 7) > todayStr().slice(0, 7);
+  }
+
   function events() {
+    var saved = stored();
+    var byId = {};
+    saved.forEach(function (e) { byId[e.id] = 1; });
+    return saved.filter(function (e) { return !e.dismissed; })
+      .concat(autoEvents().filter(function (e) {
+        return !byId[e.id] && !hiddenUntilItsMonth(e);
+      }));
+  }
+
+  /* The anniversaries card still wants them all, so it can show a review as
+     already scheduled rather than offering a second one. */
+  function eventsIncludingFuture() {
     var saved = stored();
     var byId = {};
     saved.forEach(function (e) { byId[e.id] = 1; });
@@ -253,7 +275,7 @@
     // One already on the diary for that client and date should not be offered
     // again, or the list nags about something you have already dealt with.
     var booked = {};
-    events().forEach(function (e) {
+    eventsIncludingFuture().forEach(function (e) {
       if (e.type === "Yearly review") booked[(e.client || "").toLowerCase() + "|" + e.date] = 1;
     });
 

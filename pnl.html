@@ -1052,8 +1052,8 @@
 
     var stages = [
       { n: a.dials, label: "Dials" },
-      { n: a.pickups, label: "Pickups" },
-      { n: a.convos, label: "Convos" },
+      { n: a.pickups, label: "Contacts" },
+      { n: a.appointments, label: "Appointments" },
       { n: a.presentations, label: "Presented" },
       { n: deals, label: "Sold" }
     ];
@@ -1265,18 +1265,36 @@
   });
 
   /* funnel (activity → deals → dollars) */
+  /* Reads the Activity page's counts: a key per day, plus an optional key for
+     a month typed in one go, which is why both are summed. Falls back to the
+     old per-call rows so a month logged before the rewrite still charts. */
   function activityMonth(ym) {
     var b = activityBlob || {};
-    var dm = b.dials || {};
-    var dials = 0;
-    Object.keys(dm).forEach(function (k) { if (String(k).slice(0, 7) === ym) dials += (+dm[k] || 0); });
-    var ents = (b.entries || []).filter(function (e) {
-      var d = new Date(e.ts);
-      return (d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")) === ym;
+    var counts = b.counts || {};
+    var tot = { dials: 0, contacts: 0, appointments: 0, presentations: 0, sold: 0 };
+    var found = false;
+    Object.keys(counts).forEach(function (k) {
+      if (k !== ym && !(k.length === 10 && k.slice(0, 7) === ym)) return;
+      found = true;
+      Object.keys(tot).forEach(function (f) { tot[f] += (+counts[k][f] || 0); });
     });
-    var c = function (f) { return ents.filter(function (e) { return e[f]; }).length; };
-    return { dials: dials, pickups: c("pickup"), convos: c("conv2"), presentations: c("presentation"),
-             hasData: (dials > 0 || ents.length > 0) };
+
+    if (!found) {
+      var dm = b.dials || {};
+      Object.keys(dm).forEach(function (k) { if (String(k).slice(0, 7) === ym) tot.dials += (+dm[k] || 0); });
+      var ents = (b.entries || []).filter(function (e) {
+        var d = new Date(e.ts);
+        return (d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0")) === ym;
+      });
+      var c = function (f) { return ents.filter(function (e) { return e[f]; }).length; };
+      tot.contacts = c("pickup");
+      tot.appointments = c("appointment");
+      tot.presentations = c("presentation");
+      found = tot.dials > 0 || ents.length > 0;
+    }
+
+    return { dials: tot.dials, pickups: tot.contacts, appointments: tot.appointments,
+             presentations: tot.presentations, sold: tot.sold, hasData: found };
   }
 
   /* Comp guide data lives in comp-guide.js (shared with the agency owner hub);
