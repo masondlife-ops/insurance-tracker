@@ -382,7 +382,8 @@
           grp.box.style.display = anyKid ? "" : "none";
         });
         var any = g.items.some(function (x) { return x.style.display !== "none"; });
-        g.secEl.style.display = any ? "" : "none";
+        var hasGroup = (g.groups || []).some(function (grp) { return grp.box.style.display !== "none"; });
+        g.secEl.style.display = (any && !hasGroup) ? "" : "none";
         g.items.forEach(function (x) { if (x.style.display !== "none") visible++; });
       });
       // Grouping earns its keep at 6+ items; below that it is noise.

@@ -32,7 +32,7 @@
 
   /* ---------- shape ---------- */
 
-  function seed() { return { deals: [], expenses: [], clients: [] }; }
+  function seed() { return { deals: [], expenses: [], clients: [], events: [] }; }
 
   function normName(s) {
     return String(s || "").trim().toLowerCase().replace(/\s+/g, " ");
@@ -48,6 +48,8 @@
     s.deals = (s.deals || []).filter(function (d) { return d && typeof d === "object"; });
     s.expenses = (s.expenses || []).filter(function (e) { return e && typeof e === "object"; });
     s.clients = (s.clients || []).filter(function (c) { return c && typeof c === "object"; });
+    // Scheduled follow-ups and events, owned by the Dashboard.
+    s.events = (s.events || []).filter(function (e) { return e && typeof e === "object"; });
     s.clients.forEach(function (c) {
       if (!c.id) c.id = uid();
       if (!Array.isArray(c.beneficiaries)) c.beneficiaries = [];
