@@ -326,7 +326,7 @@
   <div class="card">
     <div class="card-head">
       <h2>Book of business <span class="hint" id="bookCount"></span></h2>
-      <button type="button" class="btn secondary small" id="clientAddBtn">Add client</button>
+      <button type="button" class="btn small" id="clientAddBtn">+ Add deal</button>
     </div>
     <div class="book-search">
       <input type="search" id="bookSearch" placeholder="Search name, phone, email, carrier or product" aria-label="Search your clients">
@@ -360,6 +360,15 @@
       <button type="button" class="sheet-x" id="clientSheetClose" aria-label="Close">&times;</button>
     </div>
     <form id="clientForm">
+      <div class="for-client" id="dealForClient"></div>
+
+      <!-- Three modes share this one sheet: a new deal (client + policy), an
+           edit of a client (client only), and a policy added to a client who
+           already exists (policy only). Sections are shown or hidden per mode
+           rather than split across two forms, because "add a deal" is one
+           thought and asking for it in two places is what made logging a deal
+           feel impossible. -->
+      <div id="clientSections">
       <div class="form-grid">
         <div class="field"><label for="c-name">Name</label><input type="text" id="c-name" class="wide" required></div>
         <div class="field"><label for="c-dob">Date of birth</label><input type="date" id="c-dob"></div>
@@ -402,23 +411,10 @@
         <div class="ben-total" id="benTotal"></div>
       </div>
 
-      <div class="deal-actions">
-        <button type="submit" class="btn" id="clientSubmit">Save client</button>
-        <button type="button" class="btn secondary" id="clientDelete" style="display:none">Delete</button>
-      </div>
-    </form>
-  </div>
-</aside>
+      </div><!-- /clientSections -->
 
-<div class="deal-scrim" id="dealScrim"></div>
-<aside class="deal-sheet" id="dealSheet">
-  <div class="card">
-    <div class="sheet-head">
-      <h2 id="dealFormTitle">Add a policy</h2>
-      <button type="button" class="sheet-x" id="dealSheetClose" aria-label="Close">&times;</button>
-    </div>
-    <form id="dealForm">
-      <div class="for-client" id="dealForClient"></div>
+      <div class="ben-sec" id="policySection">
+        <div class="card-head"><h2 style="font-size:13px" id="policySectionTitle">Policy</h2></div>
       <div class="form-grid">
         <div class="field"><label for="x-date">Date</label><input type="date" id="x-date" required></div>
         <div class="field"><label for="x-carrier">Carrier</label><input type="text" id="x-carrier" class="wide" list="xCarrierList" placeholder="Carrier" autocomplete="off"></div>
@@ -441,13 +437,17 @@
         <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="x-paid"> Paid</label></div>
         <div class="field"><label>&nbsp;</label><label class="check"><input type="checkbox" id="x-reqs"> Requirements</label></div>
       </div>
+      </div>
+
       <div class="deal-actions">
-        <button type="submit" class="btn" id="dealSubmit">Add policy</button>
-        <button type="button" class="btn secondary" id="dealDelete" style="display:none">Delete</button>
+        <button type="submit" class="btn" id="clientSubmit">Save</button>
+        <button type="button" class="btn secondary" id="clientDelete" style="display:none">Delete client</button>
+        <button type="button" class="btn secondary" id="dealDelete" style="display:none">Delete policy</button>
       </div>
     </form>
   </div>
 </aside>
+
 <datalist id="xCarrierList"></datalist>
 <datalist id="xProductList"></datalist>
 <datalist id="xLeadList"></datalist>
@@ -456,7 +456,7 @@
 <script src="comp-calc.js"></script>
 <script src="hub-contract.js"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=7"></script>
+<script src="clients.js?v=9"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>

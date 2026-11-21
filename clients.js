@@ -111,10 +111,7 @@
         '<td class="num">' + money(r.ap) + "</td>" +
         "<td>" + esc(r.carriers.join(", ") || "—") + "</td>" +
         "<td>" + (r.last ? fmtDay(r.last) : "—") + "</td>" +
-        '<td><div class="row-actions">' +
-          '<button type="button" class="btn small" data-add-policy="' + esc(r.client.id) + '">+ Policy</button>' +
-          '<button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button>' +
-        "</div></td>" +
+        '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button></td>' +
       "</tr>";
     }).join("");
 
@@ -122,7 +119,7 @@
     empty.style.display = rows.length ? "none" : "";
     empty.textContent = total
       ? "No client matches “" + q + "”."
-      : "No clients yet. Add a client first, then log their policies with + Policy.";
+      : "No deals yet. Use Add deal — it takes the client and their policy together.";
 
     if (viewingId && !rows.some(function (r) { return r.client.id === viewingId; })) viewingId = null;
     renderDetail();
@@ -320,15 +317,31 @@
 
   /* ---------- the sheet ---------- */
 
-  function openSheet() {
+  /* "client"  -- editing someone who already exists, no policy involved
+     "deal"    -- the main path: a new client and their first policy at once
+     "policy"  -- another policy for a client who already exists */
+  var sheetMode = "client";
+
+  function openSheet(focusId) {
     $("clientScrim").classList.add("show");
     $("clientSheet").classList.add("show");
-    setTimeout(function () { var n = $("c-name"); if (n) n.focus(); }, 180);
+    setTimeout(function () { var n = $(focusId); if (n) n.focus(); }, 180);
   }
   function closeSheet() {
     $("clientSheet").classList.remove("show");
     $("clientScrim").classList.remove("show");
     editingId = null;
+    dealEditingId = null;
+  }
+
+  function applyMode(mode) {
+    sheetMode = mode;
+    $("clientSections").hidden = mode === "policy";
+    $("policySection").hidden = mode === "client";
+    $("c-name").required = mode !== "policy";
+    $("x-date").required = mode !== "client";
+    $("clientDelete").style.display = (mode === "client" && editingId) ? "" : "none";
+    $("dealDelete").style.display = (mode === "policy" && dealEditingId) ? "" : "none";
   }
 
   function benRow(b) {
@@ -389,16 +402,34 @@
     $("benRows").innerHTML = "";
     ((c && c.beneficiaries) || []).forEach(function (b) { $("benRows").appendChild(benRow(b)); });
     benMeta();
-    $("clientFormTitle").textContent = c ? "Edit client" : "Add client";
-    $("clientSubmit").textContent = c ? "Save client" : "Add client";
-    $("clientDelete").style.display = c ? "" : "none";
   }
 
   function editClient(id) {
     var c = id ? clientById(id) : null;
     editingId = c ? c.id : null;
+    dealEditingId = null;
     fillForm(c);
-    openSheet();
+    $("dealForClient").innerHTML = "";
+    $("clientFormTitle").textContent = "Edit client";
+    $("clientSubmit").textContent = "Save client";
+    applyMode("client");
+    openSheet("c-name");
+  }
+
+  /* The main path. One sheet, one submit: the client and the policy they just
+     bought go in together, because that is one event. */
+  function addDeal() {
+    editingId = null;
+    dealEditingId = null;
+    dealClientId = null;
+    fillForm(null);
+    fillDealForm(null, null);
+    $("dealForClient").innerHTML = "";
+    $("clientFormTitle").textContent = "Add a deal";
+    $("clientSubmit").textContent = "Add deal";
+    $("policySectionTitle").textContent = "Policy";
+    applyMode("deal");
+    openSheet("c-name");
   }
 
   function readBeneficiaries() {
@@ -483,15 +514,17 @@
     pendingFull = q.full;
   }
 
-  function openDealSheet() {
-    $("dealScrim").classList.add("show");
-    $("dealSheet").classList.add("show");
-    setTimeout(function () { var n = $("x-carrier"); if (n) n.focus(); }, 180);
-  }
-  function closeDealSheet() {
-    $("dealSheet").classList.remove("show");
-    $("dealScrim").classList.remove("show");
-    dealEditingId = null;
+  /* The policy-only path reuses the same sheet with the client half hidden. */
+  function openPolicySheet(d, clientId) {
+    editingId = null;
+    fillDealForm(d, clientId);
+    var c = clientId ? clientById(clientId) : null;
+    $("dealForClient").innerHTML = c ? "For <b>" + esc(c.name) + "</b>" : "";
+    $("clientFormTitle").textContent = d ? "Edit policy" : "Add a policy";
+    $("clientSubmit").textContent = d ? "Save policy" : "Add policy";
+    $("policySectionTitle").textContent = "Policy";
+    applyMode("policy");
+    openSheet("x-carrier");
   }
 
   function fillDealForm(d, clientId) {
@@ -499,9 +532,6 @@
     dealClientId = clientId || (d && d.clientId) || null;
     comAutoFilled = false;
     pendingFull = d ? (num(d.com) || 0) + (num(d.comBalance) || 0) || null : null;
-
-    var c = dealClientId ? clientById(dealClientId) : null;
-    $("dealForClient").innerHTML = c ? "For <b>" + esc(c.name) + "</b>" : "";
 
     $("x-date").value = d ? d.date || todayStr() : todayStr();
     $("x-carrier").value = d ? d.carrier || "" : "";
@@ -519,25 +549,65 @@
     $("x-paid").checked = !!(d && d.paid);
     $("x-reqs").checked = !!(d && d.reqs);
 
-    $("dealFormTitle").textContent = d ? "Edit policy" : "Add a policy";
-    $("dealSubmit").textContent = d ? "Save policy" : "Add policy";
-    $("dealDelete").style.display = d ? "" : "none";
     refreshDealLists();
     syncTargetField();
     recalcCommission();
   }
 
-  function addDealFor(clientId) { fillDealForm(null, clientId); openDealSheet(); }
+  /* Reads the policy half of the form into a deal record. Returns null when
+     the section is blank, so "Add deal" can be used for a client you have
+     taken details for but not yet written. */
+  function readPolicy(client) {
+    var touched = ["x-carrier", "x-policy", "x-policynum", "x-ap", "x-face",
+                   "x-monthly", "x-com", "x-lead", "x-notes"]
+      .some(function (id) { return String($(id).value || "").trim() !== ""; });
+    if (!touched) return null;
+
+    var adv = num($("x-com").value);
+    // The balance above the advance cap is still owed, just paid as the
+    // client pays, so it is kept on the deal rather than thrown away.
+    var balance = (adv != null && pendingFull != null && pendingFull > adv)
+      ? Number((pendingFull - adv).toFixed(2)) : null;
+
+    return {
+      date: $("x-date").value || todayStr(),
+      client: client.name,
+      clientId: client.id,
+      carrier: $("x-carrier").value.trim(),
+      policy: $("x-policy").value.trim(),
+      policyNumber: $("x-policynum").value.trim(),
+      ap: num($("x-ap").value),
+      target: num($("x-target").value),
+      face: num($("x-face").value),
+      monthly: num($("x-monthly").value),
+      com: adv,
+      comBalance: balance,
+      status: $("x-status").value,
+      lead: $("x-lead").value.trim(),
+      issuedDate: $("x-issued-date").value,
+      notes: $("x-notes").value.trim(),
+      paid: $("x-paid").checked,
+      reqs: $("x-reqs").checked
+    };
+  }
+
+  function savePolicy(fields, existingId) {
+    var id = existingId || S.uid();
+    S.commit(function (doc) {
+      var d = doc.deals.find(function (x) { return x.id === id; });
+      if (!d) { d = { id: id }; doc.deals.push(d); }
+      Object.keys(fields).forEach(function (k) { d[k] = fields[k]; });
+    });
+  }
+
+  function addDealFor(clientId) { openPolicySheet(null, clientId); }
   function editDeal(id) {
     var d = state().deals.find(function (x) { return x.id === id; });
     if (!d) return;
-    fillDealForm(d, d.clientId);
-    openDealSheet();
+    openPolicySheet(d, d.clientId);
   }
 
   function wireDealSheet() {
-    $("dealSheetClose").addEventListener("click", closeDealSheet);
-    $("dealScrim").addEventListener("click", closeDealSheet);
     ["x-carrier", "x-policy"].forEach(function (id) {
       $(id).addEventListener("input", function () {
         refreshDealLists(); syncTargetField(); recalcCommission();
@@ -549,48 +619,6 @@
     // Typing a commission means you meant it; auto-fill stops overwriting it.
     $("x-com").addEventListener("input", function () { comAutoFilled = false; });
 
-    $("dealForm").addEventListener("submit", function (ev) {
-      ev.preventDefault();
-      var c = dealClientId ? clientById(dealClientId) : null;
-      if (!c) { alert("Open a client first, then add the policy to their record."); return; }
-
-      var adv = num($("x-com").value);
-      // The balance above the advance cap is still owed, just paid as the
-      // client pays, so it is kept on the deal rather than thrown away.
-      var balance = (adv != null && pendingFull != null && pendingFull > adv)
-        ? Number((pendingFull - adv).toFixed(2)) : null;
-
-      var fields = {
-        date: $("x-date").value,
-        client: c.name,
-        clientId: c.id,
-        carrier: $("x-carrier").value.trim(),
-        policy: $("x-policy").value.trim(),
-        policyNumber: $("x-policynum").value.trim(),
-        ap: num($("x-ap").value),
-        target: num($("x-target").value),
-        face: num($("x-face").value),
-        monthly: num($("x-monthly").value),
-        com: adv,
-        comBalance: balance,
-        status: $("x-status").value,
-        lead: $("x-lead").value.trim(),
-        issuedDate: $("x-issued-date").value,
-        notes: $("x-notes").value.trim(),
-        paid: $("x-paid").checked,
-        reqs: $("x-reqs").checked
-      };
-      var id = dealEditingId || S.uid();
-
-      S.commit(function (doc) {
-        var d = doc.deals.find(function (x) { return x.id === id; });
-        if (!d) { d = { id: id }; doc.deals.push(d); }
-        Object.keys(fields).forEach(function (k) { d[k] = fields[k]; });
-      });
-      closeDealSheet();
-      renderBook();
-    });
-
     $("dealDelete").addEventListener("click", function () {
       var id = dealEditingId;
       if (!id) return;
@@ -600,7 +628,7 @@
       S.commit(function (doc) {
         doc.deals = doc.deals.filter(function (x) { return x.id !== id; });
       });
-      closeDealSheet();
+      closeSheet();
       renderBook();
     });
   }
@@ -609,7 +637,7 @@
 
   function wire() {
     $("bookSearch").addEventListener("input", renderBook);
-    $("clientAddBtn").addEventListener("click", function () { editClient(null); });
+    $("clientAddBtn").addEventListener("click", addDeal);
     $("clientSheetClose").addEventListener("click", closeSheet);
     $("clientScrim").addEventListener("click", closeSheet);
     $("benAdd").addEventListener("click", function () {
@@ -618,8 +646,6 @@
     });
 
     $("bookBody").addEventListener("click", function (ev) {
-      var add = ev.target.closest("[data-add-policy]");
-      if (add) { addDealFor(add.getAttribute("data-add-policy")); return; }
       var btn = ev.target.closest("[data-edit-client]");
       if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
       var tr = ev.target.closest("tr[data-client]");
@@ -642,7 +668,6 @@
     // then the record itself.
     document.addEventListener("keydown", function (e) {
       if (e.key !== "Escape") return;
-      if ($("dealSheet").classList.contains("show")) { closeDealSheet(); return; }
       if ($("clientSheet").classList.contains("show")) { closeSheet(); return; }
       if (!$("clientDetail").hidden) closeRecord();
     });
@@ -651,16 +676,40 @@
 
     $("clientForm").addEventListener("submit", function (ev) {
       ev.preventDefault();
-      var name = $("c-name").value.trim();
-      if (!name) return;
-      // Two records with one name would split a person's policies in half,
-      // which is the one thing a book of business must never do.
-      var clash = clientByName(name);
-      if (clash && clash.id !== editingId) {
-        alert("You already have a client called " + clash.name + ". Open that record instead.");
+
+      /* Policy only: the client already exists and is not being edited. */
+      if (sheetMode === "policy") {
+        var owner = dealClientId ? clientById(dealClientId) : null;
+        if (!owner) { alert("Open a client first, then add the policy to their record."); return; }
+        var pol = readPolicy(owner);
+        if (!pol) { alert("Fill in at least the carrier or the premium before saving this policy."); return; }
+        savePolicy(pol, dealEditingId);
+        closeSheet();
+        renderBook();
         return;
       }
+
+      var name = $("c-name").value.trim();
+      if (!name) return;
+
+      var existing = clientByName(name);
       var id = editingId;
+
+      if (sheetMode === "client") {
+        // Two records with one name would split a person's policies in half,
+        // which is the one thing a book of business must never do.
+        if (existing && existing.id !== editingId) {
+          alert("You already have a client called " + existing.name + ". Open that record instead.");
+          return;
+        }
+      } else if (existing) {
+        /* Adding a deal under a name already on the book is the normal way a
+           repeat sale gets logged, so it attaches to that record instead of
+           refusing. Their details are only filled in where blank -- a name
+           typed with an empty phone box must never wipe the number on file. */
+        id = existing.id;
+      }
+
       var fields = {
         name: name,
         dob: $("c-dob").value,
@@ -678,6 +727,7 @@
         },
         beneficiaries: readBeneficiaries()
       };
+      var attaching = sheetMode === "deal" && !!existing;
       if (!id) id = S.uid();
 
       // Written as a function of the document so the store can replay it onto
@@ -685,11 +735,33 @@
       S.commit(function (doc) {
         var c = doc.clients.find(function (x) { return x.id === id; });
         if (!c) { c = { id: id, createdAt: todayStr(), beneficiaries: [] }; doc.clients.push(c); }
-        Object.keys(fields).forEach(function (k) { c[k] = fields[k]; });
+        Object.keys(fields).forEach(function (k) {
+          var v = fields[k];
+          if (attaching) {
+            if (k === "bank") {
+              c.bank = c.bank || {};
+              Object.keys(v).forEach(function (bk) { if (v[bk] && !c.bank[bk]) c.bank[bk] = v[bk]; });
+              return;
+            }
+            if (k === "beneficiaries") {
+              if (v.length && !(c.beneficiaries || []).length) c.beneficiaries = v;
+              return;
+            }
+            if (!v || c[k]) return;      // only fill the gaps
+          }
+          c[k] = v;
+        });
         // The name on past deals follows the record, so fixing a spelling fixes
         // it everywhere rather than leaving the old one in the deals table.
         doc.deals.forEach(function (d) { if (d.clientId === id) d.client = c.name; });
       });
+
+      if (sheetMode === "deal") {
+        var client = clientById(id);
+        var deal = client && readPolicy(client);
+        if (deal) savePolicy(deal, null);
+      }
+
       closeSheet();
       renderBook();
     });
