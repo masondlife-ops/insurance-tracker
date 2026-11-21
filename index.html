@@ -325,21 +325,22 @@
   .m-hint { font-size: 13px; color: var(--text-muted); margin-top: 3px; }
   .metric.hero .m-label, .metric.hero .m-hint { color: rgba(255,255,255,.82); }
 
-  .m-input {
+  .metric input.m-input {
     display: block; width: 100%; margin: 10px auto 0; padding: 2px 0;
     font: inherit; font-size: 46px; font-weight: 700; line-height: 1.05;
     font-variant-numeric: tabular-nums; text-align: center; letter-spacing: -0.02em;
     color: var(--text-primary); background: transparent; border: none; border-radius: 8px;
   }
-  .metric.hero .m-input { font-size: 64px; color: #fff; }
-  .m-input::placeholder { color: var(--text-muted); }
-  .m-input:focus { outline: 2px solid var(--series-1); outline-offset: 4px; }
-  .metric.hero .m-input:focus { outline-color: rgba(255,255,255,.85); }
+  .metric.hero input.m-input { font-size: 64px; color: #fff; }
+  .metric input.m-input::placeholder { color: var(--text-muted); opacity: 1; }
+  .metric.hero input.m-input::placeholder { color: rgba(255,255,255,.55); }
+  .metric input.m-input:focus { outline: 2px solid var(--series-1); outline-offset: 4px; }
+  .metric.hero input.m-input:focus { outline-color: rgba(255,255,255,.85); }
   /* The spinners are the thing this page exists to get rid of. */
-  .m-input::-webkit-outer-spin-button, .m-input::-webkit-inner-spin-button {
+  .metric input.m-input::-webkit-outer-spin-button, .metric input.m-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
   }
-  .m-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+  .metric input.m-input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 
   .m-sub { font-size: 12px; color: var(--text-muted); min-height: 16px; margin-top: 6px; }
   .metric.hero .m-sub { color: rgba(255,255,255,.8); }
@@ -348,8 +349,8 @@
 
   @media (max-width: 700px) {
     .metrics { grid-template-columns: minmax(0, 1fr); }
-    .m-input { font-size: 40px; }
-    .metric.hero .m-input { font-size: 54px; }
+    .metric input.m-input { font-size: 40px; }
+    .metric.hero input.m-input { font-size: 54px; }
   }
 </style>
 
@@ -389,7 +390,7 @@
   <div class="summary" id="summary"></div>
 </div>
 
-<script src="activity.js?v=1"></script>
+<script src="activity.js?v=2"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>

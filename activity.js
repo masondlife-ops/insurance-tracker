@@ -108,7 +108,7 @@
   function save() {
     writeLocal(COUNTS_KEY, counts);
     scheduleCloudSave();
-    renderSummary();
+    renderValues();
   }
 
   /* ---------- migration ----------
@@ -147,7 +147,7 @@
     return '<div class="metric' + (hero ? " hero" : "") + '">' +
       '<div class="m-label">' + m.label + "</div>" +
       '<div class="m-hint">' + m.hint + "</div>" +
-      '<input class="m-input" type="number" inputmode="numeric" min="0" step="1" ' +
+      '<input class="m-input" type="number" inputmode="numeric" min="0" step="1" placeholder="0" ' +
         'id="m-' + m.key + '" data-metric="' + m.key + '" aria-label="' + m.label + '">' +
       '<div class="m-sub" id="sub-' + m.key + '"></div>' +
     "</div>";
