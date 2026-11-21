@@ -334,8 +334,8 @@
   .metric.hero input.m-input { font-size: 64px; color: #fff; }
   .metric input.m-input::placeholder { color: var(--text-muted); opacity: 1; }
   .metric.hero input.m-input::placeholder { color: rgba(255,255,255,.55); }
-  .metric input.m-input:focus { outline: 2px solid var(--series-1); outline-offset: 4px; }
-  .metric.hero input.m-input:focus { outline-color: rgba(255,255,255,.85); }
+  .metric input.m-input:focus,
+  .metric input.m-input:focus-visible { outline: none; box-shadow: none; border: none; }
   /* The spinners are the thing this page exists to get rid of. */
   .metric input.m-input::-webkit-outer-spin-button, .metric input.m-input::-webkit-inner-spin-button {
     -webkit-appearance: none; margin: 0;
@@ -390,7 +390,7 @@
   <div class="summary" id="summary"></div>
 </div>
 
-<script src="activity.js?v=3"></script>
+<script src="activity.js?v=4"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
