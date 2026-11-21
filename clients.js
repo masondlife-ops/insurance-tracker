@@ -111,7 +111,10 @@
         '<td class="num">' + money(r.ap) + "</td>" +
         "<td>" + esc(r.carriers.join(", ") || "—") + "</td>" +
         "<td>" + (r.last ? fmtDay(r.last) : "—") + "</td>" +
-        '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button></td>' +
+        '<td><div class="row-actions">' +
+          '<button type="button" class="btn small" data-add-policy="' + esc(r.client.id) + '">+ Policy</button>' +
+          '<button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button>' +
+        "</div></td>" +
       "</tr>";
     }).join("");
 
@@ -119,7 +122,7 @@
     empty.style.display = rows.length ? "none" : "";
     empty.textContent = total
       ? "No client matches “" + q + "”."
-      : "No clients yet. They appear here as you log deals, or use Add client.";
+      : "No clients yet. Add a client first, then log their policies with + Policy.";
 
     if (viewingId && !rows.some(function (r) { return r.client.id === viewingId; })) viewingId = null;
     renderDetail();
@@ -615,6 +618,8 @@
     });
 
     $("bookBody").addEventListener("click", function (ev) {
+      var add = ev.target.closest("[data-add-policy]");
+      if (add) { addDealFor(add.getAttribute("data-add-policy")); return; }
       var btn = ev.target.closest("[data-edit-client]");
       if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
       var tr = ev.target.closest("tr[data-client]");

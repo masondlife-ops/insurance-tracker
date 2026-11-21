@@ -427,9 +427,6 @@
   .sheet-x { margin-left: auto; background: none; border: none; color: var(--text-muted);
              font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px; }
   .sheet-x:hover { color: var(--text-primary); }
-  .tb-add { font: inherit; font-size: 14px; font-weight: 600; padding: 6px 13px; border-radius: 8px;
-            border: 1px solid var(--series-1); background: var(--series-1); color: #fff; cursor: pointer;
-            text-decoration: none; display: inline-block; }
 
   /* ---------- Requirements flag ---------- */
   .reqs-chip { font-size: 12px; font-weight: 600; letter-spacing: .04em; padding: 1px 6px; border-radius: 999px;
@@ -1494,27 +1491,8 @@
 
   if (window.HubSettings) HubSettings.mount($("themeBtn").parentNode, $("themeBtn"));
 
-  /* New deals are created on the Clients page now, against a client record
-     that already exists -- that is what stops a policy being logged under a
-     name matching nobody, and it is where the policy number, banking details
-     and notes for that person live. This page keeps the form for EDITING a
-     deal; only the "add" entry point moved.
-
-     The button stays in the topbar and links across rather than vanishing, so
-     the old habit still lands somewhere useful. */
-  function placeAddButton() {
-    var b = document.createElement("a");
-    b.className = "tb-add";
-    b.textContent = "+ Add deal";
-    b.setAttribute("href", "clients.html");
-    b.title = "Deals are added from a client's record";
-    if (window.HubShell && HubShell.actions) HubShell.actions.insertBefore(b, HubShell.actions.firstChild);
-    else document.querySelector(".wrap").appendChild(b);
-  }
-  // DOMContentLoaded, not setTimeout(0): hub-shell.js is a body script parsed
-  // after this one, and a zero timer can fire before the parser reaches it.
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", placeAddButton);
-  else placeAddButton();
+  /* No add button here. Policies are logged on the Clients page, against the
+     client who holds them. */
 
 
 
