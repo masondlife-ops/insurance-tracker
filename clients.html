@@ -160,6 +160,7 @@
   .card-head h2 { margin-bottom: 0; }
   .empty { color: var(--text-muted); font-size: 14px; padding: 10px 0; }
   .row-actions { display: flex; gap: 6px; }
+  .muted-cell { color: var(--text-muted); }
 
   .acct-box { display: none; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); }
   .acct-box.show { display: flex; }
@@ -363,8 +364,8 @@
       <table id="bookTable">
         <thead>
           <tr>
-            <th>Client</th><th>Phone</th><th class="num">Policies</th>
-            <th class="num">AP</th><th>Carriers</th><th>Last deal</th><th></th>
+            <th>Date</th><th>Client</th><th>Carrier / product</th>
+            <th class="num">AP</th><th class="num">Commission</th><th>Status</th><th></th>
           </tr>
         </thead>
         <tbody id="bookBody"></tbody>
@@ -484,7 +485,7 @@
 <script src="comp-calc.js"></script>
 <script src="hub-contract.js"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=11"></script>
+<script src="clients.js?v=12"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>

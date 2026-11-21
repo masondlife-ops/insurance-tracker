@@ -88,17 +88,18 @@
   /* One box over everything someone might remember about a client -- their
      name, the number they called from, or just the carrier. Every word has to
      match, so a second word narrows instead of widening. */
-  function matches(row, q) {
+  /* Matched per ROW, not per client, because a row is now one policy. Searching
+     a client's name matches every row they own; searching a carrier matches
+     only the policies with it, instead of dragging along everything else that
+     client ever bought. */
+  function rowMatches(c, d, q) {
     if (!q) return true;
-    var c = row.client;
     // Deliberately not searched: ssn, bank. A search box is the easiest way to
     // confirm a number you already half-know, and typing one here would put it
     // in the browser's input history.
     var hay = [c.name, c.phone, c.email, c.address, c.notes]
-      .concat(row.carriers)
-      .concat(row.deals.map(function (d) { return d.policy || ""; }))
-      .concat(row.deals.map(function (d) { return d.policyNumber || ""; }))
       .concat((c.beneficiaries || []).map(function (b) { return b.name || ""; }))
+      .concat(d ? [d.carrier, d.policy, d.policyNumber, d.status, d.lead, d.notes] : [])
       .join(" ").toLowerCase();
     return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) {
       return hay.indexOf(w) !== -1;
@@ -107,23 +108,42 @@
 
   function renderBook() {
     var q = ($("bookSearch").value || "").trim();
-    var rows = state().clients.map(rowFor).filter(function (r) { return matches(r, q); });
-    rows.sort(function (a, b) {
-      return String(b.last || "").localeCompare(String(a.last || "")) ||
-             a.client.name.localeCompare(b.client.name);
+    /* One row per policy, matching the month list above — the two tables read
+       the same way, one filtered to a month and this one covering everything.
+       A client with nothing written yet still gets a row: they are in the book,
+       and a record you cannot see is a record you cannot add a policy to. */
+    var rows = [];
+    state().clients.map(rowFor).forEach(function (r) {
+      if (!r.deals.length) {
+        if (rowMatches(r.client, null, q)) rows.push({ client: r.client, deal: null });
+        return;
+      }
+      r.deals.forEach(function (d) {
+        if (rowMatches(r.client, d, q)) rows.push({ client: r.client, deal: d });
+      });
+    });
+    var matchedIds = {};
+    rows.forEach(function (r) { matchedIds[r.client.id] = 1; });
+    rows.sort(function (x, y) {
+      var dx = (x.deal && x.deal.date) || "", dy = (y.deal && y.deal.date) || "";
+      return String(dy).localeCompare(String(dx)) ||
+             x.client.name.localeCompare(y.client.name);
     });
 
     var total = state().clients.length;
-    $("bookCount").textContent = total ? (q ? rows.length + " of " + total : String(total)) : "";
+    $("bookCount").textContent = total
+      ? (q ? rows.length + (rows.length === 1 ? " match" : " matches") : total + (total === 1 ? " client" : " clients"))
+      : "";
 
     $("bookBody").innerHTML = rows.map(function (r) {
+      var d = r.deal;
       return '<tr data-client="' + esc(r.client.id) + '">' +
+        "<td>" + (d && d.date ? fmtDay(d.date) : "—") + "</td>" +
         "<td><b>" + esc(r.client.name) + "</b></td>" +
-        "<td>" + esc(r.client.phone || "—") + "</td>" +
-        '<td class="num">' + r.deals.length + "</td>" +
-        '<td class="num">' + money(r.ap) + "</td>" +
-        "<td>" + esc(r.carriers.join(", ") || "—") + "</td>" +
-        "<td>" + (r.last ? fmtDay(r.last) : "—") + "</td>" +
+        "<td>" + (d ? esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") : "—") + "</td>" +
+        '<td class="num">' + (d ? money(d.ap) : "—") + "</td>" +
+        '<td class="num">' + (d ? money(d.com) : "—") + "</td>" +
+        "<td>" + (d ? esc(d.status || "—") : '<span class="muted-cell">No policy yet</span>') + "</td>" +
         '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button></td>' +
       "</tr>";
     }).join("");
@@ -131,10 +151,10 @@
     var empty = $("bookEmpty");
     empty.style.display = rows.length ? "none" : "";
     empty.textContent = total
-      ? "No client matches “" + q + "”."
+      ? "No client matches \u201c" + q + "\u201d."
       : "No deals yet. Use Add deal — it takes the client and their policy together.";
 
-    if (viewingId && !rows.some(function (r) { return r.client.id === viewingId; })) viewingId = null;
+    if (viewingId && !matchedIds[viewingId]) viewingId = null;
     renderMonthDeals();
     renderDetail();
   }
