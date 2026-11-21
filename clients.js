@@ -153,7 +153,8 @@
         '<td class="num">' + (d ? money(d.ap) : "—") + "</td>" +
         '<td class="num">' + (d ? money(d.com) : "—") + "</td>" +
         "<td>" + (d ? esc(d.status || "—") : '<span class="muted-cell">No policy yet</span>') + "</td>" +
-        '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '">Edit</button></td>' +
+        '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '"' +
+          ' data-edit-row-deal="' + esc(d ? d.id : "") + '">Edit</button></td>' +
       "</tr>";
     }).join("");
 
@@ -422,8 +423,11 @@
     $("policySection").hidden = mode === "client";
     $("c-name").required = mode !== "policy";
     $("x-date").required = mode !== "client";
-    $("clientDelete").style.display = (mode === "client" && editingId) ? "" : "none";
-    $("dealDelete").style.display = (mode === "policy" && dealEditingId) ? "" : "none";
+    // Whichever halves are on screen can be deleted from here.
+    $("clientDelete").style.display =
+      (editingId && (mode === "client" || mode === "both")) ? "" : "none";
+    $("dealDelete").style.display =
+      (dealEditingId && (mode === "policy" || mode === "both")) ? "" : "none";
   }
 
   function benRow(b) {
@@ -486,15 +490,30 @@
     benMeta();
   }
 
-  function editClient(id) {
+  /* dealId turns this into an edit of the client AND that policy in one sheet.
+     A row in the book is a client and one of their policies, so its Edit
+     button opens both rather than making you fix the phone number here and
+     the premium somewhere else. Without a dealId it is the client alone. */
+  function editClient(id, dealId) {
     var c = id ? clientById(id) : null;
     editingId = c ? c.id : null;
-    dealEditingId = null;
+    var d = dealId ? state().deals.find(function (x) { return x.id === dealId; }) : null;
+
     fillForm(c);
-    $("dealForClient").innerHTML = "";
-    $("clientFormTitle").textContent = "Edit client";
-    $("clientSubmit").textContent = "Save client";
-    applyMode("client");
+    if (dealId !== undefined && c) {
+      fillDealForm(d, c.id);
+      $("dealForClient").innerHTML = "";
+      $("clientFormTitle").textContent = d ? "Edit client & policy" : "Edit client · add a policy";
+      $("clientSubmit").textContent = "Save";
+      $("policySectionTitle").textContent = d ? "Policy" : "Add a policy";
+      applyMode("both");
+    } else {
+      dealEditingId = null;
+      $("dealForClient").innerHTML = "";
+      $("clientFormTitle").textContent = "Edit client";
+      $("clientSubmit").textContent = "Save client";
+      applyMode("client");
+    }
     openSheet("c-name");
   }
 
@@ -766,7 +785,13 @@
 
     $("bookBody").addEventListener("click", function (ev) {
       var btn = ev.target.closest("[data-edit-client]");
-      if (btn) { editClient(btn.getAttribute("data-edit-client")); return; }
+      if (btn) {
+        // "" means a client with no policy yet: still open both halves, with
+        // the policy side blank and ready.
+        var rowDeal = btn.getAttribute("data-edit-row-deal");
+        editClient(btn.getAttribute("data-edit-client"), rowDeal == null ? undefined : rowDeal);
+        return;
+      }
       var tr = ev.target.closest("tr[data-client]");
       if (!tr) return;
       openRecord(tr.getAttribute("data-client"));
@@ -815,7 +840,7 @@
       var existing = clientByName(name);
       var id = editingId;
 
-      if (sheetMode === "client") {
+      if (sheetMode === "client" || sheetMode === "both") {
         // Two records with one name would split a person's policies in half,
         // which is the one thing a book of business must never do.
         if (existing && existing.id !== editingId) {
@@ -876,11 +901,13 @@
         doc.deals.forEach(function (d) { if (d.clientId === id) d.client = c.name; });
       });
 
-      if (sheetMode === "deal") {
+      if (sheetMode === "deal" || sheetMode === "both") {
         var client = clientById(id);
         var deal = client && readPolicy(client);
         if (deal) {
-          savePolicy(deal, null);
+          // In "both" this updates the policy the row was showing; with no
+          // policy yet, dealEditingId is null and it creates their first.
+          savePolicy(deal, dealEditingId);
           // Follow the policy to its own month, so one dated for last month
           // does not look like it failed to save.
           if (deal.date) dealMonth = deal.date.slice(0, 7);
