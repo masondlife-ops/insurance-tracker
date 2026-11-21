@@ -29,9 +29,12 @@
     { key: "leads",         label: "Leads bought",  hint: "How many leads you've received" },
     { key: "contacts",      label: "Contacts",      hint: "How many people picked up the phone" },
     { key: "appointments",  label: "Appointments",  hint: "How many appointments you've set" },
-    { key: "presentations", label: "Presentations", hint: "How many people you presented numbers to" },
-    { key: "sold",          label: "Sold",          hint: "How many deals you closed" }
+    { key: "presentations", label: "Presentations", hint: "How many people you presented numbers to" }
   ];
+  /* No Sold here on purpose. A sale is a deal, and a deal is logged on the
+     Clients page where it carries a carrier, a premium and a commission. A
+     second tally kept by hand could only ever agree with that by luck, and
+     the PNL funnel counts the deals, not this page. */
 
   var STORE_KEY = "agentTracker.entries.v1";
   var LEADS_KEY = "agentHub.leadTypes.v1";
@@ -134,7 +137,6 @@
       if (e.pickup) add(ds, "contacts", 1);
       if (e.appointment) add(ds, "appointments", 1);
       if (e.presentation) add(ds, "presentations", 1);
-      if (e.sold) add(ds, "sold", 1);
     });
     if (touched) writeLocal(COUNTS_KEY, counts);
     return touched;

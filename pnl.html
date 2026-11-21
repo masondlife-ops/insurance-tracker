@@ -1271,7 +1271,7 @@
   function activityMonth(ym) {
     var b = activityBlob || {};
     var counts = b.counts || {};
-    var tot = { dials: 0, contacts: 0, appointments: 0, presentations: 0, sold: 0 };
+    var tot = { dials: 0, contacts: 0, appointments: 0, presentations: 0 };
     var found = false;
     Object.keys(counts).forEach(function (k) {
       if (k !== ym && !(k.length === 10 && k.slice(0, 7) === ym)) return;
@@ -1294,7 +1294,7 @@
     }
 
     return { dials: tot.dials, pickups: tot.contacts, appointments: tot.appointments,
-             presentations: tot.presentations, sold: tot.sold, hasData: found };
+             presentations: tot.presentations, hasData: found };
   }
 
   /* Comp guide data lives in comp-guide.js (shared with the agency owner hub);
