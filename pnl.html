@@ -143,8 +143,6 @@
   .tile.profit-pos .t-value { color: var(--good); }
   .tile.profit-neg { border-color: var(--danger); background: var(--danger-soft); }
   .tile.profit-neg .t-value { color: var(--danger); }
-  .profit-pos-txt { color: var(--good); font-weight: 600; }
-  .profit-neg-txt { color: var(--danger); font-weight: 600; }
 
   /* ---------- Forms ---------- */
   .form-grid { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -621,7 +619,7 @@
     <div class="card">
       <div class="card-head"><h2>By lead source <span class="hint">this month</span></h2></div>
       <div class="table-scroll">
-        <table><thead><tr><th>Source</th><th class="num">Deals</th><th class="num">Spend</th><th class="num">Commission</th><th class="num">ROI</th></tr></thead>
+        <table><thead><tr><th>Source</th><th class="num">Deals</th><th class="num">Spend</th><th class="num">Commission</th></tr></thead>
         <tbody id="byLead"></tbody></table>
       </div>
       <div class="empty" id="leadEmpty" style="display:none">Nothing to compare yet.</div>
@@ -789,11 +787,6 @@
     if (n === null || n === undefined || n === "" || isNaN(n)) return "—";
     return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  function pct(v) {
-    if (v === null || v === undefined || isNaN(v)) return "—";
-    var r = Math.round(v * 10) / 10;
-    return (r > 0 ? "+" : r < 0 ? "−" : "") + Math.abs(r).toLocaleString("en-US", { maximumFractionDigits: 1 }) + "%";
-  }
   function num(v) {
     if (v === "" || v === null || v === undefined) return null;
     var n = parseFloat(v);
@@ -840,9 +833,6 @@
     });
     var expenses = sum(exps, function (e) { return e.price; });
     var leadSpend = sum(exps.filter(function (e) { return e.kind === "lead"; }), function (e) { return e.price; });
-    var profit = commission - expenses;
-    var profitClass = profit > 0 ? "profit-pos" : profit < 0 ? "profit-neg" : "";
-    var profitSign = profit > 0 ? "+" : profit < 0 ? "−" : "";
     var avgAP = deals.length ? submittedAP / deals.length : null;
 
     var actv = activityMonth(currentMonth);
@@ -856,7 +846,6 @@
       { key: "comm",    label: "Commission",     value: money(commission),
         sub: toCome > 0 ? "+" + money(toCome) + " to come" : "", cls: "" },
       { key: "exp",     label: "Lead spend",     value: money(leadSpend), sub: "", cls: "" },
-      { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "", cls: profitClass },
       { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
@@ -1193,17 +1182,15 @@
     var keys = Object.keys(spend).concat(Object.keys(sold)).filter(function (k, i, a) { return a.indexOf(k) === i; });
     var rows = keys.map(function (k) {
       var sp = spend[k] || 0, s = sold[k] || { n: 0, com: 0 };
-      return { key: k, n: s.n, spend: sp, com: s.com, roi: sp > 0 ? (s.com - sp) / sp * 100 : null };
+      return { key: k, n: s.n, spend: sp, com: s.com };
     }).sort(function (a, b) { return b.com - a.com || b.spend - a.spend; });
 
     $("leadEmpty").style.display = rows.length ? "none" : "";
     $("byLead").innerHTML = rows.map(function (r) {
-      var cls = r.roi == null ? "" : r.roi > 0 ? "profit-pos-txt" : r.roi < 0 ? "profit-neg-txt" : "";
       return "<tr><td>" + esc(r.key) + "</td>" +
         '<td class="num">' + r.n + "</td>" +
         '<td class="num">' + money(r.spend) + "</td>" +
-        '<td class="num">' + money(r.com) + "</td>" +
-        '<td class="num ' + cls + '">' + pct(r.roi) + "</td></tr>";
+        '<td class="num">' + money(r.com) + "</td></tr>";
     }).join("");
   }
 
