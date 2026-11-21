@@ -52,6 +52,12 @@
 
   /* Worked out from carrier and product each time, never stored, so correcting
      the rules fixes every policy already on the board. */
+  /* Paid is a yes/no, so it reads better as a mark than as another word in a
+     row already carrying a status. */
+  function paidTick(d) {
+    return d && d.paid ? ' <span class="paid-tick" title="Paid">\u2713</span>' : "";
+  }
+
   function typeCell(d) {
     var t = window.PolicyType ? PolicyType.forDeal(d) : null;
     return t ? esc(t) : '<span class="muted-cell">\u2014</span>';
@@ -152,7 +158,7 @@
         "<td>" + (d ? typeCell(d) : "—") + "</td>" +
         '<td class="num">' + (d ? money(d.ap) : "—") + "</td>" +
         '<td class="num">' + (d ? money(d.com) : "—") + "</td>" +
-        "<td>" + (d ? esc(d.status || "—") : '<span class="muted-cell">No policy yet</span>') + "</td>" +
+        "<td>" + (d ? esc(d.status || "—") + paidTick(d) : '<span class="muted-cell">No policy yet</span>') + "</td>" +
         '<td><button type="button" class="btn secondary small" data-edit-client="' + esc(r.client.id) + '"' +
           ' data-edit-row-deal="' + esc(d ? d.id : "") + '">Edit</button></td>' +
       "</tr>";
@@ -190,7 +196,7 @@
         "<td>" + esc(d.policyNumber || "—") + "</td>" +
         '<td class="num">' + money(d.ap) + "</td>" +
         '<td class="num">' + money(d.com) + "</td>" +
-        "<td>" + esc(d.status || "—") + "</td>" +
+        "<td>" + esc(d.status || "—") + paidTick(d) + "</td>" +
         '<td><button type="button" class="btn secondary small" data-edit-deal="' + esc(d.id) + '">Edit</button></td>' +
       "</tr>";
     }).join("");
@@ -297,7 +303,7 @@
             "<td>" + typeCell(d) + "</td>" +
             "<td>" + esc(d.policyNumber || "—") + "</td>" +
             '<td class="num">' + money(d.ap) + "</td>" +
-            "<td>" + esc(d.status || "—") + "</td>" +
+            "<td>" + esc(d.status || "—") + paidTick(d) + "</td>" +
             '<td><button type="button" class="btn secondary small" data-edit-deal="' + esc(d.id) + '">Edit</button></td>' +
             "</tr>";
         }).join("") + "</tbody></table></div>"

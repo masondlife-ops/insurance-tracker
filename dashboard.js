@@ -305,7 +305,11 @@
         '<td class="num">' + (d.ap == null ? "—" : money(d.ap)) + "</td>" +
         '<td class="num"><span class="age ' + cls + '">' + o.days + "d</span></td>" +
         "<td>" + esc(d.status || "—") +
-          (d.reqs ? ' <span class="reqs-chip">REQS</span>' : "") + "</td></tr>";
+          (d.reqs
+            ? ' <span class="reqs-chip">REQS</span>' +
+              ' <button type="button" class="btn secondary small" data-clear-reqs="' + esc(d.id) +
+              '" title="Mark requirements as received">Clear</button>'
+            : "") + "</td></tr>";
     }).join("");
   }
 
@@ -428,6 +432,18 @@
     document.addEventListener("click", function (ev) {
       var b = ev.target.closest("button");
       if (!b) return;
+
+      if (b.dataset.clearReqs) {
+        // The flag lives on the deal, so clearing it here is the same edit the
+        // Clients page would make — the deal keeps its status either way.
+        var did = b.dataset.clearReqs;
+        S.commit(function (doc) {
+          var dd = (doc.deals || []).find(function (x) { return x.id === did; });
+          if (dd) dd.reqs = false;
+        });
+        render();
+        return;
+      }
 
       if (b.dataset.done) { setDone(b.dataset.done, true); return; }
       if (b.dataset.undone) { setDone(b.dataset.undone, false); return; }
