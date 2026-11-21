@@ -12,6 +12,7 @@
   var $ = function (id) { return document.getElementById(id); };
   var S = window.HubStore;
   var viewingId = null, editingId = null;
+  var dealMonth = null;   // which month the policies list is showing
 
   function state() { return S.state; }
   function esc(s) {
@@ -33,6 +34,18 @@
     return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
            "-" + String(d.getDate()).padStart(2, "0");
   }
+  function thisMonth() { return todayStr().slice(0, 7); }
+  function monthLabel(ym) {
+    var p = String(ym || "").split("-");
+    if (p.length !== 2) return "";
+    return new Date(Number(p[0]), Number(p[1]) - 1, 1)
+      .toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  }
+  function shiftMonth(ym, by) {
+    var p = ym.split("-"), d = new Date(Number(p[0]), Number(p[1]) - 1 + by, 1);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  }
+
   function sum(arr, f) {
     return arr.reduce(function (t, x) { var v = Number(f(x)); return t + (isFinite(v) ? v : 0); }, 0);
   }
@@ -122,7 +135,45 @@
       : "No deals yet. Use Add deal — it takes the client and their policy together.";
 
     if (viewingId && !rows.some(function (r) { return r.client.id === viewingId; })) viewingId = null;
+    renderMonthDeals();
     renderDetail();
+  }
+
+  /* ---------- policies, by month ---------- */
+
+  function renderMonthDeals() {
+    var ds = state().deals
+      .filter(function (d) { return String(d.date || "").slice(0, 7) === dealMonth; })
+      .sort(function (a, b) { return String(b.date || "").localeCompare(String(a.date || "")); });
+
+    $("dealMonthLabel").textContent = monthLabel(dealMonth);
+
+    var ap = sum(ds, function (d) { return d.ap; });
+    var com = sum(ds, function (d) { return d.com; });
+
+    $("monthDealBody").innerHTML = ds.map(function (d) {
+      return '<tr data-open-deal="' + esc(d.id) + '">' +
+        "<td>" + fmtDay(d.date) + "</td>" +
+        "<td><b>" + esc(d.client || "—") + "</b></td>" +
+        "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
+        "<td>" + esc(d.policyNumber || "—") + "</td>" +
+        '<td class="num">' + money(d.ap) + "</td>" +
+        '<td class="num">' + money(d.com) + "</td>" +
+        "<td>" + esc(d.status || "—") + "</td>" +
+        '<td><button type="button" class="btn secondary small" data-edit-deal="' + esc(d.id) + '">Edit</button></td>' +
+      "</tr>";
+    }).join("");
+
+    $("monthDealFoot").innerHTML = ds.length
+      ? '<tr><td colspan="4">Total</td><td class="num">' + money(ap) + "</td>" +
+        '<td class="num">' + money(com) + "</td><td></td><td></td></tr>"
+      : "";
+
+    var empty = $("monthDealEmpty");
+    empty.style.display = ds.length ? "none" : "";
+    empty.textContent = "No policies written in " + monthLabel(dealMonth) + ".";
+    $("monthDealCount").textContent = ds.length
+      ? "(" + ds.length + " · " + money(ap) + " AP)" : "";
   }
 
   /* ---------- one client, full screen ---------- */
@@ -637,6 +688,23 @@
 
   function wire() {
     $("bookSearch").addEventListener("input", renderBook);
+
+    $("prevDealMonth").addEventListener("click", function () {
+      dealMonth = shiftMonth(dealMonth, -1); renderMonthDeals();
+    });
+    $("nextDealMonth").addEventListener("click", function () {
+      dealMonth = shiftMonth(dealMonth, 1); renderMonthDeals();
+    });
+
+    // A row opens the policy for editing; the Edit button does the same, so
+    // either lands in the right place.
+    $("monthDealBody").addEventListener("click", function (ev) {
+      var row = ev.target.closest("[data-open-deal]");
+      var btn = ev.target.closest("[data-edit-deal]");
+      var id = (btn && btn.getAttribute("data-edit-deal")) ||
+               (row && row.getAttribute("data-open-deal"));
+      if (id) editDeal(id);
+    });
     $("clientAddBtn").addEventListener("click", addDeal);
     $("clientSheetClose").addEventListener("click", closeSheet);
     $("clientScrim").addEventListener("click", closeSheet);
@@ -684,6 +752,7 @@
         var pol = readPolicy(owner);
         if (!pol) { alert("Fill in at least the carrier or the premium before saving this policy."); return; }
         savePolicy(pol, dealEditingId);
+        if (pol.date) dealMonth = pol.date.slice(0, 7);
         closeSheet();
         renderBook();
         return;
@@ -759,7 +828,12 @@
       if (sheetMode === "deal") {
         var client = clientById(id);
         var deal = client && readPolicy(client);
-        if (deal) savePolicy(deal, null);
+        if (deal) {
+          savePolicy(deal, null);
+          // Follow the policy to its own month, so one dated for last month
+          // does not look like it failed to save.
+          if (deal.date) dealMonth = deal.date.slice(0, 7);
+        }
       }
 
       closeSheet();
@@ -810,7 +884,7 @@
     // There is one session across the hub, so no sign-in form here: the Deals
     // page owns that, and sending them there avoids a second copy of auth.
     onSignedOut: function () { location.replace("pnl.html"); },
-    onReady: function () { wire(); renderBook(); }
+    onReady: function () { dealMonth = thisMonth(); wire(); renderBook(); }
   });
 
   S.onChange(renderBook);

@@ -345,6 +345,33 @@
     <div class="empty" id="bookEmpty" style="display:none"></div>
   </div>
 
+  <!-- The book above answers "who do I have"; this answers "what did I write
+       in March". Same deals, grouped by when they were sold rather than by
+       whose they are. -->
+  <div class="card">
+    <div class="card-head">
+      <h2>Policies <span class="hint" id="monthDealCount"></span></h2>
+      <div class="month-nav">
+        <button type="button" class="btn icon" id="prevDealMonth" title="Previous month" aria-label="Previous month">&#9664;</button>
+        <span class="label" id="dealMonthLabel"></span>
+        <button type="button" class="btn icon" id="nextDealMonth" title="Next month" aria-label="Next month">&#9654;</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="monthDeals">
+        <thead>
+          <tr>
+            <th>Date</th><th>Client</th><th>Carrier / product</th><th>Policy no.</th>
+            <th class="num">AP</th><th class="num">Commission</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="monthDealBody"></tbody>
+        <tfoot id="monthDealFoot"></tfoot>
+      </table>
+    </div>
+    <div class="empty" id="monthDealEmpty" style="display:none"></div>
+  </div>
+
 </div>
 
 <!-- The client record is a screen of its own, not a card under the table: it
@@ -456,7 +483,7 @@
 <script src="comp-calc.js"></script>
 <script src="hub-contract.js"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=9"></script>
+<script src="clients.js?v=10"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
