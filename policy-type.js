@@ -35,6 +35,15 @@
     // so they show as unknown rather than as a guess.
   };
 
+  /* Brand names that imply a type whatever carrier they are typed under, for
+     products sold by a name the comp guide does not use. Mutual of Omaha's
+     final expense is "Living Promise" everywhere except the guide, which
+     calls it "Final Expense" -- so matching the carrier too would miss it the
+     moment it is typed by hand. Checked before the generic patterns. */
+  var BY_NAME = [
+    [/living\s*promise/, "Whole Life"]
+  ];
+
   function norm(s) { return String(s == null ? "" : s).trim().toLowerCase(); }
 
   /* Returns one of TYPES, or null when the product is not recognisable. Null is
@@ -47,6 +56,8 @@
     var byProduct = BY_PRODUCT[c + "|" + p];
     if (byProduct) return byProduct;
     if (BY_CARRIER[c]) return BY_CARRIER[c];
+
+    for (var i = 0; i < BY_NAME.length; i++) if (BY_NAME[i][0].test(p)) return BY_NAME[i][1];
 
     // Accidental first: an AD&B rider product can carry another type's words.
     if (/accidental|\bad&?b\b/.test(p)) return "Accidental";
