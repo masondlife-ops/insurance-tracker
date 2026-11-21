@@ -23,8 +23,73 @@
   var ANNI_WINDOW = 90;      // days ahead to look for policy anniversaries
   var SOON_DAYS = 7;
 
+  var PACKET_DAYS = 14;
+
   function state() { return S.state; }
-  function events() { return state().events || []; }
+  function stored() { return state().events || []; }
+
+  /* ---------- items the deals schedule for themselves ----------
+
+     Two follow-ups never need asking for: a policy packet check-in two weeks
+     after a policy takes effect, on every deal, and an annual review a year
+     out on anything indexed.
+
+     They are derived rather than written, so opening this page never silently
+     edits the document and a corrected effective date moves the follow-up with
+     it. Acting on one is what makes it real: ticking it Done, editing it or
+     deleting it writes a record under the same id, and that record then wins.
+     Without the id the two would drift into duplicates. */
+  function autoId(kind, dealId) { return "auto:" + kind + ":" + dealId; }
+
+  function addDays(ds, n) {
+    var d = dayVal(ds);
+    if (!d) return null;
+    d.setDate(d.getDate() + n);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
+           "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function addYears(ds, n) {
+    var d = dayVal(ds);
+    if (!d) return null;
+    d.setFullYear(d.getFullYear() + n);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
+           "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function effectiveDate(d) { return d.issuedDate || d.date || ""; }
+
+  function autoEvents() {
+    var out = [];
+    (state().deals || []).forEach(function (d) {
+      if (d.status === "Declined" || d.status === "Cancelled") return;
+      var eff = effectiveDate(d);
+      if (!eff) return;
+      var what = [d.carrier, d.policy].filter(Boolean).join(" \u00b7 ");
+
+      var packet = addDays(eff, PACKET_DAYS);
+      if (packet) out.push({ id: autoId("packet", d.id), date: packet, type: "Policy packet",
+                             client: d.client || "", note: what, done: false, auto: true });
+
+      // Indexed only, as asked -- a plain UL does not get one.
+      var type = window.PolicyType ? PolicyType.forDeal(d) : null;
+      if (type === "IUL") {
+        var review = addYears(eff, 1);
+        if (review) out.push({ id: autoId("review", d.id), date: review, type: "Yearly review",
+                               client: d.client || "", note: what, done: false, auto: true });
+      }
+    });
+    return out;
+  }
+
+  /* Everything the page works from: what was saved, plus the automatic items
+     that have not been acted on. A saved record always beats its automatic
+     twin, which is how Done and Delete stick. */
+  function events() {
+    var saved = stored();
+    var byId = {};
+    saved.forEach(function (e) { byId[e.id] = 1; });
+    return saved.filter(function (e) { return !e.dismissed; })
+      .concat(autoEvents().filter(function (e) { return !byId[e.id]; }));
+  }
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -247,7 +312,7 @@
   /* ---------- completed ---------- */
 
   function renderDone() {
-    var done = events().filter(function (e) { return e.done; })
+    var done = stored().filter(function (e) { return e.done && !e.dismissed; })
       .sort(function (a, b) { return String(b.doneAt || "").localeCompare(String(a.doneAt || "")); });
     $("doneCount").textContent = done.length ? String(done.length) : "";
     $("doneEmpty").style.display = done.length ? "none" : "";
@@ -330,6 +395,7 @@
         var e = doc.events.find(function (x) { return x.id === id; });
         if (!e) { e = { id: id, done: false, createdAt: todayStr() }; doc.events.push(e); }
         Object.keys(fields).forEach(function (k) { e[k] = fields[k]; });
+        e.dismissed = false;
       });
       closeSheet();
       render();
@@ -338,9 +404,22 @@
     $("evDelete").addEventListener("click", function () {
       var id = editingId;
       if (!id) return;
-      if (!confirm("Delete this scheduled item?")) return;
+      var auto = id.indexOf("auto:") === 0;
+      if (!confirm(auto
+        ? "Remove this follow-up? It is scheduled automatically from the policy, so it will not come back."
+        : "Delete this scheduled item?")) return;
       S.commit(function (doc) {
-        doc.events = (doc.events || []).filter(function (x) { return x.id !== id; });
+        doc.events = doc.events || [];
+        if (auto) {
+          // A tombstone, not a removal: delete the row and the deal would
+          // schedule it again on the next render.
+          var e = doc.events.find(function (x) { return x.id === id; });
+          if (!e) { e = { id: id, createdAt: todayStr() }; doc.events.push(e); }
+          e.dismissed = true;
+          e.done = false;
+        } else {
+          doc.events = doc.events.filter(function (x) { return x.id !== id; });
+        }
       });
       closeSheet();
       render();
@@ -373,10 +452,20 @@
     });
   }
 
+  /* Ticking an automatic item is the moment it becomes a real record: there is
+     nothing stored to update until then, so it is created here under the same
+     id rather than quietly doing nothing. */
   function setDone(id, done) {
+    var virt = events().find(function (x) { return x.id === id; });
     S.commit(function (doc) {
-      var e = (doc.events || []).find(function (x) { return x.id === id; });
-      if (!e) return;
+      doc.events = doc.events || [];
+      var e = doc.events.find(function (x) { return x.id === id; });
+      if (!e) {
+        if (!virt) return;
+        e = { id: id, date: virt.date, type: virt.type, client: virt.client,
+              note: virt.note, createdAt: todayStr() };
+        doc.events.push(e);
+      }
       e.done = !!done;
       e.doneAt = done ? todayStr() : "";
     });
