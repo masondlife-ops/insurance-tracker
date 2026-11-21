@@ -25,10 +25,14 @@
   /* Product-level, where the name gives nothing away. Keyed carrier|product,
      both lowercased. Anything not listed falls through to the name rules. */
   var BY_PRODUCT = {
-    // Still unconfirmed, left out on purpose so they show as unknown rather
-    // than as a guess: American Amicable's Senior/Family Choice, Secure Life,
-    // Home Protector, OBA and Family Protector, and Foresters' Strong
-    // Foundation and Planright.
+    // Neither name gives it away, and they are not what you would guess:
+    // Strong Foundation is term, PlanRight is whole life.
+    "foresters|strong foundation": "Term",
+    "foresters|planright": "Whole Life"
+
+    // American Amicable's Senior/Family Choice, Secure Life, Home Protector,
+    // OBA and Family Protector are still unconfirmed, and left out on purpose
+    // so they show as unknown rather than as a guess.
   };
 
   function norm(s) { return String(s == null ? "" : s).trim().toLowerCase(); }

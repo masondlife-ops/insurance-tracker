@@ -253,6 +253,16 @@
   .goal-meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
   .goal-meta .hit { color: var(--good); font-weight: 600; }
 
+  /* ---------- policy mix ---------- */
+  .mix { display: flex; flex-wrap: wrap; gap: 10px; }
+  .mix-item { flex: 1 1 130px; border: 1px solid var(--border); border-radius: 10px; padding: 11px 13px;
+              background: var(--surface-1); }
+  .mix-n { font-size: 24px; font-weight: 650; font-variant-numeric: tabular-nums; line-height: 1.1; }
+  .mix-t { font-size: 13px; color: var(--text-secondary); margin-top: 1px; }
+  .mix-bar { height: 4px; border-radius: 999px; background: var(--series-1); margin-top: 8px; opacity: .85; }
+  .mix-item.unknown .mix-bar { background: var(--baseline); }
+  .mix-sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
   /* ---------- PNL layout ---------- */
   /* Two columns where there is room, one where there isn't. minmax(0,...) on
      both tracks, or a wide table inside a card refuses to shrink and pushes
@@ -562,15 +572,21 @@
   <div class="tiles" id="tiles"></div>
 
   <div class="card">
-    <div class="card-head"><h2>Profit by month <span class="hint">last 12</span></h2></div>
-    <div class="trend" id="trend"></div>
-    <div class="empty" id="trendEmpty" style="display:none">Nothing to chart yet.</div>
+    <div class="card-head"><h2>Goal pace <span class="hint" id="paceMonth"></span></h2></div>
+    <div id="c-pace"></div>
+    <div class="dash-kpi" id="k-pace"></div>
   </div>
 
   <div class="card">
     <div class="card-head"><h2>Activity funnel <span class="hint" id="funnelMonth"></span></h2></div>
     <div class="funnel" id="funnel"></div>
     <div class="funnel-note" id="funnelNote"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Policy mix <span class="hint" id="mixCount"></span></h2></div>
+    <div class="mix" id="mix"></div>
+    <div class="empty" id="mixEmpty" style="display:none">No deals this month.</div>
   </div>
 
   <div class="pnl-grid">
@@ -630,6 +646,7 @@
 </div>
 <script src="comp-guide.js"></script>
 <script src="comp-calc.js"></script>
+<script src="policy-type.js?v=1"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
@@ -812,7 +829,6 @@
 
     var actv = activityMonth(currentMonth);
     var costPerSale = deals.length > 0 ? leadSpend / deals.length : null;
-    var revPerDial = actv.dials > 0 ? commission / actv.dials : null;
 
     var allTiles = [
       { key: "sales",   label: "Total sales",   value: String(deals.length), sub: issued.length + " issued", cls: "" },
@@ -824,8 +840,7 @@
       { key: "exp",     label: "Lead spend",     value: money(leadSpend), sub: "", cls: "" },
       { key: "profit",  label: "Profit",         value: profitSign + money(Math.abs(profit)), sub: "", cls: profitClass },
       { key: "roi",     label: "ROI",            value: pct(roi), sub: roi === null ? "no lead spend yet" : "vs " + money(leadSpend) + " lead spend", cls: roiClass },
-      { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" },
-      { key: "revPerDial",  label: "Revenue per dial", value: revPerDial == null ? "—" : money(revPerDial), sub: "", cls: "" }
+      { key: "costPerSale", label: "Cost per sale",    value: costPerSale == null ? "—" : money(costPerSale), sub: leadSpend > 0 ? money(leadSpend) + " in leads" : "", cls: "" }
     ];
     window.__pnlAllTiles = allTiles;
     var hidden = tileHiddenSet();
@@ -905,8 +920,9 @@
     safeRender("tiles", renderTiles);
     safeRender("contractLevel", refreshContractLevel);
     safeRender("goal", renderGoal);
-    safeRender("trend", renderTrend);
+    safeRender("pace", renderPace);
     safeRender("funnel", renderFunnel);
+    safeRender("mix", renderMix);
     safeRender("byCarrier", renderByCarrier);
     safeRender("byLead", renderByLead);
   }
@@ -929,35 +945,95 @@
     $("heroMargin").textContent = com > 0 ? Math.round(profit / com * 100) + "%" : "—";
   }
 
-  /* ---------- profit by month ---------- */
+  /* ---------- goal pace ---------- */
 
-  function renderTrend() {
-    var months = [];
-    for (var i = 11; i >= 0; i--) months.push(shiftMonth(currentMonth, -i));
-    var vals = months.map(monthProfit);
-    var peak = Math.max.apply(null, vals.map(Math.abs).concat([1]));
-    var any = vals.some(function (v) { return v !== 0; });
+  var NS = "http://www.w3.org/2000/svg";
+  function svgEl(n, a) { var x = document.createElementNS(NS, n); for (var k in a) x.setAttribute(k, a[k]); return x; }
+  function svgHost(hostId, w, h) {
+    var el = $(hostId); el.innerHTML = "";
+    var s = svgEl("svg", { viewBox: "0 0 " + w + " " + h, height: h });
+    el.appendChild(s); return s;
+  }
+  function svgText(s, x, y, t, o) {
+    o = o || {};
+    var n = svgEl("text", { x: x, y: y, "font-size": o.size || 11, fill: o.fill || "var(--text-muted)",
+      "text-anchor": o.anchor || "start", "font-weight": o.weight || 400 });
+    n.textContent = t; s.appendChild(n); return n;
+  }
 
-    $("trendEmpty").style.display = any ? "none" : "";
-    $("trend").style.display = any ? "" : "none";
-    if (!any) { $("trend").innerHTML = ""; return; }
+  /* Issued AP walked day by day against a straight line to the month's goal.
+     Lifted from the dashboard, where it was the one chart that answered "am I
+     going to make it" rather than "what happened". */
+  function renderPace() {
+    var host = $("c-pace");
+    if (!host) return;
+    $("paceMonth").textContent = monthLabel(currentMonth);
 
-    // Each column splits into an up half and a down half around a shared
-    // baseline, so a losing month reads as below the line rather than as a
-    // short bar that looks like a small win.
-    $("trend").innerHTML = months.map(function (ym, i) {
-      var v = vals[i];
-      var h = Math.round(Math.abs(v) / peak * 100);
-      var cur = ym === currentMonth ? " tc-cur" : "";
-      return '<div class="tc' + cur + '" title="' + esc(monthLabel(ym)) + ": " + esc(money(v)) + '">' +
-        '<div class="tc-val">' + (v === 0 ? "" : moneyK(v)) + "</div>" +
-        '<div class="tc-plot">' +
-          '<div class="tc-up">' + (v > 0 ? '<div class="tc-bar pos" style="height:' + h + '%"></div>' : "") + "</div>" +
-          '<div class="tc-down">' + (v < 0 ? '<div class="tc-bar neg" style="height:' + h + '%"></div>' : "") + "</div>" +
-        "</div>" +
-        '<div class="tc-mo">' + esc(shortMonth(ym)) + "</div>" +
-      "</div>";
-    }).join("");
+    var goals = (state.settings && state.settings.goals) || {};
+    var goal = num(goals[currentMonth]) || 0;
+    if (!goal) {
+      host.innerHTML = '<div class="empty">No goal set for ' + esc(monthLabel(currentMonth)) +
+        ". Set one above to track pace.</div>";
+      $("k-pace").innerHTML = "";
+      return;
+    }
+
+    var p = currentMonth.split("-"), daysIn = new Date(+p[0], +p[1], 0).getDate();
+    var isNow = currentMonth === todayStr().slice(0, 7);
+    var today = isNow ? new Date().getDate() : daysIn;
+
+    // The true total -- the same figure the Issued AP tile uses -- so the two
+    // numbers on this page can never disagree.
+    var run = monthIssuedAP(currentMonth);
+
+    // Cumulative issued AP by day, for the shape of the line only.
+    var cum = [], plotted = 0;
+    for (var day = 1; day <= Math.min(today, daysIn); day++) {
+      var ds = currentMonth + "-" + String(day).padStart(2, "0");
+      plotted += sum(state.deals.filter(function (d) {
+        return effectiveIssuedYm(d) === currentMonth && (d.issuedDate || d.date) === ds;
+      }), function (d) { return d.ap; });
+      cum.push(plotted);
+    }
+    if (!cum.length) cum = [0];
+    // A deal dated past today, or with no issued date, still has to show up --
+    // fold the gap into today's point so the dot matches the headline figure.
+    if (plotted < run) cum[cum.length - 1] = run;
+
+    var W = 520, H = 205, PL = 54, PR = 16, PTop = 12, PB = 26;
+    var iw = W - PL - PR, ih = H - PTop - PB;
+    var top = Math.max(goal, run) * 1.02;
+    var s = svgHost("c-pace", W, H);
+    [0, 0.5, 1].forEach(function (f) {
+      var y = PTop + ih - f * ih;
+      s.appendChild(svgEl("line", { x1: PL, y1: y, x2: PL + iw, y2: y, stroke: "var(--grid)", "stroke-width": 1 }));
+      svgText(s, PL - 8, y + 4, moneyK(top * f), { anchor: "end" });
+    });
+    var X = function (d) { return PL + (d / (daysIn - 1)) * iw; };
+    var Y = function (v) { return PTop + ih - (v / top) * ih; };
+    s.appendChild(svgEl("line", { x1: X(0), y1: Y(0), x2: X(daysIn - 1), y2: Y(goal),
+      stroke: "var(--text-muted)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+    svgText(s, X(daysIn - 1) - 2, Y(goal) - 8, "target", { anchor: "end", size: 10.5 });
+
+    var poly = cum.map(function (v, i) { return X(i) + "," + Y(v); }).join(" ");
+    if (cum.length > 1) {
+      s.appendChild(svgEl("polygon", { points: X(0) + "," + Y(0) + " " + poly + " " + X(cum.length - 1) + "," + Y(0),
+        fill: "var(--series-1-soft)" }));
+      s.appendChild(svgEl("polyline", { points: poly, fill: "none", stroke: "var(--series-1)",
+        "stroke-width": 2.5, "stroke-linejoin": "round" }));
+    }
+    s.appendChild(svgEl("circle", { cx: X(cum.length - 1), cy: Y(run), r: 4.5,
+      fill: "var(--series-1)", stroke: "var(--surface-1)", "stroke-width": 2 }));
+    svgText(s, PL, H - 8, "day 1", { size: 10.5 });
+    svgText(s, PL + iw, H - 8, "day " + daysIn, { anchor: "end", size: 10.5 });
+
+    var onPace = goal * (today / daysIn), diff = run - onPace, ahead = diff >= 0;
+    var left = daysIn - today;
+    $("k-pace").innerHTML =
+      "<b>" + money(run) + "</b> of " + money(goal) +
+      " &middot; <span style=\"color:var(--" + (ahead ? "good" : "danger") + ")\"><b>" +
+        money(Math.abs(diff)) + (ahead ? " ahead" : " behind") + "</b></span> of pace" +
+      (left > 0 && run < goal ? " &middot; need <b>" + money((goal - run) / left) + "/day</b> to finish" : "");
   }
 
   /* ---------- activity funnel ---------- */
@@ -997,6 +1073,43 @@
     $("funnelNote").textContent = a.dials > 0
       ? money(com / a.dials) + " earned per dial · " + (deals > 0 ? Math.round(a.dials / deals) + " dials per sale" : "no sales yet")
       : "";
+  }
+
+  /* ---------- policy mix ---------- */
+
+  /* How the month's deals split by type of policy. Counts, because "ten IUL"
+     is the sentence an agent says; AP sits underneath for the ones where the
+     count flatters a small case. */
+  function renderMix() {
+    var deals = monthDeals();
+    var by = {};
+    deals.forEach(function (d) {
+      var t = (window.PolicyType && PolicyType.of(d.carrier, d.policy)) || "Unclassified";
+      by[t] = by[t] || { n: 0, ap: 0 };
+      by[t].n += 1;
+      by[t].ap += num(d.ap) || 0;
+    });
+
+    // Fixed order so the row does not reshuffle as the month fills up.
+    var order = (window.PolicyType ? PolicyType.TYPES : []).concat(["Unclassified"]);
+    var rows = order.filter(function (t) { return by[t]; })
+      .map(function (t) { return { type: t, n: by[t].n, ap: by[t].ap }; });
+
+    $("mixCount").textContent = deals.length
+      ? deals.length + (deals.length === 1 ? " deal sold" : " deals sold") : "";
+    $("mixEmpty").style.display = rows.length ? "none" : "";
+    $("mix").style.display = rows.length ? "" : "none";
+
+    var peak = rows.reduce(function (m, r) { return Math.max(m, r.n); }, 0) || 1;
+    $("mix").innerHTML = rows.map(function (r) {
+      var share = Math.round(r.n / deals.length * 100);
+      return '<div class="mix-item' + (r.type === "Unclassified" ? " unknown" : "") + '">' +
+        '<div class="mix-n">' + r.n + "</div>" +
+        '<div class="mix-t">' + esc(r.type) + "</div>" +
+        '<div class="mix-bar" style="width:' + Math.round(r.n / peak * 100) + '%"></div>' +
+        '<div class="mix-sub">' + share + "% · " + money(r.ap) + " AP</div>" +
+      "</div>";
+    }).join("");
   }
 
   /* ---------- breakdowns ---------- */
