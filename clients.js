@@ -50,6 +50,13 @@
     return arr.reduce(function (t, x) { var v = Number(f(x)); return t + (isFinite(v) ? v : 0); }, 0);
   }
 
+  /* Worked out from carrier and product each time, never stored, so correcting
+     the rules fixes every policy already on the board. */
+  function typeCell(d) {
+    var t = window.PolicyType && d ? PolicyType.of(d.carrier, d.policy) : null;
+    return t ? esc(t) : '<span class="muted-cell">\u2014</span>';
+  }
+
   function clientById(id) {
     return state().clients.find(function (c) { return c.id === id; }) || null;
   }
@@ -99,7 +106,8 @@
     // in the browser's input history.
     var hay = [c.name, c.phone, c.email, c.address, c.notes]
       .concat((c.beneficiaries || []).map(function (b) { return b.name || ""; }))
-      .concat(d ? [d.carrier, d.policy, d.policyNumber, d.status, d.lead, d.notes] : [])
+      .concat(d ? [d.carrier, d.policy, d.policyNumber, d.status, d.lead, d.notes,
+                   (window.PolicyType && PolicyType.of(d.carrier, d.policy)) || ""] : [])
       .join(" ").toLowerCase();
     return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) {
       return hay.indexOf(w) !== -1;
@@ -141,6 +149,7 @@
         "<td>" + (d && d.date ? fmtDay(d.date) : "—") + "</td>" +
         "<td><b>" + esc(r.client.name) + "</b></td>" +
         "<td>" + (d ? esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") : "—") + "</td>" +
+        "<td>" + (d ? typeCell(d) : "—") + "</td>" +
         '<td class="num">' + (d ? money(d.ap) : "—") + "</td>" +
         '<td class="num">' + (d ? money(d.com) : "—") + "</td>" +
         "<td>" + (d ? esc(d.status || "—") : '<span class="muted-cell">No policy yet</span>') + "</td>" +
@@ -176,6 +185,7 @@
         "<td>" + fmtDay(d.date) + "</td>" +
         "<td><b>" + esc(d.client || "—") + "</b></td>" +
         "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
+        "<td>" + typeCell(d) + "</td>" +
         "<td>" + esc(d.policyNumber || "—") + "</td>" +
         '<td class="num">' + money(d.ap) + "</td>" +
         '<td class="num">' + money(d.com) + "</td>" +
@@ -185,7 +195,7 @@
     }).join("");
 
     $("monthDealFoot").innerHTML = ds.length
-      ? '<tr><td colspan="4">Total</td><td class="num">' + money(ap) + "</td>" +
+      ? '<tr><td colspan="5">Total</td><td class="num">' + money(ap) + "</td>" +
         '<td class="num">' + money(com) + "</td><td></td><td></td></tr>"
       : "";
 
@@ -279,10 +289,11 @@
 
     var policies = ds.length
       ? '<div class="table-scroll"><table><thead><tr><th>Date</th><th>Carrier / product</th>' +
-        '<th>Policy no.</th><th class="num">AP</th><th>Status</th><th></th></tr></thead><tbody>' +
+        '<th>Type</th><th>Policy no.</th><th class="num">AP</th><th>Status</th><th></th></tr></thead><tbody>' +
         ds.map(function (d) {
           return '<tr><td>' + fmtDay(d.date) + "</td>" +
             "<td>" + esc([d.carrier, d.policy].filter(Boolean).join(" · ") || "—") + "</td>" +
+            "<td>" + typeCell(d) + "</td>" +
             "<td>" + esc(d.policyNumber || "—") + "</td>" +
             '<td class="num">' + money(d.ap) + "</td>" +
             "<td>" + esc(d.status || "—") + "</td>" +
