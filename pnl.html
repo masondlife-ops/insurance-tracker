@@ -646,7 +646,7 @@
 </div>
 <script src="comp-guide.js"></script>
 <script src="comp-calc.js"></script>
-<script src="policy-type.js?v=1"></script>
+<script src="policy-type.js?v=2"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
@@ -1084,7 +1084,7 @@
     var deals = monthDeals();
     var by = {};
     deals.forEach(function (d) {
-      var t = (window.PolicyType && PolicyType.of(d.carrier, d.policy)) || "Unclassified";
+      var t = (window.PolicyType && PolicyType.forDeal(d)) || "Unclassified";
       by[t] = by[t] || { n: 0, ap: 0 };
       by[t].n += 1;
       by[t].ap += num(d.ap) || 0;

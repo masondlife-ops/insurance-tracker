@@ -70,5 +70,15 @@
     return null;
   }
 
-  global.PolicyType = { TYPES: TYPES, of: of };
+  /* What a deal's type actually is: what was chosen on the form if anything
+     was, otherwise what the carrier and product imply. Everything that
+     displays or counts a type goes through here, so a deal saved before the
+     dropdown existed still reports one. */
+  function forDeal(d) {
+    if (!d) return null;
+    if (d.type) return d.type;
+    return of(d.carrier, d.policy);
+  }
+
+  global.PolicyType = { TYPES: TYPES, of: of, forDeal: forDeal };
 })(window);

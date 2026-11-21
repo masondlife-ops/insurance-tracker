@@ -53,7 +53,7 @@
   /* Worked out from carrier and product each time, never stored, so correcting
      the rules fixes every policy already on the board. */
   function typeCell(d) {
-    var t = window.PolicyType && d ? PolicyType.of(d.carrier, d.policy) : null;
+    var t = window.PolicyType ? PolicyType.forDeal(d) : null;
     return t ? esc(t) : '<span class="muted-cell">\u2014</span>';
   }
 
@@ -107,7 +107,7 @@
     var hay = [c.name, c.phone, c.email, c.address, c.notes]
       .concat((c.beneficiaries || []).map(function (b) { return b.name || ""; }))
       .concat(d ? [d.carrier, d.policy, d.policyNumber, d.status, d.lead, d.notes,
-                   (window.PolicyType && PolicyType.of(d.carrier, d.policy)) || ""] : [])
+                   (window.PolicyType && PolicyType.forDeal(d)) || ""] : [])
       .join(" ").toLowerCase();
     return q.toLowerCase().split(/\s+/).filter(Boolean).every(function (w) {
       return hay.indexOf(w) !== -1;
@@ -535,6 +535,7 @@
   var dealEditingId = null;
   var dealClientId = null;
   var comAutoFilled = false;
+  var typeAutoFilled = false;
   var pendingFull = null;
 
   function num(v) {
@@ -564,6 +565,18 @@
     if (ckey) fillList("xProductList", Object.keys(COMP_CARRIERS[ckey].products), []);
     else fillList("xProductList", state().deals.map(function (d) { return d.policy; }), ["WL", "Term", "IUL", "FE"]);
     fillList("xLeadList", state().deals.map(function (d) { return d.lead; }), []);
+  }
+
+  /* The product usually says what type it is, so the box fills itself as you
+     type the carrier and product. Touch it once and it stops guessing — which
+     is how the five American Amicable products nothing can classify get a type
+     at all. */
+  function syncPolicyType() {
+    var el = $("x-type");
+    if (!el || typeAutoFilled === "locked") return;
+    var guess = window.PolicyType
+      ? PolicyType.of($("x-carrier").value, $("x-policy").value) : null;
+    if (guess && el.value !== guess) { el.value = guess; typeAutoFilled = true; }
   }
 
   function syncTargetField() {
@@ -619,6 +632,9 @@
     $("x-carrier").value = d ? d.carrier || "" : "";
     $("x-policy").value = d ? d.policy || "" : "";
     $("x-policynum").value = d ? d.policyNumber || "" : "";
+    $("x-type").value = d ? (d.type || (window.PolicyType ? PolicyType.of(d.carrier, d.policy) : "") || "") : "";
+    // An existing deal's saved type is a choice already made.
+    typeAutoFilled = d && d.type ? "locked" : false;
     $("x-ap").value = d && d.ap != null ? d.ap : "";
     $("x-target").value = d && d.target != null ? d.target : "";
     $("x-face").value = d && d.face != null ? d.face : "";
@@ -633,6 +649,7 @@
 
     refreshDealLists();
     syncTargetField();
+    syncPolicyType();
     recalcCommission();
   }
 
@@ -640,7 +657,7 @@
      the section is blank, so "Add deal" can be used for a client you have
      taken details for but not yet written. */
   function readPolicy(client) {
-    var touched = ["x-carrier", "x-policy", "x-policynum", "x-ap", "x-face",
+    var touched = ["x-carrier", "x-policy", "x-policynum", "x-type", "x-ap", "x-face",
                    "x-monthly", "x-com", "x-lead", "x-notes"]
       .some(function (id) { return String($(id).value || "").trim() !== ""; });
     if (!touched) return null;
@@ -658,6 +675,7 @@
       carrier: $("x-carrier").value.trim(),
       policy: $("x-policy").value.trim(),
       policyNumber: $("x-policynum").value.trim(),
+      type: $("x-type").value,
       ap: num($("x-ap").value),
       target: num($("x-target").value),
       face: num($("x-face").value),
@@ -692,7 +710,7 @@
   function wireDealSheet() {
     ["x-carrier", "x-policy"].forEach(function (id) {
       $(id).addEventListener("input", function () {
-        refreshDealLists(); syncTargetField(); recalcCommission();
+        refreshDealLists(); syncTargetField(); syncPolicyType(); recalcCommission();
       });
     });
     ["x-ap", "x-target"].forEach(function (id) {
@@ -700,6 +718,8 @@
     });
     // Typing a commission means you meant it; auto-fill stops overwriting it.
     $("x-com").addEventListener("input", function () { comAutoFilled = false; });
+    // Choosing a type by hand means you meant it; stop overwriting it.
+    $("x-type").addEventListener("change", function () { typeAutoFilled = "locked"; });
 
     $("dealDelete").addEventListener("click", function () {
       var id = dealEditingId;

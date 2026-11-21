@@ -448,6 +448,13 @@
         <div class="field"><label for="x-date">Date</label><input type="date" id="x-date" required></div>
         <div class="field"><label for="x-carrier">Carrier</label><input type="text" id="x-carrier" class="wide" list="xCarrierList" placeholder="Carrier" autocomplete="off"></div>
         <div class="field"><label for="x-policy">Product</label><input type="text" id="x-policy" class="wide" list="xProductList" placeholder="Carrier product" autocomplete="off"></div>
+        <div class="field"><label for="x-type">Policy type</label>
+          <select id="x-type">
+            <option value="">—</option>
+            <option>Whole Life</option><option>Term</option><option>IUL</option>
+            <option>UL</option><option>Accidental</option>
+          </select>
+        </div>
         <div class="field"><label for="x-policynum">Policy number</label><input type="text" id="x-policynum" class="wide" placeholder="From the carrier" autocomplete="off"></div>
         <div class="field"><label for="x-ap">AP ($)</label><input type="number" id="x-ap" class="narrow" min="0" step="0.01" placeholder="0"></div>
         <div class="field" id="xTargetField" hidden><label for="x-target">Target premium ($)</label><input type="number" id="x-target" class="narrow" min="0" step="0.01" placeholder="from illustration"></div>
@@ -484,9 +491,9 @@
 <script src="comp-guide.js"></script>
 <script src="comp-calc.js"></script>
 <script src="hub-contract.js"></script>
-<script src="policy-type.js?v=1"></script>
+<script src="policy-type.js?v=2"></script>
 <script src="hub-store.js?v=1"></script>
-<script src="clients.js?v=13"></script>
+<script src="clients.js?v=14"></script>
 <script src="hub-branding.js"></script>
 <script src="hub-prefs.js"></script>
 <script src="hub-settings.js"></script>
